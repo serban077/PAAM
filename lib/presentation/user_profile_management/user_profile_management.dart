@@ -3,6 +3,7 @@ import 'package:sizer/sizer.dart';
 
 import '../../services/supabase_service.dart';
 import '../../services/gemini_ai_service.dart';
+import '../../services/calorie_calculator_service.dart';
 import '../../routes/app_routes.dart';
 import './widgets/personal_info_section_widget.dart';
 import './widgets/fitness_preferences_section_widget.dart';
@@ -126,7 +127,7 @@ class _UserProfileManagementState extends State<UserProfileManagement> {
       if (mounted) {
         Navigator.pushReplacementNamed(
           context,
-          AppRoutes.authenticationOnboardingFlow,
+          AppRoutes.loginScreen,
         );
       }
     } catch (e) {
@@ -209,12 +210,39 @@ class _UserProfileManagementState extends State<UserProfileManagement> {
                       })
                       .eq('id', userId);
 
-                  // TODO: Recalculate calories - temporarily disabled due to schema cache issue
-                  // Uncomment after Supabase schema refresh or manual calorie update
-                  // await SupabaseService.instance.client.rpc(
-                  //   'calculate_daily_calories',
-                  //   params: {'target_user_id': userId},
-                  // );
+                  // Calculate and update nutrition goals with deadline-based calculation
+                  try {
+                    final nutritionGoals = CalorieCalculatorService.calculateNutritionGoals(
+                      weightKg: (data['weight'] as num).toDouble(),
+                      heightCm: (data['height'] as num).toDouble(),
+                      age: data['age'] as int,
+                      gender: _userProfile!['gender'] ?? 'masculin',
+                      weeklyTrainingFrequency: _userProfile!['weekly_training_frequency'] ?? 3,
+                      fitnessGoal: _userProfile!['fitness_goal'] ?? 'mentinere',
+                      targetWeightKg: (data['targetWeight'] as num?)?.toDouble(),
+                      targetTimeframeWeeks: data['targetTimeframeWeeks'] as int?,
+                    );
+
+                    await SupabaseService.instance.client
+                        .from('user_profiles')
+                        .update({
+                          'daily_calorie_goal': nutritionGoals['daily_calorie_goal'],
+                          'protein_goal_g': nutritionGoals['protein_goal_g'],
+                          'carbs_goal_g': nutritionGoals['carbs_goal_g'],
+                          'fat_goal_g': nutritionGoals['fat_goal_g'],
+                        })
+                        .eq('id', userId);
+                    
+                    // Delete daily_nutrition_goals to force recreation with new values
+                    await SupabaseService.instance.client
+                        .from('daily_nutrition_goals')
+                        .delete()
+                        .eq('user_id', userId);
+                    
+                    debugPrint('Nutrition goals updated: ${nutritionGoals['daily_calorie_goal']} kcal');
+                  } catch (e) {
+                    debugPrint('Error calculating nutrition goals: $e');
+                  }
 
                   await _loadUserProfile();
                   
@@ -269,6 +297,40 @@ class _UserProfileManagementState extends State<UserProfileManagement> {
                         'fitness_goal': data['fitnessGoal'],
                       })
                       .eq('id', userId);
+
+                  // Calculate and update nutrition goals with deadline-based calculation
+                  try {
+                    final nutritionGoals = CalorieCalculatorService.calculateNutritionGoals(
+                      weightKg: (_userProfile!['weight_kg'] as num?)?.toDouble() ?? 70.0,
+                      heightCm: (_userProfile!['height_cm'] as num?)?.toDouble() ?? 170.0,
+                      age: _userProfile!['age'] ?? 30,
+                      gender: _userProfile!['gender'] ?? 'masculin',
+                      weeklyTrainingFrequency: newFrequency,
+                      fitnessGoal: data['fitnessGoal'],
+                      targetWeightKg: (_userProfile!['target_weight_kg'] as num?)?.toDouble(),
+                      targetTimeframeWeeks: _userProfile!['target_timeframe_weeks'] as int?,
+                    );
+
+                    await SupabaseService.instance.client
+                        .from('user_profiles')
+                        .update({
+                          'daily_calorie_goal': nutritionGoals['daily_calorie_goal'],
+                          'protein_goal_g': nutritionGoals['protein_goal_g'],
+                          'carbs_goal_g': nutritionGoals['carbs_goal_g'],
+                          'fat_goal_g': nutritionGoals['fat_goal_g'],
+                        })
+                        .eq('id', userId);
+                    
+                    // Delete daily_nutrition_goals to force recreation with new values
+                    await SupabaseService.instance.client
+                        .from('daily_nutrition_goals')
+                        .delete()
+                        .eq('user_id', userId);
+                    
+                    debugPrint('Nutrition goals updated: ${nutritionGoals['daily_calorie_goal']} kcal');
+                  } catch (e) {
+                    debugPrint('Error calculating nutrition goals: $e');
+                  }
 
                   await _loadUserProfile();
 
@@ -392,7 +454,9 @@ class _UserProfileManagementState extends State<UserProfileManagement> {
             ),
             SizedBox(height: 2.h),
 
-            const AccountManagementSectionWidget(),
+            AccountManagementSectionWidget(
+              onLogout: _handleLogout,
+            ),
           ],
         ),
       ),

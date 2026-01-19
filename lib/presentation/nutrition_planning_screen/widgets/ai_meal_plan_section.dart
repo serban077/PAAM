@@ -371,7 +371,8 @@ class _AIMealPlanSectionState extends State<AIMealPlanSection> {
         throw Exception('User not logged in');
       }
 
-      // Map meal names to meal types
+      // Map meal names to meal types (must match Supabase enum exactly)
+      // Supabase enum values: mic_dejun, gustare_dimineata, pranz, gustare_dupa_amiaza, cina, gustare_seara
       final mealTypeMap = {
         'Mic dejun': 'mic_dejun',
         'Mic Dejun': 'mic_dejun',
@@ -379,63 +380,56 @@ class _AIMealPlanSectionState extends State<AIMealPlanSection> {
         'Pranz': 'pranz',
         'Cină': 'cina',
         'Cina': 'cina',
-        'Gustare': 'snack',
+        'Gustare': 'gustare_dimineata', // Default to morning snack
+        'Gustare dimineață': 'gustare_dimineata',
+        'Gustare după-amiază': 'gustare_dupa_amiaza',
+        'Gustare seară': 'gustare_seara',
       };
 
-      final mealType = mealTypeMap[mealName] ?? 'snack';
+      final mealType = mealTypeMap[mealName] ?? 'gustare_dimineata';
       final description = option['description'] as String? ?? '';
-      
-      // Parse the description to extract foods and quantities
-      // Format: "Omletă cu 3 ouă și spanac (150g), pâine integrală (50g)"
-      final foodPattern = RegExp(r'([^,]+?)\s*\((\d+)g\)');
-      final matches = foodPattern.allMatches(description);
-      
-      if (matches.isEmpty) {
-        // If no foods found, create a custom entry
-        await SupabaseService.instance.client.from('user_meals').insert({
-          'user_id': userId,
-          'food_id': null, // Custom meal without specific food
-          'meal_type': mealType,
-          'serving_quantity': 1,
-          'consumed_at': DateTime.now().toIso8601String(),
-          'notes': description, // Store full description in notes
-        });
-      } else {
-        // Add each parsed food
-        for (var match in matches) {
-          final foodName = match.group(1)?.trim() ?? '';
-          final quantity = int.tryParse(match.group(2) ?? '0') ?? 0;
-          
-          if (foodName.isEmpty || quantity == 0) continue;
-          
-          // Try to find food in database
-          final foodData = await SupabaseService.instance.client
-              .from('food_database')
-              .select('id')
-              .ilike('name', '%$foodName%')
-              .limit(1)
-              .maybeSingle();
+      final calories = (option['calories'] as num?)?.toInt() ?? 0;
+      final protein = (option['protein_g'] as num?)?.toDouble() ?? 0;
+      final carbs = (option['carbs_g'] as num?)?.toDouble() ?? 0;
+      final fat = (option['fat_g'] as num?)?.toDouble() ?? 0;
 
-          if (foodData != null) {
-            await SupabaseService.instance.client.from('user_meals').insert({
-              'user_id': userId,
-              'food_id': foodData['id'],
-              'meal_type': mealType,
-              'serving_quantity': quantity.toDouble(),
-              'consumed_at': DateTime.now().toIso8601String(),
-            });
-          }
-        }
-      }
+      // Create custom food entry for this AI meal
+      // IMPORTANT: serving_size=100 and serving_quantity=1 means 1 portion = 100g
+      // Formula: calories * quantity / servingSize = 450 * 1 / 1 = 450 cal (correct!)
+      // The calories value already represents the TOTAL for this meal
+      final customFood = await SupabaseService.instance.client
+          .from('food_database')
+          .insert({
+            'name': 'Plan AI - $mealName',
+            'serving_size': 1, // 1 portion
+            'serving_unit': 'porție',
+            'calories': calories, // Total calories for the meal
+            'protein_g': protein, // Total protein for the meal
+            'carbs_g': carbs, // Total carbs for the meal
+            'fat_g': fat, // Total fat for the meal
+            'is_verified': false, // Mark as AI-generated
+          })
+          .select()
+          .single();
+
+      // Add to user_meals with quantity=1 (one full portion)
+      await SupabaseService.instance.client.from('user_meals').insert({
+        'user_id': userId,
+        'food_id': customFood['id'],
+        'meal_type': mealType,
+        'serving_quantity': 1, // 1 portion = full meal
+        'consumed_at': DateTime.now().toIso8601String(),
+        'notes': description, // Store full description in notes
+      });
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Masă adăugată cu succes!'),
+          SnackBar(
+            content: Text('Masă adăugată în $mealName!'),
             backgroundColor: Colors.green,
           ),
         );
-        widget.onMealAdded();
+        widget.onMealAdded(); // Refresh UI
       }
     } catch (e) {
       if (mounted) {

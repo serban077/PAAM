@@ -8,7 +8,12 @@ import '../../../widgets/custom_icon_widget.dart';
 /// Account Management Section Widget
 /// Includes security options, data export, and account deletion
 class AccountManagementSectionWidget extends StatefulWidget {
-  const AccountManagementSectionWidget({super.key});
+  final VoidCallback onLogout;
+  
+  const AccountManagementSectionWidget({
+    super.key,
+    required this.onLogout,
+  });
 
   @override
   State<AccountManagementSectionWidget> createState() =>
@@ -19,12 +24,98 @@ class _AccountManagementSectionWidgetState
     extends State<AccountManagementSectionWidget> {
   bool _isExpanded = false;
 
-  void _handleChangePassword() {
+  void _handleChangePassword() async {
     HapticFeedback.lightImpact();
-    showDialog(
+    
+    final currentPasswordController = TextEditingController();
+    final newPasswordController = TextEditingController();
+    final confirmPasswordController = TextEditingController();
+    
+    final result = await showDialog<bool>(
       context: context,
-      builder: (context) => _buildChangePasswordDialog(),
+      builder: (dialogContext) {
+        final theme = Theme.of(dialogContext);
+        
+        return AlertDialog(
+          title: Text('Schimbă Parola'),
+          content: IntrinsicHeight(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: currentPasswordController,
+                  obscureText: true,
+                  decoration: InputDecoration(
+                    labelText: 'Parola Curentă',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+                SizedBox(height: 2.h),
+                TextField(
+                  controller: newPasswordController,
+                  obscureText: true,
+                  decoration: InputDecoration(
+                    labelText: 'Parola Nouă',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+                SizedBox(height: 2.h),
+                TextField(
+                  controller: confirmPasswordController,
+                  obscureText: true,
+                  decoration: InputDecoration(
+                    labelText: 'Confirmă Parola Nouă',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: Text('Anulează'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                // Validate passwords match
+                if (newPasswordController.text != confirmPasswordController.text) {
+                  ScaffoldMessenger.of(dialogContext).showSnackBar(
+                    SnackBar(
+                      content: Text('Parolele nu coincid'),
+                      backgroundColor: Colors.red,
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                  return;
+                }
+                
+                Navigator.pop(dialogContext, true);
+              },
+              child: Text('Salvează'),
+            ),
+          ],
+        );
+      },
     );
+    
+    // Controllers will be automatically disposed when method ends
+    // Show success if saved
+    if (result == true && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Parola a fost schimbată cu succes'),
+          backgroundColor: Theme.of(context).colorScheme.primary,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
   }
 
   void _handleExportData() {
@@ -33,6 +124,35 @@ class _AccountManagementSectionWidgetState
       context: context,
       builder: (context) => _buildExportDataDialog(),
     );
+  }
+
+  void _handleSignOut() async {
+    HapticFeedback.lightImpact();
+    final shouldSignOut = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text('Deconectare'),
+        content: Text('Ești sigur că vrei să te deconectezi?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: Text('Anulează'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+            ),
+            child: Text('Deconectare'),
+          ),
+        ],
+      ),
+    );
+
+    if (shouldSignOut != true) return;
+
+    // Call the parent's logout handler
+    widget.onLogout();
   }
 
   void _handleDeleteAccount() {
@@ -170,6 +290,17 @@ class _AccountManagementSectionWidgetState
                           ),
                           SizedBox(height: 3.h),
 
+                          // Sign Out
+                          _buildActionTile(
+                            icon: 'logout',
+                            title: 'Deconectare',
+                            description: 'Ieși din contul tău',
+                            onTap: _handleSignOut,
+                            theme: theme,
+                            isDestructive: true,
+                          ),
+                          SizedBox(height: 2.h),
+
                           // Delete Account
                           _buildActionTile(
                             icon: 'delete_forever',
@@ -264,74 +395,6 @@ class _AccountManagementSectionWidgetState
     );
   }
 
-  Widget _buildChangePasswordDialog() {
-    final theme = Theme.of(context);
-    final currentPasswordController = TextEditingController();
-    final newPasswordController = TextEditingController();
-    final confirmPasswordController = TextEditingController();
-
-    return AlertDialog(
-      title: Text('Schimbă Parola'),
-      content: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: currentPasswordController,
-              obscureText: true,
-              decoration: InputDecoration(
-                labelText: 'Parola Curentă',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-            ),
-            SizedBox(height: 2.h),
-            TextField(
-              controller: newPasswordController,
-              obscureText: true,
-              decoration: InputDecoration(
-                labelText: 'Parola Nouă',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-            ),
-            SizedBox(height: 2.h),
-            TextField(
-              controller: confirmPasswordController,
-              obscureText: true,
-              decoration: InputDecoration(
-                labelText: 'Confirmă Parola Nouă',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: Text('Anulează'),
-        ),
-        ElevatedButton(
-          onPressed: () {
-            Navigator.pop(context);
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('Parola a fost schimbată cu succes'),
-                backgroundColor: theme.colorScheme.primary,
-                behavior: SnackBarBehavior.floating,
-              ),
-            );
-          },
-          child: Text('Salvează'),
-        ),
-      ],
-    );
-  }
 
   Widget _buildExportDataDialog() {
     final theme = Theme.of(context);

@@ -4,6 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:intl/intl.dart';
 
 import '../../services/nutrition_service.dart';
+import '../../services/supabase_service.dart';
 import './widgets/calorie_goal_widget.dart';
 import './widgets/macro_progress_widget.dart';
 import './widgets/add_food_modal_widget.dart';
@@ -88,6 +89,37 @@ class _NutritionPlanningScreenState extends State<NutritionPlanningScreen> {
 
   List<Map<String, dynamic>> _getMealsForType(String mealType) {
     return _meals.where((meal) => meal['meal_type'] == mealType).toList();
+  }
+
+  /// Edit meal quantity and update in database
+  Future<void> _editMealQuantity(String mealId, double newQuantity) async {
+    try {
+      await SupabaseService.instance.client
+          .from('user_meals')
+          .update({'serving_quantity': newQuantity})
+          .eq('id', mealId);
+      
+      // Reload data to refresh calories
+      await _loadNutritionData();
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Cantitate actualizată!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Eroare: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   @override
@@ -181,6 +213,7 @@ class _NutritionPlanningScreenState extends State<NutritionPlanningScreen> {
                         await _nutritionService.deleteMeal(mealId);
                         _loadNutritionData();
                       },
+                      onEditMeal: _editMealQuantity,
                     ),
                     SizedBox(height: 1.5.h),
 
@@ -193,6 +226,7 @@ class _NutritionPlanningScreenState extends State<NutritionPlanningScreen> {
                         await _nutritionService.deleteMeal(mealId);
                         _loadNutritionData();
                       },
+                      onEditMeal: _editMealQuantity,
                     ),
                     SizedBox(height: 1.5.h),
 
@@ -205,18 +239,20 @@ class _NutritionPlanningScreenState extends State<NutritionPlanningScreen> {
                         await _nutritionService.deleteMeal(mealId);
                         _loadNutritionData();
                       },
+                      onEditMeal: _editMealQuantity,
                     ),
                     SizedBox(height: 1.5.h),
 
                     SimpleMealCard(
                       title: 'Gustare',
-                      mealType: 'snack',
-                      meals: _getMealsForType('snack'),
-                      onAddFood: () => _showAddFoodModal('snack'),
+                      mealType: 'gustare_dimineata',
+                      meals: _getMealsForType('gustare_dimineata'),
+                      onAddFood: () => _showAddFoodModal('gustare_dimineata'),
                       onDeleteMeal: (mealId) async {
                         await _nutritionService.deleteMeal(mealId);
                         _loadNutritionData();
                       },
+                      onEditMeal: _editMealQuantity,
                     ),
                     SizedBox(height: 2.h),
 

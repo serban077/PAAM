@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:sizer/sizer.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -24,6 +26,7 @@ class _AuthenticationOnboardingFlowState
   User? _currentUser;
   bool _isCheckingAuth = true;
   bool _isOnboardingComplete = false;
+  StreamSubscription<AuthState>? _authSubscription;
 
   @override
   void initState() {
@@ -32,26 +35,42 @@ class _AuthenticationOnboardingFlowState
   }
 
   void _setupAuthListener() {
-    SupabaseService.instance.client.auth.onAuthStateChange.listen((data) {
+    _authSubscription = SupabaseService.instance.client.auth.onAuthStateChange.listen((data) {
       final user = data.session?.user;
-      setState(() {
-        _currentUser = user;
-        _isCheckingAuth = true; // Start check on any auth change
-      });
+      
       if (user != null) {
+        // User logged in - check onboarding
+        if (mounted) {
+          setState(() {
+            _currentUser = user;
+            _isCheckingAuth = true; // Start checking onboarding status
+          });
+        }
         _checkOnboardingStatus();
       } else {
-        setState(() {
-          _isCheckingAuth = false;
-          _isOnboardingComplete = false;
-        });
+        // User logged out - reset state immediately
+        if (mounted) {
+          setState(() {
+            _currentUser = null;
+            _isCheckingAuth = false; // Don't check, just show login
+            _isOnboardingComplete = false;
+          });
+        }
       }
     });
   }
 
+  @override
+  void dispose() {
+    _authSubscription?.cancel();
+    super.dispose();
+  }
+
   Future<void> _checkOnboardingStatus() async {
     if (_currentUser == null) {
-      setState(() => _isCheckingAuth = false);
+      if (mounted) {
+        setState(() => _isCheckingAuth = false);
+      }
       return;
     }
 
@@ -63,17 +82,21 @@ class _AuthenticationOnboardingFlowState
           .limit(1);
 
       final isComplete = response.isNotEmpty;
-      setState(() {
-        _isOnboardingComplete = isComplete;
-        _isCheckingAuth = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isOnboardingComplete = isComplete;
+          _isCheckingAuth = false;
+        });
+      }
 
       if (isComplete && mounted) {
         Navigator.pushReplacementNamed(context, AppRoutes.mainDashboard);
       }
     } catch (e) {
       debugPrint('Error checking onboarding status: $e');
-      setState(() => _isCheckingAuth = false);
+      if (mounted) {
+        setState(() => _isCheckingAuth = false);
+      }
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(

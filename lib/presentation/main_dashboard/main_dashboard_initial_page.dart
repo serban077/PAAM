@@ -30,6 +30,15 @@ class _MainDashboardInitialPageState extends State<MainDashboardInitialPage> {
     _loadDashboardData();
   }
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Reload data when returning to dashboard to sync with nutrition screen
+    if (!_isLoading) {
+      _loadDashboardData();
+    }
+  }
+
   Future<void> _loadDashboardData() async {
     try {
       if (!mounted) return;
@@ -87,19 +96,56 @@ class _MainDashboardInitialPageState extends State<MainDashboardInitialPage> {
         }
       }
 
-      // 3. Load today's nutrition data
+      // 3. Load today's nutrition data with proper calculation
+      final today = DateTime.now();
+      final todayStart = DateTime(today.year, today.month, today.day).toIso8601String();
+      
       final nutritionResponse = await SupabaseService.instance.client
           .from('user_meals')
           .select('*, food_database(*)')
           .eq('user_id', userId)
-          .gte('consumed_at', DateTime.now().toIso8601String().split('T')[0]);
+          .gte('consumed_at', todayStart);
+
+      // Calculate nutrition totals
+      double totalCalories = 0;
+      double totalProtein = 0;
+      double totalCarbs = 0;
+      double totalFat = 0;
+
+      for (var meal in nutritionResponse) {
+        final food = meal['food_database'] as Map<String, dynamic>?;
+        if (food != null) {
+          final quantity = (meal['serving_quantity'] as num?)?.toDouble() ?? 1;
+          final servingSize = (food['serving_size'] as num?)?.toDouble() ?? 100;
+          
+          final calories = (food['calories'] as num?)?.toDouble() ?? 0;
+          final protein = (food['protein_g'] as num?)?.toDouble() ?? 0;
+          final carbs = (food['carbs_g'] as num?)?.toDouble() ?? 0;
+          final fat = (food['fat_g'] as num?)?.toDouble() ?? 0;
+          
+          final multiplier = quantity / servingSize;
+          
+          totalCalories += calories * multiplier;
+          totalProtein += protein * multiplier;
+          totalCarbs += carbs * multiplier;
+          totalFat += fat * multiplier;
+        }
+      }
+
+      final nutritionData = {
+        'consumed_calories': totalCalories.toInt(),
+        'consumed_protein': totalProtein.toInt(),
+        'consumed_carbs': totalCarbs.toInt(),
+        'consumed_fat': totalFat.toInt(),
+        'goal_calories': profileResponse?['daily_calorie_goal'] ?? 2000,
+      };
 
       if (!mounted) return;
 
       setState(() {
         _userProfile = profileResponse;
         _todayWorkout = todaysSession;
-        _nutritionData = _calculateNutritionTotals(nutritionResponse);
+        _nutritionData = nutritionData;
         _isLoading = false;
       });
     } catch (e) {
