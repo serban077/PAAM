@@ -51,3 +51,8 @@ env.json
 env.json
 /PAAM Documentation.md
 /documentation.md
+bin/
+app/build/
+.gradle/
+.idea/
+build/
