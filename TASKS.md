@@ -208,4 +208,5 @@ Update `## Current Status` in `CLAUDE.md` at the end of every session.
 
 | Date | Session | Completed | Next |
 |---|---|---|---|
-| 2026-03-23 | Setup & init | M1–M8 foundation, body measurements | Commit pending changes → M9 UI Polish |
+| 2026-03-23 | M7 — Body measurements | BodyMeasurementsService, measurements UI, pending commits | Commit pending changes → M9 UI Polish |
+| 2026-03-24 | Docs setup | CLAUDE.md hierarchy, TASKS.md, SESSION_WORKFLOW.md, docs/ reference files | M9 — Romanian → English UI strings |

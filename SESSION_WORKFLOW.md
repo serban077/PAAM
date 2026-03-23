@@ -63,6 +63,9 @@ Commit format:
 
 Types: `feat` / `fix` / `refactor` / `docs` / `chore` / `perf`
 
+IMPORTANT: NEVER add Co-Authored-By or any Claude attribution.
+All commits are authored by serban077 <serban.07@yahoo.com> only.
+
 **Examples:**
 
 ```

@@ -12,11 +12,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Current Status
 
-**Last updated:** 2026-03-23
-**Last session:** M7 — Body measurements tracking added
-**Next session starts with:** Commit pending changes (`main.dart`, `onboarding_survey_screen.dart`, `auth_service.dart`) → M9: replace all Romanian UI strings with English
+**Last updated:** 2026-03-24
+**Last session:** Docs — Full Claude Code documentation system setup (CLAUDE.md hierarchy, TASKS.md, SESSION_WORKFLOW.md, docs/)
+**Next session starts with:** M9 — Replace all Romanian UI strings with English (start with `custom_bottom_bar.dart` labels)
 **Active branches:** main
-**Blockers:** `pubspec.lock` is gitignored — run `flutter pub get` at every session start
+**Blockers:** `pubspec.lock` is gitignored — run `flutter pub get` at every session start. PAAM/ folder not yet committed (check if needed).
 
 ---
 
