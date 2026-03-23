@@ -40,25 +40,25 @@ class _AIWorkoutGeneratorState extends State<AIWorkoutGenerator> {
       _errorMessage = '';
       _generatedPlan = null;
       _progressValue = 0.0;
-      _progressMessage = 'Se analizează profilul tău...';
+      _progressMessage = 'Analyzing your profile...';
     });
 
     _cancelToken = CancelToken();
 
     try {
       final user = SupabaseService.instance.client.auth.currentUser;
-      if (user == null) throw Exception('Nu sunteți autentificat');
+      if (user == null) throw Exception('Not authenticated');
 
       setState(() {
         _progressValue = 0.3;
-        _progressMessage = 'Se generează planul de antrenament personalizat...';
+        _progressMessage = 'Generating your personalized workout plan...';
       });
 
       final plan = await _geminiService.generateWeeklyWorkoutPlan(user.id);
 
       setState(() {
         _progressValue = 1.0;
-        _progressMessage = 'Plan generat cu succes! 🎉';
+        _progressMessage = 'Plan generated successfully!';
         _generatedPlan = plan;
         _isGenerating = false;
       });
@@ -72,7 +72,7 @@ class _AIWorkoutGeneratorState extends State<AIWorkoutGenerator> {
       setState(() {
         _isGenerating = false;
         _hasError = true;
-        _errorMessage = 'A apărut o eroare: ${e.toString()}';
+        _errorMessage = 'An error occurred: ${e.toString()}';
       });
     }
   }
@@ -84,7 +84,7 @@ class _AIWorkoutGeneratorState extends State<AIWorkoutGenerator> {
       _errorMessage = '';
       _personalizedExercises = null;
       _progressValue = 0.0;
-      _progressMessage = 'Se analizează preferințele tale...';
+      _progressMessage = 'Analyzing your preferences...';
     });
 
     _cancelToken = CancelToken();
@@ -95,15 +95,14 @@ class _AIWorkoutGeneratorState extends State<AIWorkoutGenerator> {
 
       setState(() {
         _progressValue = 0.3;
-        _progressMessage =
-            'Se caută cele mai potrivite exerciții pentru tine...';
+        _progressMessage = 'Finding the best exercises for you...';
       });
 
       final exercises = await _geminiService.getPersonalizedExercises(user.id);
 
       setState(() {
         _progressValue = 1.0;
-        _progressMessage = 'Exerciții găsite! 💪';
+        _progressMessage = 'Exercises found!';
         _personalizedExercises = exercises;
         _isGenerating = false;
       });
@@ -117,16 +116,16 @@ class _AIWorkoutGeneratorState extends State<AIWorkoutGenerator> {
       setState(() {
         _isGenerating = false;
         _hasError = true;
-        _errorMessage = 'A apărut o eroare: ${e.toString()}';
+        _errorMessage = 'An error occurred: ${e.toString()}';
       });
     }
   }
 
   void _cancelGeneration() {
-    _cancelToken?.cancel('Anulat de utilizator');
+    _cancelToken?.cancel('Cancelled by user');
     setState(() {
       _isGenerating = false;
-      _progressMessage = 'Generare anulată';
+      _progressMessage = 'Generation cancelled';
     });
   }
 
@@ -137,7 +136,7 @@ class _AIWorkoutGeneratorState extends State<AIWorkoutGenerator> {
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        title: const Text('Generator AI Antrenamente'),
+        title: const Text('AI Workout Generator'),
         backgroundColor: theme.colorScheme.primary,
         foregroundColor: theme.colorScheme.onPrimary,
         elevation: 0,
@@ -184,7 +183,7 @@ class _AIWorkoutGeneratorState extends State<AIWorkoutGenerator> {
                 ),
                 SizedBox(height: 2.h),
                 Text(
-                  'Generator AI Personalizat',
+                  'AI Personalized Generator',
                   style: theme.textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
@@ -192,7 +191,7 @@ class _AIWorkoutGeneratorState extends State<AIWorkoutGenerator> {
                 ),
                 SizedBox(height: 1.h),
                 Text(
-                  'Folosim inteligența artificială pentru a crea planuri de antrenament perfect adaptate pentru tine',
+                  'We use artificial intelligence to create workout plans perfectly tailored for you',
                   style: theme.textTheme.bodyMedium,
                   textAlign: TextAlign.center,
                 ),
@@ -203,18 +202,17 @@ class _AIWorkoutGeneratorState extends State<AIWorkoutGenerator> {
           _buildFeatureCard(
             theme: theme,
             icon: Icons.fitness_center,
-            title: 'Plan Săptămânal Complet',
-            description:
-                'Generează un plan de antrenament structurat pentru 7 zile',
+            title: 'Full Weekly Plan',
+            description: 'Generate a structured 7-day workout plan',
             onPressed: _generateWorkoutPlan,
           ),
           SizedBox(height: 2.h),
           _buildFeatureCard(
             theme: theme,
             icon: Icons.star,
-            title: 'Exerciții Personalizate',
+            title: 'Personalized Exercises',
             description:
-                'Descoperă exercițiile perfecte pentru nivelul și obiectivele tale',
+                'Discover the perfect exercises for your level and goals',
             onPressed: _generatePersonalizedExercises,
           ),
           SizedBox(height: 3.h),
@@ -287,7 +285,7 @@ class _AIWorkoutGeneratorState extends State<AIWorkoutGenerator> {
               Icon(Icons.info_outline, color: theme.colorScheme.primary),
               SizedBox(width: 2.w),
               Text(
-                'Despre Generatorul AI',
+                'About AI Generator',
                 style: theme.textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
@@ -295,11 +293,11 @@ class _AIWorkoutGeneratorState extends State<AIWorkoutGenerator> {
             ],
           ),
           SizedBox(height: 2.h),
-          _buildInfoItem(theme, 'Analizăm profilul tău complet'),
-          _buildInfoItem(theme, 'Adaptăm la nivelul tău de experiență'),
-          _buildInfoItem(theme, 'Respectăm restricțiile medicale'),
-          _buildInfoItem(theme, 'Folosim echipamentul disponibil'),
-          _buildInfoItem(theme, 'Optimizăm pentru obiectivele tale'),
+          _buildInfoItem(theme, 'Analyze your complete profile'),
+          _buildInfoItem(theme, 'Adapt to your experience level'),
+          _buildInfoItem(theme, 'Respect medical restrictions'),
+          _buildInfoItem(theme, 'Use available equipment'),
+          _buildInfoItem(theme, 'Optimize for your goals'),
         ],
       ),
     );
@@ -326,7 +324,7 @@ class _AIWorkoutGeneratorState extends State<AIWorkoutGenerator> {
         children: [
           if (_generatedPlan != null) ...[
             Text(
-              'Planul Tău de Antrenament',
+              'Your Workout Plan',
               style: theme.textTheme.headlineSmall?.copyWith(
                 fontWeight: FontWeight.bold,
               ),
@@ -337,7 +335,7 @@ class _AIWorkoutGeneratorState extends State<AIWorkoutGenerator> {
           ],
           if (_personalizedExercises != null) ...[
             Text(
-              'Exerciții Recomandate',
+              'Recommended Exercises',
               style: theme.textTheme.headlineSmall?.copyWith(
                 fontWeight: FontWeight.bold,
               ),
@@ -361,7 +359,7 @@ class _AIWorkoutGeneratorState extends State<AIWorkoutGenerator> {
               _personalizedExercises = null;
             }),
             icon: const Icon(Icons.refresh),
-            label: const Text('Generează Din Nou'),
+            label: const Text('Generate Again'),
             style: ElevatedButton.styleFrom(
               padding: EdgeInsets.symmetric(vertical: 2.h),
             ),
@@ -385,7 +383,7 @@ class _AIWorkoutGeneratorState extends State<AIWorkoutGenerator> {
             ),
             SizedBox(height: 2.h),
             Text(
-              'A apărut o eroare',
+              'An error occurred',
               style: theme.textTheme.titleLarge?.copyWith(
                 fontWeight: FontWeight.bold,
               ),
@@ -403,7 +401,7 @@ class _AIWorkoutGeneratorState extends State<AIWorkoutGenerator> {
                 _errorMessage = '';
               }),
               icon: const Icon(Icons.replay),
-              label: const Text('Încearcă Din Nou'),
+              label: const Text('Try Again'),
             ),
           ],
         ),

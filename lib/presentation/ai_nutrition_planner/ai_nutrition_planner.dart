@@ -39,32 +39,32 @@ class _AINutritionPlannerState extends State<AINutritionPlanner> {
       _errorMessage = '';
       _nutritionPlan = null;
       _progressValue = 0.0;
-      _progressMessage = 'Se analizează profilul tău...';
+      _progressMessage = 'Analyzing your profile...';
     });
 
     _cancelToken = CancelToken();
 
     try {
       final user = SupabaseService.instance.client.auth.currentUser;
-      if (user == null) throw Exception('Nu sunteți autentificat');
+      if (user == null) throw Exception('Not authenticated');
 
       setState(() {
         _progressValue = 0.3;
-        _progressMessage = 'Se calculează necesarul caloric...';
+        _progressMessage = 'Calculating your caloric needs...';
       });
 
       await Future.delayed(const Duration(milliseconds: 500));
 
       setState(() {
         _progressValue = 0.6;
-        _progressMessage = 'Se creează planul personalizat de mese...';
+        _progressMessage = 'Creating your personalized meal plan...';
       });
 
       final plan = await _geminiService.generateNutritionPlan(user.id);
 
       setState(() {
         _progressValue = 1.0;
-        _progressMessage = 'Plan nutrițional generat! 🥗';
+        _progressMessage = 'Nutrition plan generated!';
         _nutritionPlan = plan;
         _isGenerating = false;
       });
@@ -78,16 +78,16 @@ class _AINutritionPlannerState extends State<AINutritionPlanner> {
       setState(() {
         _isGenerating = false;
         _hasError = true;
-        _errorMessage = 'A apărut o eroare: ${e.toString()}';
+        _errorMessage = 'An error occurred: ${e.toString()}';
       });
     }
   }
 
   void _cancelGeneration() {
-    _cancelToken?.cancel('Anulat de utilizator');
+    _cancelToken?.cancel('Cancelled by user');
     setState(() {
       _isGenerating = false;
-      _progressMessage = 'Generare anulată';
+      _progressMessage = 'Generation cancelled';
     });
   }
 
@@ -98,7 +98,7 @@ class _AINutritionPlannerState extends State<AINutritionPlanner> {
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        title: const Text('Planificator AI Nutriție'),
+        title: const Text('AI Nutrition Planner'),
         backgroundColor: theme.colorScheme.primary,
         foregroundColor: theme.colorScheme.onPrimary,
         elevation: 0,
@@ -145,7 +145,7 @@ class _AINutritionPlannerState extends State<AINutritionPlanner> {
                 ),
                 SizedBox(height: 2.h),
                 Text(
-                  'Planificator AI Nutriție',
+                  'AI Nutrition Planner',
                   style: theme.textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
@@ -153,7 +153,7 @@ class _AINutritionPlannerState extends State<AINutritionPlanner> {
                 ),
                 SizedBox(height: 1.h),
                 Text(
-                  'Creăm planuri nutriționale personalizate adaptate obiectivelor și preferințelor tale',
+                  'We create personalized nutrition plans tailored to your goals and preferences',
                   style: theme.textTheme.bodyMedium,
                   textAlign: TextAlign.center,
                 ),
@@ -164,31 +164,31 @@ class _AINutritionPlannerState extends State<AINutritionPlanner> {
           _buildFeatureCard(
             theme: theme,
             icon: Icons.calculate,
-            title: 'Calcul Caloric Precis',
+            title: 'Precise Calorie Calculation',
             description:
-                'Determinăm necesarul tău caloric bazat pe obiective și nivel de activitate',
+                'We determine your caloric needs based on goals and activity level',
           ),
           SizedBox(height: 2.h),
           _buildFeatureCard(
             theme: theme,
             icon: Icons.pie_chart,
-            title: 'Distribuție Macro Optimă',
+            title: 'Optimal Macro Distribution',
             description:
-                'Balansăm proteine, carbohidrați și grăsimi perfect pentru tine',
+                'We balance protein, carbohydrates and fats perfectly for you',
           ),
           SizedBox(height: 2.h),
           _buildFeatureCard(
             theme: theme,
             icon: Icons.lunch_dining,
-            title: 'Mese Personalizate',
+            title: 'Personalized Meals',
             description:
-                'Exemple concrete de mese adaptate preferințelor tale alimentare',
+                'Concrete meal examples adapted to your food preferences',
           ),
           SizedBox(height: 3.h),
           ElevatedButton.icon(
             onPressed: _generateNutritionPlan,
             icon: const Icon(Icons.auto_awesome),
-            label: const Text('Generează Plan Nutrițional'),
+            label: const Text('Generate Nutrition Plan'),
             style: ElevatedButton.styleFrom(
               padding: EdgeInsets.symmetric(vertical: 2.h),
               backgroundColor: theme.colorScheme.secondary,
@@ -259,7 +259,7 @@ class _AINutritionPlannerState extends State<AINutritionPlanner> {
               Icon(Icons.info_outline, color: theme.colorScheme.secondary),
               SizedBox(width: 2.w),
               Text(
-                'Ce Primești',
+                'What You Get',
                 style: theme.textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
@@ -267,12 +267,12 @@ class _AINutritionPlannerState extends State<AINutritionPlanner> {
             ],
           ),
           SizedBox(height: 2.h),
-          _buildInfoItem(theme, 'Calcul caloric personalizat'),
-          _buildInfoItem(theme, 'Distribuție optimă macronutrienți'),
-          _buildInfoItem(theme, 'Plan complet de mese zilnic'),
-          _buildInfoItem(theme, 'Respectă preferințele alimentare'),
-          _buildInfoItem(theme, 'Evită alergenele declarate'),
-          _buildInfoItem(theme, 'Recomandări hidratare și suplimente'),
+          _buildInfoItem(theme, 'Personalized calorie calculation'),
+          _buildInfoItem(theme, 'Optimal macronutrient distribution'),
+          _buildInfoItem(theme, 'Full daily meal plan'),
+          _buildInfoItem(theme, 'Respects dietary preferences'),
+          _buildInfoItem(theme, 'Avoids declared allergens'),
+          _buildInfoItem(theme, 'Hydration and supplement recommendations'),
         ],
       ),
     );
@@ -302,7 +302,7 @@ class _AINutritionPlannerState extends State<AINutritionPlanner> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(
-            'Planul Tău Nutrițional',
+            'Your Nutrition Plan',
             style: theme.textTheme.headlineSmall?.copyWith(
               fontWeight: FontWeight.bold,
             ),
@@ -314,7 +314,7 @@ class _AINutritionPlannerState extends State<AINutritionPlanner> {
           ),
           SizedBox(height: 2.h),
           Text(
-            'Mese Recomandate',
+            'Recommended Meals',
             style: theme.textTheme.titleLarge?.copyWith(
               fontWeight: FontWeight.bold,
             ),
@@ -343,7 +343,7 @@ class _AINutritionPlannerState extends State<AINutritionPlanner> {
           ElevatedButton.icon(
             onPressed: () => setState(() => _nutritionPlan = null),
             icon: const Icon(Icons.refresh),
-            label: const Text('Generează Din Nou'),
+            label: const Text('Generate Again'),
             style: ElevatedButton.styleFrom(
               padding: EdgeInsets.symmetric(vertical: 2.h),
             ),
@@ -367,7 +367,7 @@ class _AINutritionPlannerState extends State<AINutritionPlanner> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Hidratare',
+                    'Hydration',
                     style: theme.textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
@@ -404,7 +404,7 @@ class _AINutritionPlannerState extends State<AINutritionPlanner> {
                 ),
                 SizedBox(width: 2.w),
                 Text(
-                  'Suplimente Recomandate',
+                  'Recommended Supplements',
                   style: theme.textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
@@ -442,7 +442,7 @@ class _AINutritionPlannerState extends State<AINutritionPlanner> {
             ),
             SizedBox(height: 2.h),
             Text(
-              'A apărut o eroare',
+              'An error occurred',
               style: theme.textTheme.titleLarge?.copyWith(
                 fontWeight: FontWeight.bold,
               ),
@@ -460,7 +460,7 @@ class _AINutritionPlannerState extends State<AINutritionPlanner> {
                 _errorMessage = '';
               }),
               icon: const Icon(Icons.replay),
-              label: const Text('Încearcă Din Nou'),
+              label: const Text('Try Again'),
             ),
           ],
         ),
