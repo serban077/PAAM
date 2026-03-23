@@ -808,6 +808,30 @@ class GeminiClient {
     return ':generateContent';
   }
 
+  /// Retries [fn] up to [maxAttempts] times with exponential backoff.
+  /// Retries on network errors, 5xx responses, and 429 (rate limit).
+  Future<T> _withRetry<T>(
+    Future<T> Function() fn, {
+    int maxAttempts = 3,
+  }) async {
+    for (int attempt = 1; attempt <= maxAttempts; attempt++) {
+      try {
+        return await fn();
+      } on GeminiException catch (e) {
+        final isRetryable = e.statusCode >= 500 || e.statusCode == 429;
+        if (!isRetryable || attempt == maxAttempts) rethrow;
+        await Future.delayed(Duration(seconds: attempt * 2));
+      } on DioException catch (e) {
+        final isNetwork = e.type == DioExceptionType.connectionError ||
+            e.type == DioExceptionType.connectionTimeout ||
+            e.type == DioExceptionType.receiveTimeout;
+        if (!isNetwork || attempt == maxAttempts) rethrow;
+        await Future.delayed(Duration(seconds: attempt * 2));
+      }
+    }
+    throw GeminiException(statusCode: 500, message: 'Max retries reached');
+  }
+
   Future<Completion> createChat({
     required List<Message> messages,
     String model = 'gemini-2.5-flash',
@@ -815,62 +839,64 @@ class GeminiClient {
     double temperature = 1.0,
     CancelToken? cancelToken,
   }) async {
-    try {
-      final contents = messages
-          .map(
-            (m) => {
-          'role': m.role,
-          'parts': m.content is String
-              ? [
-            {'text': m.content},
-          ]
-              : m.content,
-        },
-      )
-          .toList();
-
-      final endpoint = _getEndpointMethod(model);
-
-      final response = await dio.post(
-        '/models/$model$endpoint',
-        data: {
-          'contents': contents,
-          'generationConfig': {
-            'maxOutputTokens': maxTokens,
-            'temperature': temperature,
+    return _withRetry(() async {
+      try {
+        final contents = messages
+            .map(
+              (m) => {
+            'role': m.role,
+            'parts': m.content is String
+                ? [
+              {'text': m.content},
+            ]
+                : m.content,
           },
-          'safetySettings': _getSafetySettings(),
-        },
-        cancelToken: cancelToken,
-      );
+        )
+            .toList();
 
-      if (response.data['candidates'] != null &&
-          response.data['candidates'].isNotEmpty &&
-          response.data['candidates'][0]['content'] != null) {
-        final parts = response.data['candidates'][0]['content']['parts'];
-        final text = parts.isNotEmpty ? parts[0]['text'] : '';
-        return Completion(text: text);
-      } else {
+        final endpoint = _getEndpointMethod(model);
+
+        final response = await dio.post(
+          '/models/$model$endpoint',
+          data: {
+            'contents': contents,
+            'generationConfig': {
+              'maxOutputTokens': maxTokens,
+              'temperature': temperature,
+            },
+            'safetySettings': _getSafetySettings(),
+          },
+          cancelToken: cancelToken,
+        );
+
+        if (response.data['candidates'] != null &&
+            response.data['candidates'].isNotEmpty &&
+            response.data['candidates'][0]['content'] != null) {
+          final parts = response.data['candidates'][0]['content']['parts'];
+          final text = parts.isNotEmpty ? parts[0]['text'] : '';
+          return Completion(text: text);
+        } else {
+          throw GeminiException(
+            statusCode: response.statusCode ?? 500,
+            message: 'Failed to parse response or empty response',
+          );
+        }
+      } on DioException catch (e) {
+        // Convert to GeminiException so _withRetry can classify it
+        if (e.type == DioExceptionType.cancel) {
+          throw GeminiException(
+            statusCode: 499,
+            message: 'Request was cancelled by user',
+          );
+        }
         throw GeminiException(
-          statusCode: response.statusCode ?? 500,
-          message: 'Failed to parse response or empty response',
+          statusCode: e.response?.statusCode ?? 500,
+          message: e.response?.data?['error']?['message'] ??
+              e.message ??
+              'Unknown error',
         );
       }
-    } on DioException catch (e) {
-      if (e.type == DioExceptionType.cancel) {
-        throw GeminiException(
-          statusCode: 499,
-          message: 'Request was cancelled by user',
-        );
-      }
-      throw GeminiException(
-        statusCode: e.response?.statusCode ?? 500,
-        message:
-        e.response?.data?['error']?['message'] ??
-            e.message ??
-            'Unknown error',
-      );
-    }
+    });
   }
 
   List<Map<String, dynamic>> _getSafetySettings() {
