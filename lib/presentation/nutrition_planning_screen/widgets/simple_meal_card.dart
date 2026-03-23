@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:sizer/sizer.dart';
 
 /// Simple Meal Card - Streamlined meal display with integrated add button
-class SimpleMealCard extends StatelessWidget {
+/// Supports marking individual food items as eaten with local state tracking
+class SimpleMealCard extends StatefulWidget {
   final String title;
   final String mealType;
   final List<Map<String, dynamic>> meals;
@@ -20,8 +21,15 @@ class SimpleMealCard extends StatelessWidget {
     this.onEditMeal,
   });
 
+  @override
+  State<SimpleMealCard> createState() => _SimpleMealCardState();
+}
+
+class _SimpleMealCardState extends State<SimpleMealCard> {
+  final Set<String> _eatenMealIds = {};
+
   double get totalCalories {
-    return meals.fold(0.0, (sum, meal) {
+    return widget.meals.fold(0.0, (sum, meal) {
       final food = meal['food_database'] as Map<String, dynamic>?;
       if (food != null) {
         final quantity = (meal['serving_quantity'] as num?)?.toDouble() ?? 1;
@@ -30,6 +38,16 @@ class SimpleMealCard extends StatelessWidget {
         return sum + (calories * quantity / servingSize);
       }
       return sum;
+    });
+  }
+
+  void _toggleEaten(String mealId) {
+    setState(() {
+      if (_eatenMealIds.contains(mealId)) {
+        _eatenMealIds.remove(mealId);
+      } else {
+        _eatenMealIds.add(mealId);
+      }
     });
   }
 
@@ -49,7 +67,7 @@ class SimpleMealCard extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  title,
+                  widget.title,
                   style: theme.textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
@@ -60,14 +78,14 @@ class SimpleMealCard extends StatelessWidget {
                     color: theme.colorScheme.primary,
                     size: 28,
                   ),
-                  onPressed: onAddFood,
+                  onPressed: widget.onAddFood,
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(),
                 ),
               ],
             ),
             SizedBox(height: 1.h),
-            
+
             // Calories display
             Text(
               '${totalCalories.toStringAsFixed(0)} kcal',
@@ -76,15 +94,17 @@ class SimpleMealCard extends StatelessWidget {
                 fontWeight: FontWeight.bold,
               ),
             ),
-            
+
             // Foods list or empty state
-            if (meals.isNotEmpty) ...[
+            if (widget.meals.isNotEmpty) ...[
               SizedBox(height: 1.h),
-              ...meals.map((meal) => _buildFoodItem(meal, context)),
+              ...widget.meals.map(
+                (meal) => _buildFoodItem(meal, context, theme),
+              ),
             ] else ...[
               SizedBox(height: 0.5.h),
               Text(
-                'Apasă + pentru a adăuga',
+                'Tap + to add food',
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: Colors.grey[600],
                   fontStyle: FontStyle.italic,
@@ -97,10 +117,16 @@ class SimpleMealCard extends StatelessWidget {
     );
   }
 
-  Widget _buildFoodItem(Map<String, dynamic> meal, BuildContext context) {
+  Widget _buildFoodItem(
+    Map<String, dynamic> meal,
+    BuildContext context,
+    ThemeData theme,
+  ) {
     final food = meal['food_database'] as Map<String, dynamic>?;
     if (food == null) return const SizedBox.shrink();
 
+    final mealId = meal['id'] as String? ?? '';
+    final isEaten = _eatenMealIds.contains(mealId);
     final name = food['name'] ?? 'Unknown';
     final quantity = (meal['serving_quantity'] as num?)?.toDouble() ?? 0;
     final unit = food['serving_unit'] ?? 'g';
@@ -108,51 +134,97 @@ class SimpleMealCard extends StatelessWidget {
     final servingSize = (food['serving_size'] as num?)?.toDouble() ?? 100;
     final itemCalories = (calories * quantity / servingSize).toStringAsFixed(0);
 
-    return Padding(
-      padding: EdgeInsets.only(bottom: 0.8.h),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  name,
-                  style: TextStyle(
-                    fontSize: 13.sp,
-                    fontWeight: FontWeight.w500,
+    return Opacity(
+      opacity: isEaten ? 0.5 : 1.0,
+      child: Padding(
+        padding: EdgeInsets.only(bottom: 0.8.h),
+        child: Row(
+          children: [
+            // Eaten checkbox
+            GestureDetector(
+              onTap: () => _toggleEaten(mealId),
+              child: Container(
+                width: 22,
+                height: 22,
+                margin: EdgeInsets.only(right: 2.w),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: isEaten
+                      ? theme.colorScheme.primary
+                      : Colors.transparent,
+                  border: Border.all(
+                    color: isEaten
+                        ? theme.colorScheme.primary
+                        : Colors.grey.shade400,
+                    width: 1.5,
                   ),
                 ),
-                Text(
-                  '${quantity.toStringAsFixed(0)}$unit • $itemCalories kcal',
-                  style: TextStyle(
-                    fontSize: 11.sp,
-                    color: Colors.grey[600],
-                  ),
-                ),
-              ],
+                child: isEaten
+                    ? const Icon(Icons.check, size: 14, color: Colors.white)
+                    : null,
+              ),
             ),
-          ),
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (onEditMeal != null)
+            // Food info
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    name,
+                    style: TextStyle(
+                      fontSize: 13.sp,
+                      fontWeight: FontWeight.w500,
+                      decoration: isEaten ? TextDecoration.lineThrough : null,
+                      color: isEaten ? Colors.grey : null,
+                    ),
+                  ),
+                  Text(
+                    '${quantity.toStringAsFixed(0)}$unit • $itemCalories kcal',
+                    style: TextStyle(
+                      fontSize: 11.sp,
+                      color: Colors.grey[600],
+                      decoration: isEaten ? TextDecoration.lineThrough : null,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            // Action buttons
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (widget.onEditMeal != null)
+                  IconButton(
+                    icon: const Icon(
+                      Icons.edit_outlined,
+                      size: 18,
+                      color: Colors.blue,
+                    ),
+                    onPressed: () => _showEditQuantityDialog(
+                      context,
+                      meal,
+                      name,
+                      quantity,
+                      unit,
+                    ),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                  ),
+                SizedBox(width: 1.w),
                 IconButton(
-                  icon: const Icon(Icons.edit_outlined, size: 18, color: Colors.blue),
-                  onPressed: () => _showEditQuantityDialog(context, meal, name, quantity, unit),
+                  icon: const Icon(
+                    Icons.delete_outline,
+                    size: 20,
+                    color: Colors.red,
+                  ),
+                  onPressed: () => widget.onDeleteMeal(meal['id']),
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(),
                 ),
-              SizedBox(width: 1.w),
-              IconButton(
-                icon: const Icon(Icons.delete_outline, size: 20, color: Colors.red),
-                onPressed: () => onDeleteMeal(meal['id']),
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(),
-              ),
-            ],
-          ),
-        ],
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -164,12 +236,14 @@ class SimpleMealCard extends StatelessWidget {
     double currentQuantity,
     String unit,
   ) {
-    final controller = TextEditingController(text: currentQuantity.toStringAsFixed(0));
-    
+    final controller = TextEditingController(
+      text: currentQuantity.toStringAsFixed(0),
+    );
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Editează cantitatea'),
+        title: const Text('Edit quantity'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -186,7 +260,7 @@ class SimpleMealCard extends StatelessWidget {
               controller: controller,
               keyboardType: TextInputType.number,
               decoration: InputDecoration(
-                labelText: 'Cantitate ($unit)',
+                labelText: 'Quantity ($unit)',
                 border: const OutlineInputBorder(),
               ),
               autofocus: true,
@@ -196,17 +270,19 @@ class SimpleMealCard extends StatelessWidget {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Anulează'),
+            child: const Text('Cancel'),
           ),
           ElevatedButton(
             onPressed: () {
               final newQuantity = double.tryParse(controller.text);
-              if (newQuantity != null && newQuantity > 0 && onEditMeal != null) {
-                onEditMeal!(meal['id'], newQuantity);
+              if (newQuantity != null &&
+                  newQuantity > 0 &&
+                  widget.onEditMeal != null) {
+                widget.onEditMeal!(meal['id'], newQuantity);
                 Navigator.pop(context);
               }
             },
-            child: const Text('Salvează'),
+            child: const Text('Save'),
           ),
         ],
       ),

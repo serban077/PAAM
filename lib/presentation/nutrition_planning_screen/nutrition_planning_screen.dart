@@ -11,6 +11,7 @@ import './widgets/add_food_modal_widget.dart';
 import './widgets/simple_meal_card.dart';
 import './widgets/water_tracking_card.dart';
 import './widgets/ai_meal_plan_section.dart';
+import './widgets/barcode_scanner_page.dart';
 
 class NutritionPlanningScreen extends StatefulWidget {
   const NutritionPlanningScreen({super.key});
@@ -122,6 +123,23 @@ class _NutritionPlanningScreenState extends State<NutritionPlanningScreen> {
     }
   }
 
+  Future<void> _openBarcodeScanner() async {
+    final food = await Navigator.push<Map<String, dynamic>>(
+      context,
+      MaterialPageRoute(builder: (context) => const BarcodeScannerPage()),
+    );
+
+    if (food != null && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Found: ${food['name']}'),
+          backgroundColor: Colors.green,
+        ),
+      );
+      _loadNutritionData();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -145,6 +163,11 @@ class _NutritionPlanningScreenState extends State<NutritionPlanningScreen> {
             },
           ),
         ],
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _openBarcodeScanner,
+        tooltip: 'Scan barcode',
+        child: const Icon(Icons.qr_code_scanner),
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())

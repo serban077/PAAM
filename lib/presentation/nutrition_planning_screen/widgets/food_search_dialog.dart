@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:sizer/sizer.dart';
 
@@ -15,6 +17,7 @@ class _FoodSearchDialogState extends State<FoodSearchDialog> {
   final _searchController = TextEditingController();
   List<Map<String, dynamic>> _searchResults = [];
   bool _isLoading = false;
+  Timer? _debounce;
 
   @override
   void initState() {
@@ -73,6 +76,7 @@ class _FoodSearchDialogState extends State<FoodSearchDialog> {
 
   @override
   void dispose() {
+    _debounce?.cancel();
     _searchController.dispose();
     super.dispose();
   }
@@ -92,7 +96,7 @@ class _FoodSearchDialogState extends State<FoodSearchDialog> {
               children: [
                 Expanded(
                   child: Text(
-                    'Caută Aliment',
+                    'Search Food',
                     style: theme.textTheme.titleLarge?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
@@ -110,8 +114,8 @@ class _FoodSearchDialogState extends State<FoodSearchDialog> {
             TextField(
               controller: _searchController,
               decoration: InputDecoration(
-                labelText: 'Caută aliment',
-                hintText: 'Ex: pui, orez, mere...',
+                labelText: 'Search food',
+                hintText: 'e.g. chicken, rice, apple...',
                 prefixIcon: const Icon(Icons.search),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -127,7 +131,11 @@ class _FoodSearchDialogState extends State<FoodSearchDialog> {
                     : null,
               ),
               onChanged: (value) {
-                _searchFood(value);
+                _debounce?.cancel();
+                _debounce = Timer(
+                  const Duration(milliseconds: 300),
+                  () => _searchFood(value),
+                );
               },
             ),
             SizedBox(height: 2.h),
@@ -148,12 +156,12 @@ class _FoodSearchDialogState extends State<FoodSearchDialog> {
                               ),
                               SizedBox(height: 2.h),
                               Text(
-                                'Nu am găsit alimente',
+                                'No foods found',
                                 style: theme.textTheme.titleMedium,
                               ),
                               SizedBox(height: 1.h),
                               Text(
-                                'Încearcă alt termen de căutare',
+                                'Try a different search term',
                                 style: theme.textTheme.bodyMedium?.copyWith(
                                   color: Colors.grey,
                                 ),

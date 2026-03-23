@@ -94,7 +94,7 @@ class _AIMealPlanSectionState extends State<AIMealPlanSection> {
         
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Plan generat și salvat cu succes!'),
+            content: Text('Plan generated and saved!'),
             backgroundColor: Colors.green,
           ),
         );
@@ -104,7 +104,7 @@ class _AIMealPlanSectionState extends State<AIMealPlanSection> {
         setState(() => _isGenerating = false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Eroare: $e'),
+            content: Text('Error: $e'),
             backgroundColor: Colors.red,
           ),
         );
@@ -144,7 +144,7 @@ class _AIMealPlanSectionState extends State<AIMealPlanSection> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Masă adăugată cu succes!'),
+            content: Text('Meal added successfully!'),
             backgroundColor: Colors.green,
           ),
         );
@@ -201,7 +201,7 @@ class _AIMealPlanSectionState extends State<AIMealPlanSection> {
                     SizedBox(width: 2.w),
                     Expanded(
                       child: Text(
-                        'Plan Alimentar AI',
+                        'AI Meal Plan',
                         style: theme.textTheme.titleLarge?.copyWith(
                           fontWeight: FontWeight.bold,
                         ),
@@ -211,7 +211,7 @@ class _AIMealPlanSectionState extends State<AIMealPlanSection> {
                 ),
                 SizedBox(height: 1.h),
                 Text(
-                  'Plan personalizat bazat pe caloriile și macronutrienții tăi',
+                  'Personalized plan based on your calorie and macronutrient targets',
                   style: theme.textTheme.bodyMedium?.copyWith(
                     color: Colors.grey[700],
                   ),
@@ -229,7 +229,7 @@ class _AIMealPlanSectionState extends State<AIMealPlanSection> {
                           ),
                         )
                       : const Icon(Icons.auto_awesome),
-                  label: Text(_aiPlan == null ? 'Generează Plan AI' : 'Regenerează Plan'),
+                  label: Text(_aiPlan == null ? 'Generate AI Plan' : 'Regenerate Plan'),
                   style: ElevatedButton.styleFrom(
                     minimumSize: Size(double.infinity, 5.h),
                   ),
@@ -262,7 +262,7 @@ class _AIMealPlanSectionState extends State<AIMealPlanSection> {
 
   Widget _buildAIMealCard(Map<String, dynamic> meal) {
     final theme = Theme.of(context);
-    final mealName = meal['meal_name'] as String? ?? 'Masă';
+    final mealName = meal['meal_name'] as String? ?? 'Meal';
     final options = meal['options'] as List<dynamic>?;
     
     if (options == null || options.isEmpty) {
@@ -280,7 +280,7 @@ class _AIMealPlanSectionState extends State<AIMealPlanSection> {
           ),
         ),
         subtitle: Text(
-          '${options.length} opțiuni disponibile',
+          '${options.length} options available',
           style: theme.textTheme.bodySmall?.copyWith(
             color: Colors.grey[600],
           ),
@@ -320,7 +320,7 @@ class _AIMealPlanSectionState extends State<AIMealPlanSection> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Opțiunea $optionId',
+            'Option $optionId',
             style: theme.textTheme.titleSmall?.copyWith(
               fontWeight: FontWeight.bold,
               color: theme.colorScheme.primary,
@@ -354,7 +354,7 @@ class _AIMealPlanSectionState extends State<AIMealPlanSection> {
           ElevatedButton.icon(
             onPressed: () => _addOptionToDay(option, mealName),
             icon: const Icon(Icons.add, size: 18),
-            label: const Text('Adaugă la Mese'),
+            label: const Text('Add to Today'),
             style: ElevatedButton.styleFrom(
               minimumSize: Size(double.infinity, 4.h),
             ),
@@ -425,7 +425,7 @@ class _AIMealPlanSectionState extends State<AIMealPlanSection> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Masă adăugată în $mealName!'),
+            content: Text('Meal added to $mealName!'),
             backgroundColor: Colors.green,
           ),
         );
@@ -435,7 +435,7 @@ class _AIMealPlanSectionState extends State<AIMealPlanSection> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Eroare la adăugare: $e'),
+            content: Text('Error adding meal: $e'),
             backgroundColor: Colors.red,
           ),
         );
