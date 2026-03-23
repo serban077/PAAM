@@ -34,10 +34,10 @@ class _PhotoProgressWidgetState extends State<PhotoProgressWidget> {
       "afterImage":
           "https://img.rocket.new/generatedImages/rocket_gen_img_16a84649c-1767572170096.png",
       "beforeSemanticLabel":
-          "Fotografie progres înainte - bărbat în tricou alb, poziție frontală",
+          "Progress photo before - man in white shirt, front view",
       "afterSemanticLabel":
-          "Fotografie progres după - bărbat în tricou alb, poziție frontală, musculatură mai definită",
-      "notes": "Început program antrenament",
+          "Progress photo after - man in white shirt, front view, more defined muscles",
+      "notes": "Started training program",
     },
     {
       "date": "2026-01-15",
@@ -46,10 +46,10 @@ class _PhotoProgressWidgetState extends State<PhotoProgressWidget> {
       "afterImage":
           "https://img.rocket.new/generatedImages/rocket_gen_img_1c20541c9-1766847286174.png",
       "beforeSemanticLabel":
-          "Fotografie progres înainte - bărbat în tricou alb, poziție laterală",
+          "Progress photo before - man in white shirt, side view",
       "afterSemanticLabel":
-          "Fotografie progres după - bărbat în tricou alb, poziție laterală, abdomen mai plat",
-      "notes": "După 2 săptămâni",
+          "Progress photo after - man in white shirt, side view, flatter abdomen",
+      "notes": "After 2 weeks",
     },
   ];
 
@@ -105,7 +105,7 @@ class _PhotoProgressWidgetState extends State<PhotoProgressWidget> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Nu s-a putut inițializa camera'),
+            content: Text('Could not initialize camera'),
             duration: Duration(seconds: 2),
           ),
         );
@@ -128,7 +128,7 @@ class _PhotoProgressWidgetState extends State<PhotoProgressWidget> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Fotografie salvată cu succes!'),
+            content: Text('Photo saved successfully!'),
             duration: Duration(seconds: 2),
           ),
         );
@@ -137,7 +137,7 @@ class _PhotoProgressWidgetState extends State<PhotoProgressWidget> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Eroare la capturarea fotografiei'),
+            content: Text('Error capturing photo'),
             duration: Duration(seconds: 2),
           ),
         );
@@ -159,7 +159,7 @@ class _PhotoProgressWidgetState extends State<PhotoProgressWidget> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Fotografie selectată cu succes!'),
+              content: Text('Photo selected successfully!'),
               duration: Duration(seconds: 2),
             ),
           );
@@ -169,7 +169,7 @@ class _PhotoProgressWidgetState extends State<PhotoProgressWidget> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Eroare la selectarea fotografiei'),
+            content: Text('Error selecting photo'),
             duration: Duration(seconds: 2),
           ),
         );
@@ -239,7 +239,7 @@ class _PhotoProgressWidgetState extends State<PhotoProgressWidget> {
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
-                    'Poziționează-te în cadru',
+                    'Position yourself in frame',
                     style: theme.textTheme.bodyMedium?.copyWith(
                       color: Colors.white,
                     ),
@@ -311,7 +311,7 @@ class _PhotoProgressWidgetState extends State<PhotoProgressWidget> {
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
-                      content: Text('Permisiune cameră necesară'),
+                      content: Text('Camera permission required'),
                       duration: Duration(seconds: 2),
                     ),
                   );
@@ -323,7 +323,7 @@ class _PhotoProgressWidgetState extends State<PhotoProgressWidget> {
               color: theme.colorScheme.onPrimary,
               size: 20,
             ),
-            label: const Text('Cameră'),
+            label: const Text('Camera'),
             style: ElevatedButton.styleFrom(
               padding: EdgeInsets.symmetric(vertical: 2.h),
             ),
@@ -338,7 +338,7 @@ class _PhotoProgressWidgetState extends State<PhotoProgressWidget> {
               color: theme.colorScheme.primary,
               size: 20,
             ),
-            label: const Text('Galerie'),
+            label: const Text('Gallery'),
             style: OutlinedButton.styleFrom(
               padding: EdgeInsets.symmetric(vertical: 2.h),
             ),
@@ -353,7 +353,7 @@ class _PhotoProgressWidgetState extends State<PhotoProgressWidget> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Comparații Progres',
+          'Progress Comparisons',
           style: theme.textTheme.titleMedium?.copyWith(
             fontWeight: FontWeight.w600,
           ),
@@ -465,7 +465,7 @@ class _PhotoProgressWidgetState extends State<PhotoProgressWidget> {
               ),
               SizedBox(width: 2.w),
               Text(
-                'Sfaturi pentru Fotografii',
+                'Photo Tips',
                 style: theme.textTheme.titleSmall?.copyWith(
                   fontWeight: FontWeight.w600,
                   color: theme.colorScheme.primary,
@@ -474,10 +474,10 @@ class _PhotoProgressWidgetState extends State<PhotoProgressWidget> {
             ],
           ),
           SizedBox(height: 1.h),
-          _buildTipItem(theme, 'Folosește aceeași lumină și fundal'),
-          _buildTipItem(theme, 'Fotografiază-te dimineața, pe stomacul gol'),
-          _buildTipItem(theme, 'Menține aceeași poziție și distanță'),
-          _buildTipItem(theme, 'Fă fotografii săptămânal pentru consistență'),
+          _buildTipItem(theme, 'Use the same lighting and background'),
+          _buildTipItem(theme, 'Take photos in the morning on an empty stomach'),
+          _buildTipItem(theme, 'Maintain the same pose and distance'),
+          _buildTipItem(theme, 'Take photos weekly for consistency'),
         ],
       ),
     );

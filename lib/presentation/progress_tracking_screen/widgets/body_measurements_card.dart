@@ -1,8 +1,9 @@
+import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:sizer/sizer.dart';
 
 import '../../../services/body_measurements_service.dart';
-import 'package:intl/intl.dart';
 
 /// Body Measurements Card with improved design and positioned buttons
 class BodyMeasurementsCard extends StatefulWidget {
@@ -15,6 +16,8 @@ class BodyMeasurementsCard extends StatefulWidget {
 class _BodyMeasurementsCardState extends State<BodyMeasurementsCard> {
   final _measurementsService = BodyMeasurementsService();
   List<Map<String, dynamic>> _recentMeasurements = [];
+  List<Map<String, dynamic>> _chartData = [];
+  String _selectedChartMetric = 'waist';
   bool _isLoading = true;
 
   final Map<String, String> _measurementLabels = {
@@ -34,6 +37,7 @@ class _BodyMeasurementsCardState extends State<BodyMeasurementsCard> {
   void initState() {
     super.initState();
     _loadMeasurements();
+    _loadChartData();
   }
 
   Future<void> _loadMeasurements() async {
@@ -54,6 +58,29 @@ class _BodyMeasurementsCardState extends State<BodyMeasurementsCard> {
     }
   }
 
+  Future<void> _loadChartData() async {
+    try {
+      final data = await _measurementsService.getMeasurementHistory(
+        _selectedChartMetric,
+        limit: 30,
+      );
+      // Reverse to chronological order for chart
+      if (mounted) {
+        setState(() => _chartData = data.reversed.toList());
+      }
+    } catch (_) {
+      // Chart data failure is non-critical
+    }
+  }
+
+  void _selectChartMetric(String metric) {
+    setState(() {
+      _selectedChartMetric = metric;
+      _chartData = [];
+    });
+    _loadChartData();
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -66,11 +93,162 @@ class _BodyMeasurementsCardState extends State<BodyMeasurementsCard> {
         children: [
           _buildHeader(theme),
           _buildBodyModel(theme),
+          _buildMetricChips(theme),
+          _buildChart(theme),
           if (!_isLoading && _recentMeasurements.isNotEmpty)
             _buildRecentMeasurements(theme),
           if (!_isLoading && _recentMeasurements.isEmpty)
             _buildEmptyState(theme),
         ],
+      ),
+    );
+  }
+
+  Widget _buildMetricChips(ThemeData theme) {
+    return Padding(
+      padding: EdgeInsets.fromLTRB(4.w, 0, 4.w, 1.h),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Progress Chart',
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          SizedBox(height: 1.h),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: _measurementLabels.entries.map((entry) {
+                final isSelected = _selectedChartMetric == entry.key;
+                return Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: ChoiceChip(
+                    label: Text(entry.value),
+                    selected: isSelected,
+                    onSelected: (_) => _selectChartMetric(entry.key),
+                    selectedColor: theme.colorScheme.primary,
+                    labelStyle: TextStyle(
+                      color: isSelected ? Colors.white : null,
+                      fontSize: 12.sp,
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildChart(ThemeData theme) {
+    if (_chartData.isEmpty) {
+      return Padding(
+        padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 2.h),
+        child: Center(
+          child: Text(
+            'No data yet for ${_measurementLabels[_selectedChartMetric] ?? _selectedChartMetric}',
+            style: theme.textTheme.bodySmall?.copyWith(color: Colors.grey),
+          ),
+        ),
+      );
+    }
+
+    final spots = _chartData.asMap().entries.map((e) {
+      final value = (e.value['value'] as num).toDouble();
+      return FlSpot(e.key.toDouble(), value);
+    }).toList();
+
+    final minY = spots.map((s) => s.y).reduce((a, b) => a < b ? a : b) - 2;
+    final maxY = spots.map((s) => s.y).reduce((a, b) => a > b ? a : b) + 2;
+
+    return Padding(
+      padding: EdgeInsets.fromLTRB(2.w, 0, 4.w, 2.h),
+      child: SizedBox(
+        height: 22.h,
+        child: LineChart(
+          LineChartData(
+            gridData: FlGridData(
+              show: true,
+              drawVerticalLine: false,
+              getDrawingHorizontalLine: (value) => FlLine(
+                color: Colors.grey.withOpacity(0.2),
+                strokeWidth: 1,
+              ),
+            ),
+            titlesData: FlTitlesData(
+              topTitles: const AxisTitles(
+                sideTitles: SideTitles(showTitles: false),
+              ),
+              rightTitles: const AxisTitles(
+                sideTitles: SideTitles(showTitles: false),
+              ),
+              leftTitles: AxisTitles(
+                sideTitles: SideTitles(
+                  showTitles: true,
+                  reservedSize: 40,
+                  getTitlesWidget: (value, meta) => Text(
+                    '${value.toStringAsFixed(0)}',
+                    style: TextStyle(fontSize: 9.sp, color: Colors.grey),
+                  ),
+                ),
+              ),
+              bottomTitles: AxisTitles(
+                sideTitles: SideTitles(
+                  showTitles: true,
+                  reservedSize: 28,
+                  interval: _chartData.length <= 6
+                      ? 1
+                      : (_chartData.length / 5).ceilToDouble(),
+                  getTitlesWidget: (value, meta) {
+                    final idx = value.toInt();
+                    if (idx < 0 || idx >= _chartData.length) {
+                      return const SizedBox.shrink();
+                    }
+                    final date = DateTime.parse(
+                      _chartData[idx]['measured_at'] as String,
+                    );
+                    return Padding(
+                      padding: const EdgeInsets.only(top: 4),
+                      child: Text(
+                        DateFormat('dd/MM').format(date),
+                        style: TextStyle(fontSize: 8.sp, color: Colors.grey),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ),
+            borderData: FlBorderData(show: false),
+            minY: minY,
+            maxY: maxY,
+            lineBarsData: [
+              LineChartBarData(
+                spots: spots,
+                isCurved: true,
+                color: theme.colorScheme.primary,
+                barWidth: 2.5,
+                isStrokeCapRound: true,
+                dotData: FlDotData(
+                  show: true,
+                  getDotPainter: (spot, percent, bar, index) =>
+                      FlDotCirclePainter(
+                    radius: 3,
+                    color: theme.colorScheme.primary,
+                    strokeWidth: 1.5,
+                    strokeColor: Colors.white,
+                  ),
+                ),
+                belowBarData: BarAreaData(
+                  show: true,
+                  color: theme.colorScheme.primary.withOpacity(0.1),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

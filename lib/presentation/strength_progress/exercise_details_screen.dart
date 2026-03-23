@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:sizer/sizer.dart';
 
 import '../../services/supabase_service.dart';
+import '../../widgets/custom_icon_widget.dart';
 
 /// Exercise Details Screen - Shows exercises with PR tracking
 class ExerciseDetailsScreen extends StatefulWidget {
@@ -17,6 +18,7 @@ class _ExerciseDetailsScreenState extends State<ExerciseDetailsScreen> {
   bool _isLoading = true;
   List<Map<String, dynamic>> _exercises = [];
   Map<String, dynamic>? _sessionInfo;
+  Map<String, double?> _exercisePRs = {};
 
   @override
   void initState() {
@@ -59,10 +61,43 @@ class _ExerciseDetailsScreenState extends State<ExerciseDetailsScreen> {
           _exercises = List<Map<String, dynamic>>.from(exercisesResponse);
           _isLoading = false;
         });
+        _loadExercisePRs(
+          _exercises
+              .map((e) => (e['exercises'] as Map)['id'] as String)
+              .toList(),
+        );
       }
     } catch (e) {
       debugPrint('Error loading exercises: $e');
       if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _loadExercisePRs(List<String> exerciseIds) async {
+    if (exerciseIds.isEmpty) return;
+    try {
+      final userId = SupabaseService.instance.client.auth.currentUser?.id;
+      if (userId == null) return;
+
+      final response = await SupabaseService.instance.client
+          .from('strength_progress')
+          .select('exercise_id, weight_kg')
+          .eq('user_id', userId)
+          .inFilter('exercise_id', exerciseIds);
+
+      final data = List<Map<String, dynamic>>.from(response);
+      final Map<String, double?> maxWeights = {};
+      for (final row in data) {
+        final id = row['exercise_id'] as String;
+        final weight = (row['weight_kg'] as num).toDouble();
+        if (!maxWeights.containsKey(id) || weight > (maxWeights[id] ?? 0)) {
+          maxWeights[id] = weight;
+        }
+      }
+
+      if (mounted) setState(() => _exercisePRs = maxWeights);
+    } catch (e) {
+      debugPrint('Error loading PRs: $e');
     }
   }
 
@@ -139,7 +174,21 @@ class _ExerciseDetailsScreenState extends State<ExerciseDetailsScreen> {
             'reps': reps,
           });
 
-      if (mounted) {
+      if (!mounted) return;
+
+      final currentMax = _exercisePRs[exerciseId];
+      final isNewPR = currentMax == null || weight > currentMax;
+
+      if (isNewPR) {
+        setState(() => _exercisePRs[exerciseId] = weight);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('New PR! ${weight.toStringAsFixed(1)} kg × $reps reps'),
+            backgroundColor: Colors.amber[700],
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('PR saved: ${weight.toStringAsFixed(1)} kg × $reps reps'),
@@ -161,8 +210,6 @@ class _ExerciseDetailsScreenState extends State<ExerciseDetailsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return Scaffold(
       appBar: AppBar(
         title: Text(_sessionInfo?['name'] ?? 'Exercises'),
@@ -188,6 +235,8 @@ class _ExerciseDetailsScreenState extends State<ExerciseDetailsScreen> {
     final sets = sessionExercise['sets'] ?? 3;
     final repsMin = sessionExercise['reps_min'] ?? 8;
     final repsMax = sessionExercise['reps_max'] ?? 12;
+    final exerciseId = exercise['id'] as String;
+    final currentPR = _exercisePRs[exerciseId];
 
     return Card(
       margin: EdgeInsets.only(bottom: 2.h),
@@ -206,9 +255,37 @@ class _ExerciseDetailsScreenState extends State<ExerciseDetailsScreen> {
                     ),
                   ),
                 ),
+                if (currentPR != null)
+                  Container(
+                    margin: EdgeInsets.only(right: 1.w),
+                    padding: EdgeInsets.symmetric(horizontal: 2.w, vertical: 0.5.h),
+                    decoration: BoxDecoration(
+                      color: Colors.amber[700],
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        CustomIconWidget(
+                          iconName: 'emoji_events',
+                          color: Colors.white,
+                          size: 14,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          'PR ${currentPR.toStringAsFixed(1)} kg',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 IconButton(
                   icon: const Icon(Icons.add_circle, color: Colors.green),
-                  onPressed: () => _addPR(exercise['id'], name),
+                  onPressed: () => _addPR(exerciseId, name),
                   tooltip: 'Add PR',
                 ),
               ],

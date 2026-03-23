@@ -70,7 +70,7 @@ class _StrengthProgressScreenState extends State<StrengthProgressScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Progres Forță'),
+        title: const Text('Strength Progress'),
         centerTitle: true,
       ),
       body: _isLoading
@@ -83,12 +83,12 @@ class _StrengthProgressScreenState extends State<StrengthProgressScreen> {
                       Icon(Icons.fitness_center, size: 60.sp, color: Colors.grey),
                       SizedBox(height: 2.h),
                       Text(
-                        'Nu ai un plan activ',
+                        'No active plan',
                         style: theme.textTheme.titleLarge,
                       ),
                       SizedBox(height: 1.h),
                       Text(
-                        'Generează un plan AI pentru a începe',
+                        'Generate an AI plan to get started',
                         style: theme.textTheme.bodyMedium?.copyWith(
                           color: Colors.grey,
                         ),
@@ -110,7 +110,7 @@ class _StrengthProgressScreenState extends State<StrengthProgressScreen> {
   Widget _buildSessionCard(Map<String, dynamic> session) {
     final theme = Theme.of(context);
     final dayNumber = session['day_number'] ?? 0;
-    final name = session['name'] ?? 'Antrenament';
+    final name = session['name'] ?? 'Workout';
     final focusArea = session['focus_area'] ?? '';
     final duration = session['estimated_duration_minutes'] ?? 60;
 
@@ -121,7 +121,7 @@ class _StrengthProgressScreenState extends State<StrengthProgressScreen> {
         leading: CircleAvatar(
           backgroundColor: theme.colorScheme.primary,
           child: Text(
-            'Z$dayNumber',
+            'D$dayNumber',
             style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
           ),
         ),
