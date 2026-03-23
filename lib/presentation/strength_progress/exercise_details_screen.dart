@@ -73,7 +73,7 @@ class _ExerciseDetailsScreenState extends State<ExerciseDetailsScreen> {
     final result = await showDialog<Map<String, dynamic>>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Adaugă PR - $exerciseName'),
+        title: Text('Add PR - $exerciseName'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -81,7 +81,7 @@ class _ExerciseDetailsScreenState extends State<ExerciseDetailsScreen> {
               controller: weightController,
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
               decoration: const InputDecoration(
-                labelText: 'Greutate (kg)',
+                labelText: 'Weight (kg)',
                 suffixText: 'kg',
               ),
             ),
@@ -90,7 +90,7 @@ class _ExerciseDetailsScreenState extends State<ExerciseDetailsScreen> {
               controller: repsController,
               keyboardType: TextInputType.number,
               decoration: const InputDecoration(
-                labelText: 'Repetări',
+                labelText: 'Reps',
                 suffixText: 'reps',
               ),
             ),
@@ -99,7 +99,7 @@ class _ExerciseDetailsScreenState extends State<ExerciseDetailsScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Anulează'),
+            child: const Text('Cancel'),
           ),
           ElevatedButton(
             onPressed: () {
@@ -113,7 +113,7 @@ class _ExerciseDetailsScreenState extends State<ExerciseDetailsScreen> {
                 });
               }
             },
-            child: const Text('Salvează'),
+            child: const Text('Save'),
           ),
         ],
       ),
@@ -142,7 +142,7 @@ class _ExerciseDetailsScreenState extends State<ExerciseDetailsScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('PR salvat: ${weight.toStringAsFixed(1)} kg × $reps reps'),
+            content: Text('PR saved: ${weight.toStringAsFixed(1)} kg × $reps reps'),
             backgroundColor: Colors.green,
           ),
         );
@@ -151,7 +151,7 @@ class _ExerciseDetailsScreenState extends State<ExerciseDetailsScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Eroare: $e'),
+            content: Text('Error: $e'),
             backgroundColor: Colors.red,
           ),
         );
@@ -165,7 +165,7 @@ class _ExerciseDetailsScreenState extends State<ExerciseDetailsScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(_sessionInfo?['name'] ?? 'Exerciții'),
+        title: Text(_sessionInfo?['name'] ?? 'Exercises'),
         centerTitle: true,
       ),
       body: _isLoading
@@ -209,13 +209,13 @@ class _ExerciseDetailsScreenState extends State<ExerciseDetailsScreen> {
                 IconButton(
                   icon: const Icon(Icons.add_circle, color: Colors.green),
                   onPressed: () => _addPR(exercise['id'], name),
-                  tooltip: 'Adaugă PR',
+                  tooltip: 'Add PR',
                 ),
               ],
             ),
             SizedBox(height: 1.h),
             Text(
-              '$sets seturi × $repsMin-$repsMax repetări',
+              '$sets sets × $repsMin-$repsMax reps',
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: Colors.grey[600],
               ),
