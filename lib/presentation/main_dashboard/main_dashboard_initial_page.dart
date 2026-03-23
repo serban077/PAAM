@@ -188,7 +188,7 @@ class _MainDashboardInitialPageState extends State<MainDashboardInitialPage> {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
-    final userName = _userProfile?['full_name'] ?? 'Utilizator';
+    final userName = _userProfile?['full_name'] ?? 'User';
     final calorieGoal = _userProfile?['daily_calorie_goal'] ?? 2000;
     final currentWeight = _userProfile?['current_weight_kg']?.toDouble() ?? 0.0;
     final targetWeight = _userProfile?['target_weight_kg']?.toDouble() ?? 0.0;
@@ -197,7 +197,7 @@ class _MainDashboardInitialPageState extends State<MainDashboardInitialPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Bine ai venit, $userName!'),
+        title: Text('Welcome, $userName!'),
         centerTitle: true,
       ),
       body: SingleChildScrollView(
@@ -210,7 +210,7 @@ class _MainDashboardInitialPageState extends State<MainDashboardInitialPage> {
               children: [
                 Expanded(
                   child: MetricCardWidget(
-                    title: 'Greutate actuală',
+                    title: 'Current Weight',
                     value: currentWeight > 0
                         ? '${currentWeight.toStringAsFixed(1)} kg'
                         : 'N/A',
@@ -222,7 +222,7 @@ class _MainDashboardInitialPageState extends State<MainDashboardInitialPage> {
                 SizedBox(width: 3.w),
                 Expanded(
                   child: MetricCardWidget(
-                    title: 'Țintă',
+                    title: 'Target',
                     value: targetWeight > 0
                         ? '${targetWeight.toStringAsFixed(1)} kg'
                         : 'N/A',
@@ -239,7 +239,7 @@ class _MainDashboardInitialPageState extends State<MainDashboardInitialPage> {
             if (_todayWorkout != null)
               TodayWorkoutCardWidget(
                 workout: {
-                  'title': _todayWorkout!['session_name'] ?? 'Antrenament',
+                  'title': _todayWorkout!['session_name'] ?? 'Workout',
                   'thumbnailUrl': 'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80', // Generic gym image
                   'semanticLabel': 'Workout thumbnail',
                   'duration': '${_todayWorkout!['estimated_duration_minutes'] ?? 60} min',
@@ -263,7 +263,7 @@ class _MainDashboardInitialPageState extends State<MainDashboardInitialPage> {
                   padding: EdgeInsets.all(4.w),
                   child: Center(
                     child: Text(
-                      'Niciun antrenament programat pentru astăzi',
+                      'No workout scheduled for today',
                       style: TextStyle(fontSize: 14.sp, color: Colors.grey),
                     ),
                   ),
@@ -273,13 +273,19 @@ class _MainDashboardInitialPageState extends State<MainDashboardInitialPage> {
             SizedBox(height: 2.h),
 
             // Nutrition summary
-            NutritionSummaryWidget(),
+            NutritionSummaryWidget(
+              consumedCalories: _nutritionData?['consumed_calories'] ?? 0,
+              targetCalories: _nutritionData?['goal_calories'] ?? 2000,
+              proteinG: _nutritionData?['consumed_protein'] ?? 0,
+              carbsG: _nutritionData?['consumed_carbs'] ?? 0,
+              fatsG: _nutritionData?['consumed_fat'] ?? 0,
+            ),
 
             SizedBox(height: 3.h),
 
             // Weekly progress
             Text(
-              'Progres săptămânal',
+              'Weekly Progress',
               style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.bold),
             ),
             SizedBox(height: 1.h),

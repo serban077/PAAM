@@ -5,24 +5,32 @@ import '../../../core/app_export.dart';
 import '../../../theme/app_theme.dart';
 
 class NutritionSummaryWidget extends StatelessWidget {
-  const NutritionSummaryWidget({super.key});
+  final int consumedCalories;
+  final int targetCalories;
+  final int proteinG;
+  final int carbsG;
+  final int fatsG;
+
+  const NutritionSummaryWidget({
+    super.key,
+    required this.consumedCalories,
+    required this.targetCalories,
+    required this.proteinG,
+    required this.carbsG,
+    required this.fatsG,
+  });
+
+  /// Derive macro targets from calorie goal (30% protein, 45% carbs, 25% fat)
+  int get _targetProteinG => ((targetCalories * 0.30) / 4).round();
+  int get _targetCarbsG => ((targetCalories * 0.45) / 4).round();
+  int get _targetFatsG => ((targetCalories * 0.25) / 9).round();
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    // Mock nutrition data
-    final Map<String, dynamic> nutritionData = {
-      "targetCalories": 2100,
-      "consumedCalories": 1650,
-      "protein": {"consumed": 120, "target": 150, "unit": "g"},
-      "carbs": {"consumed": 180, "target": 230, "unit": "g"},
-      "fats": {"consumed": 55, "target": 70, "unit": "g"},
-    };
-
     final double calorieProgress =
-        (nutritionData["consumedCalories"] as int) /
-        (nutritionData["targetCalories"] as int);
+        targetCalories > 0 ? consumedCalories / targetCalories : 0;
 
     return Container(
       padding: EdgeInsets.all(4.w),
@@ -44,9 +52,9 @@ class NutritionSummaryWidget extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('Calorii Astăzi', style: theme.textTheme.titleMedium),
+              Text('Calories Today', style: theme.textTheme.titleMedium),
               Text(
-                '${nutritionData["consumedCalories"]} / ${nutritionData["targetCalories"]} kcal',
+                '$consumedCalories / $targetCalories kcal',
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
                   fontWeight: FontWeight.w600,
@@ -58,7 +66,7 @@ class NutritionSummaryWidget extends StatelessWidget {
           ClipRRect(
             borderRadius: BorderRadius.circular(8),
             child: LinearProgressIndicator(
-              value: calorieProgress,
+              value: calorieProgress.clamp(0.0, 1.0),
               minHeight: 1.h,
               backgroundColor: theme.colorScheme.outline.withValues(alpha: 0.2),
               valueColor: AlwaysStoppedAnimation<Color>(
@@ -74,7 +82,7 @@ class NutritionSummaryWidget extends StatelessWidget {
 
           // Macro breakdown
           Text(
-            'Macronutrienți',
+            'Macronutrients',
             style: theme.textTheme.titleSmall?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
             ),
@@ -83,30 +91,30 @@ class NutritionSummaryWidget extends StatelessWidget {
 
           _buildMacroRow(
             context,
-            'Proteine',
-            nutritionData["protein"]["consumed"] as int,
-            nutritionData["protein"]["target"] as int,
-            nutritionData["protein"]["unit"] as String,
+            'Protein',
+            proteinG,
+            _targetProteinG,
+            'g',
             theme.colorScheme.tertiary,
           ),
           SizedBox(height: 1.5.h),
 
           _buildMacroRow(
             context,
-            'Carbohidrați',
-            nutritionData["carbs"]["consumed"] as int,
-            nutritionData["carbs"]["target"] as int,
-            nutritionData["carbs"]["unit"] as String,
+            'Carbohydrates',
+            carbsG,
+            _targetCarbsG,
+            'g',
             theme.colorScheme.secondary,
           ),
           SizedBox(height: 1.5.h),
 
           _buildMacroRow(
             context,
-            'Grăsimi',
-            nutritionData["fats"]["consumed"] as int,
-            nutritionData["fats"]["target"] as int,
-            nutritionData["fats"]["unit"] as String,
+            'Fats',
+            fatsG,
+            _targetFatsG,
+            'g',
             AppTheme.warningLight,
           ),
         ],
@@ -123,7 +131,7 @@ class NutritionSummaryWidget extends StatelessWidget {
     Color color,
   ) {
     final theme = Theme.of(context);
-    final double progress = consumed / target;
+    final double progress = target > 0 ? consumed / target : 0;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
