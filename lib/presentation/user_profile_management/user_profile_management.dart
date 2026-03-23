@@ -4,6 +4,7 @@ import 'package:sizer/sizer.dart';
 import '../../services/supabase_service.dart';
 import '../../services/gemini_ai_service.dart';
 import '../../services/calorie_calculator_service.dart';
+import '../../services/theme_service.dart';
 import '../../routes/app_routes.dart';
 import './widgets/personal_info_section_widget.dart';
 import './widgets/fitness_preferences_section_widget.dart';
@@ -407,6 +408,53 @@ class _UserProfileManagementState extends State<UserProfileManagement> {
                     );
                   }
                 }
+              },
+            ),
+            SizedBox(height: 2.h),
+
+            // Dark Mode Toggle
+            ValueListenableBuilder<ThemeMode>(
+              valueListenable: ThemeService.themeNotifier,
+              builder: (context, themeMode, child) {
+                return Container(
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.surface,
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.1),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: SwitchListTile(
+                    contentPadding: EdgeInsets.symmetric(
+                      horizontal: 4.w,
+                      vertical: 1.h,
+                    ),
+                    title: Text(
+                      'Dark Mode',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    subtitle: Text(
+                      'Switch between light and dark theme',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    secondary: Icon(
+                      themeMode == ThemeMode.dark
+                          ? Icons.dark_mode
+                          : Icons.light_mode,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                    value: themeMode == ThemeMode.dark,
+                    onChanged: (isDark) => ThemeService.setDarkMode(isDark),
+                  ),
+                );
               },
             ),
             SizedBox(height: 2.h),

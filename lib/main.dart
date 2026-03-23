@@ -5,6 +5,7 @@ import 'package:sizer/sizer.dart';
 
 import 'core/app_export.dart';
 import 'services/supabase_service.dart';
+import 'services/theme_service.dart';
 import 'widgets/custom_error_widget.dart';
 
 void main() async {
@@ -14,6 +15,7 @@ void main() async {
     // Initialize services first
     await initializeDateFormatting();
     await SupabaseService.initialize();
+    await ThemeService.init();
     await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
 
     // Setup custom error handling
@@ -55,26 +57,31 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Sizer(
-      builder: (context, orientation, screenType) {
-        return MaterialApp(
-          title: 'smartfitai',
-          theme: AppTheme.lightTheme,
-          darkTheme: AppTheme.darkTheme,
-          themeMode: ThemeMode.light,
-          // 🚨 CRITICAL: NEVER REMOVE OR MODIFY
-          builder: (context, child) {
-            return MediaQuery(
-              data: MediaQuery.of(
-                context,
-              ).copyWith(textScaler: TextScaler.linear(1.0)),
-              child: child!,
+    return ValueListenableBuilder<ThemeMode>(
+      valueListenable: ThemeService.themeNotifier,
+      builder: (context, themeMode, child) {
+        return Sizer(
+          builder: (context, orientation, screenType) {
+            return MaterialApp(
+              title: 'smartfitai',
+              theme: AppTheme.lightTheme,
+              darkTheme: AppTheme.darkTheme,
+              themeMode: themeMode,
+              // 🚨 CRITICAL: NEVER REMOVE OR MODIFY
+              builder: (context, child) {
+                return MediaQuery(
+                  data: MediaQuery.of(
+                    context,
+                  ).copyWith(textScaler: TextScaler.linear(1.0)),
+                  child: child!,
+                );
+              },
+              // 🚨 END CRITICAL SECTION
+              debugShowCheckedModeBanner: false,
+              routes: AppRoutes.routes,
+              initialRoute: AppRoutes.loginScreen,
             );
           },
-          // 🚨 END CRITICAL SECTION
-          debugShowCheckedModeBanner: false,
-          routes: AppRoutes.routes,
-          initialRoute: AppRoutes.loginScreen,
         );
       },
     );
