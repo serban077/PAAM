@@ -13,8 +13,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Current Status
 
 **Last updated:** 2026-03-24
-**Last session:** Docs — Full Claude Code documentation system setup (CLAUDE.md hierarchy, TASKS.md, SESSION_WORKFLOW.md, docs/)
-**Next session starts with:** M9 — Replace all Romanian UI strings with English (start with `custom_bottom_bar.dart` labels)
+**Last session:** M1–M8 sub-tasks — All incomplete sub-tasks implemented: retry logic (GeminiClient), shimmer skeletons (AI generators), real nutrition data wiring (NutritionSummaryWidget), YouTube player on exercise detail sheet, meal eaten toggle (SimpleMealCard), barcode scanner (MobileScanner + BarcodeScannerPage), measurements fl_chart LineChart with ChoiceChip selector, before/after photo strings translated, PR badges with trophy icon (ExerciseDetailsScreen), dark mode toggle with SharedPreferences (ThemeService)
+**Next session starts with:** M9 remaining polish — empty states for all screens, pull-to-refresh where missing, shimmer skeletons for data loads >300ms, layout overflow review on 375px width
 **Active branches:** main
 **Blockers:** `pubspec.lock` is gitignored — run `flutter pub get` at every session start. PAAM/ folder not yet committed (check if needed).
 

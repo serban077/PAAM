@@ -55,8 +55,8 @@ Update `## Current Status` in `CLAUDE.md` at the end of every session.
 - [x] Create `AINutritionPlanner` screen — UI for requesting a custom meal plan
 - [x] Create `AINutritionService` for nutrition-specific AI logic
 - [x] Create `CalorieCalculatorService` for TDEE and macro calculations
-- [ ] Add retry logic for Gemini API failures (currently fails silently)
-- [ ] Add loading skeleton while AI generates plans (currently shows spinner)
+- [x] Add retry logic for Gemini API failures (currently fails silently)
+- [x] Add loading skeleton while AI generates plans (currently shows spinner)
 
 ---
 
@@ -67,7 +67,7 @@ Update `## Current Status` in `CLAUDE.md` at the end of every session.
 - [x] Implement `CustomBottomBar` with 5 tabs: Home / Workouts / Nutrition / Progress / Profile
 - [x] Wire bottom nav tabs to correct routes in exact order
 - [x] Dashboard home tab: show today's workout card (linked to AI-generated plan)
-- [x] Dashboard home tab: show today's meal summary (calories, macros)
+- [x] Dashboard home tab: show today's meal summary (calories, macros) — wired to real Supabase data
 - [x] Dashboard home tab: show weekly progress ring / streak indicator
 
 ---
@@ -81,7 +81,7 @@ Update `## Current Status` in `CLAUDE.md` at the end of every session.
 - [x] Create `ExerciseDetailsScreen` — shows sets, reps, rest time for a session
 - [x] Add search bar with real-time filter by name
 - [x] Add filter chips for muscle group and equipment type
-- [ ] Integrate `youtube_player_flutter` to show exercise demo video on detail screen
+- [x] Integrate `youtube_player_flutter` to show exercise demo video on detail screen
 
 ---
 
@@ -89,11 +89,11 @@ Update `## Current Status` in `CLAUDE.md` at the end of every session.
 
 - [x] Create `NutritionPlanningScreen` — manual food tracking interface
 - [x] Create `NutritionService` for CRUD operations on Supabase nutrition table
-- [ ] Implement food search (search by name, return macros)
-- [ ] Implement `mobile_scanner` barcode scan to look up food by barcode
-- [ ] Add daily calorie and macro progress bars (using fl_chart or linear indicators)
-- [ ] Display AI-generated meal plan in nutrition tab
-- [ ] Allow marking individual meals as eaten
+- [x] Implement food search (search by name, return macros) — debounced Supabase ilike query
+- [x] Implement `mobile_scanner` barcode scan to look up food by barcode
+- [x] Add daily calorie and macro progress bars (using fl_chart or linear indicators)
+- [x] Display AI-generated meal plan in nutrition tab
+- [x] Allow marking individual meals as eaten — circular checkbox with strikethrough
 
 ---
 
@@ -103,9 +103,9 @@ Update `## Current Status` in `CLAUDE.md` at the end of every session.
 - [x] Create `StrengthProgressScreen` for tracking personal records per exercise
 - [x] Create `BodyMeasurementsService` for storing body measurements in Supabase
 - [x] Add body measurements tracking UI (chest, waist, hips, arms, etc.)
-- [ ] Connect body measurements to charts in `ProgressTrackingScreen`
-- [ ] Add before/after photo comparison using `before_after` widget
-- [ ] Show PR (personal record) badges on strength exercises
+- [x] Connect body measurements to fl_chart LineChart with metric selector chips
+- [x] Add before/after photo comparison using `before_after` widget (draggable divider)
+- [x] Show PR (personal record) badges on strength exercises — amber badge with trophy icon
 
 ---
 
@@ -116,17 +116,18 @@ Update `## Current Status` in `CLAUDE.md` at the end of every session.
 - [x] Allow editing profile fields (goal, fitness level, dietary preference)
 - [x] Allow updating physical stats (weight, height) and recalculating TDEE
 - [x] Add sign-out button with confirmation dialog
-- [ ] Add dark mode toggle (ThemeMode is hardcoded to `ThemeMode.light`)
+- [x] Add dark mode toggle — ValueNotifier<ThemeMode> in ThemeService, persisted to SharedPreferences
 
 ---
 
 ## Milestone 9 — UI Polish & Localization
 
-- [~] Replace all Romanian UI strings with English equivalents
-  - [ ] `CustomBottomBar` labels: "Acasă" → "Home", "Antrenamente" → "Workouts", "Nutriție" → "Nutrition", "Progres" → "Progress", "Profil" → "Profile"
-  - [ ] `AuthenticationOnboardingFlow`: "Conectează-te" → "Sign In", "Creează cont" → "Create Account"
-  - [ ] `WorkoutDetailScreen`: "Detalii Antrenament" → "Workout Details", "Detalii..." → actual content
-  - [ ] Scan all `presentation/` screens for remaining Romanian strings
+- [x] Replace all Romanian UI strings with English equivalents
+  - [x] `CustomBottomBar` labels, `AuthenticationOnboardingFlow`, `OnboardingSurveyWidget`
+  - [x] `NutritionPlanningScreen`, `ProgressTrackingScreen`, `BodyMeasurementsCard`
+  - [x] `UserProfileManagement` widgets, `AccountManagementSectionWidget`
+  - [x] `AIWorkoutGenerator`, `AINutritionPlanner`, `ExerciseLibrary`, `StrengthProgressScreen`
+  - [x] `PhotoProgressWidget`, `SimpleMealCard`, `AIMealPlanSection`, `FoodSearchDialog`
 - [ ] Add empty states for all screens that load data (no workouts yet, no meals yet, etc.)
 - [ ] Add pull-to-refresh on all list screens
 - [ ] Add proper loading shimmer skeletons (replace all `CircularProgressIndicator` for data loads >300ms)
@@ -210,3 +211,4 @@ Update `## Current Status` in `CLAUDE.md` at the end of every session.
 |---|---|---|---|
 | 2026-03-23 | M7 — Body measurements | BodyMeasurementsService, measurements UI, pending commits | Commit pending changes → M9 UI Polish |
 | 2026-03-24 | Docs setup | CLAUDE.md hierarchy, TASKS.md, SESSION_WORKFLOW.md, docs/ reference files | M9 — Romanian → English UI strings |
+| 2026-03-24 | M1–M8 sub-tasks | Retry logic, shimmer skeletons, real nutrition data, YouTube player, meal eaten toggle, barcode scan, measurements LineChart, PR badges, dark mode toggle | M9 remaining polish tasks |
