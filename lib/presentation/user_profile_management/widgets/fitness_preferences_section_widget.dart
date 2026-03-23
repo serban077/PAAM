@@ -37,35 +37,35 @@ class _FitnessPreferencesSectionWidgetState
   late String _selectedGoal;
 
   final List<String> _equipmentOptions = [
-    "Gantere",
-    "Bandă de alergare",
-    "Bicicletă staționară",
-    "Bare de tracțiuni",
-    "Saltea de yoga",
-    "Benzi de rezistență",
+    "Dumbbells",
+    "Treadmill",
+    "Stationary Bike",
+    "Pull-up Bar",
+    "Yoga Mat",
+    "Resistance Bands",
   ];
 
   final List<String> _goalOptions = [
-    "Pierdere în greutate",
-    "Creștere musculară",
-    "Rezistență",
-    "Recompunere corporală",
+    "Weight Loss",
+    "Muscle Gain",
+    "Endurance",
+    "Body Recomposition",
   ];
 
   // Map DB values to Display values for Goals
   final Map<String, String> _dbGoalToDisplay = {
-    'pierdere_greutate': 'Pierdere în greutate',
-    'crestere_masa_musculara': 'Creștere musculară', // Changed from crestere_musculara
-    'mentinere': 'Rezistență', // Mapped mentinere to Rezistenta (closest) or should allow 'Mentinere'
-    'tonifiere': 'Recompunere corporală', // Mapped tonifiere to Recompunere
+    'pierdere_greutate': 'Weight Loss',
+    'crestere_masa_musculara': 'Muscle Gain',
+    'mentinere': 'Endurance',
+    'tonifiere': 'Body Recomposition',
   };
 
   // Map Display values to DB values for Goals
   final Map<String, String> _displayGoalToDb = {
-    'Pierdere în greutate': 'pierdere_greutate',
-    'Creștere musculară': 'crestere_masa_musculara',
-    'Rezistență': 'mentinere',
-    'Recompunere corporală': 'tonifiere',
+    'Weight Loss': 'pierdere_greutate',
+    'Muscle Gain': 'crestere_masa_musculara',
+    'Endurance': 'mentinere',
+    'Body Recomposition': 'tonifiere',
   };
 
   @override
@@ -76,13 +76,12 @@ class _FitnessPreferencesSectionWidgetState
     _selectedEquipment = List.from(widget.availableEquipment);
     
     // Map goal to display value - try both English and potential fallback
-    _selectedGoal = _dbGoalToDisplay[widget.fitnessGoal] ?? 
-                   (widget.fitnessGoal == 'recompunere_corporala' ? 'Recompunere corporală' : "Recompunere corporală");
+    _selectedGoal = _dbGoalToDisplay[widget.fitnessGoal] ?? "Body Recomposition";
   }
 
   void _handleSave() {
     if (_selectedEquipment.isEmpty) {
-      _showValidationError('Selectați cel puțin un echipament');
+      _showValidationError('Please select at least one equipment type');
       return;
     }
 
@@ -158,14 +157,14 @@ class _FitnessPreferencesSectionWidgetState
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Preferințe Fitness',
+                          'Fitness Preferences',
                           style: theme.textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.w600,
                           ),
                         ),
                         SizedBox(height: 0.5.h),
                         Text(
-                          '$_workoutFrequency zile/săptămână • $_sessionDuration min/sesiune',
+                          '$_workoutFrequency days/week • $_sessionDuration min/session',
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: theme.colorScheme.onSurfaceVariant,
                           ),
@@ -197,7 +196,7 @@ class _FitnessPreferencesSectionWidgetState
                         children: [
                           // Workout Frequency Slider
                           Text(
-                            'Frecvență Antrenament',
+                            'Training Frequency',
                             style: theme.textTheme.bodyMedium?.copyWith(
                               fontWeight: FontWeight.w500,
                               color: theme.colorScheme.onSurfaceVariant,
@@ -212,7 +211,7 @@ class _FitnessPreferencesSectionWidgetState
                                   min: 2,
                                   max: 7,
                                   divisions: 5,
-                                  label: '$_workoutFrequency zile',
+                                  label: '$_workoutFrequency days',
                                   onChanged: (value) {
                                     setState(() {
                                       _workoutFrequency = value.toInt();
@@ -233,7 +232,7 @@ class _FitnessPreferencesSectionWidgetState
 
                           // Session Duration Slider
                           Text(
-                            'Durată Sesiune',
+                            'Session Duration',
                             style: theme.textTheme.bodyMedium?.copyWith(
                               fontWeight: FontWeight.w500,
                               color: theme.colorScheme.onSurfaceVariant,
@@ -269,7 +268,7 @@ class _FitnessPreferencesSectionWidgetState
 
                           // Equipment Selection
                           Text(
-                            'Echipament Disponibil',
+                            'Available Equipment',
                             style: theme.textTheme.bodyMedium?.copyWith(
                               fontWeight: FontWeight.w500,
                               color: theme.colorScheme.onSurfaceVariant,
@@ -300,7 +299,7 @@ class _FitnessPreferencesSectionWidgetState
 
                           // Fitness Goal Dropdown
                           Text(
-                            'Obiectiv Fitness',
+                            'Fitness Goal',
                             style: theme.textTheme.bodyMedium?.copyWith(
                               fontWeight: FontWeight.w500,
                               color: theme.colorScheme.onSurfaceVariant,
@@ -339,7 +338,7 @@ class _FitnessPreferencesSectionWidgetState
                             width: double.infinity,
                             child: ElevatedButton(
                               onPressed: _handleSave,
-                              child: Text('Salvează Modificările'),
+                              child: Text('Save Changes'),
                             ),
                           ),
                         ],

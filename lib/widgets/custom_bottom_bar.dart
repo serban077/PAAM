@@ -63,40 +63,40 @@ class CustomBottomBar extends StatelessWidget {
         BottomNavigationBarItem(
           icon: const Icon(Icons.home_outlined, size: 24),
           activeIcon: const Icon(Icons.home, size: 24),
-          label: 'Acasă',
-          tooltip: 'Pagina principală',
+          label: 'Home',
+          tooltip: 'Home',
         ),
 
         // Workouts - Exercise library and active workout sessions
         BottomNavigationBarItem(
           icon: const Icon(Icons.fitness_center_outlined, size: 24),
           activeIcon: const Icon(Icons.fitness_center, size: 24),
-          label: 'Antrenamente',
-          tooltip: 'Antrenamente și exerciții',
+          label: 'Workouts',
+          tooltip: 'Workouts & exercises',
         ),
 
         // Nutrition - Meal planning and macro tracking
         BottomNavigationBarItem(
           icon: const Icon(Icons.restaurant_menu_outlined, size: 24),
           activeIcon: const Icon(Icons.restaurant_menu, size: 24),
-          label: 'Nutriție',
-          tooltip: 'Planificare mese',
+          label: 'Nutrition',
+          tooltip: 'Meal planning',
         ),
 
         // Progress - Photo and measurement tracking
         BottomNavigationBarItem(
           icon: const Icon(Icons.trending_up_outlined, size: 24),
           activeIcon: const Icon(Icons.trending_up, size: 24),
-          label: 'Progres',
-          tooltip: 'Urmărire progres',
+          label: 'Progress',
+          tooltip: 'Track progress',
         ),
 
         // Profile - Settings and preferences
         BottomNavigationBarItem(
           icon: const Icon(Icons.person_outline, size: 24),
           activeIcon: const Icon(Icons.person, size: 24),
-          label: 'Profil',
-          tooltip: 'Setări profil',
+          label: 'Profile',
+          tooltip: 'Profile settings',
         ),
       ],
     );
@@ -126,39 +126,39 @@ class BottomNavItems {
 
   static const List<BottomNavItem> items = [
     BottomNavItem(
-      label: 'Acasă',
+      label: 'Home',
       icon: Icons.home_outlined,
       activeIcon: Icons.home,
       route: '/main-dashboard',
-      tooltip: 'Pagina principală',
+      tooltip: 'Home',
     ),
     BottomNavItem(
-      label: 'Antrenamente',
+      label: 'Workouts',
       icon: Icons.fitness_center_outlined,
       activeIcon: Icons.fitness_center,
       route: '/exercise-library',
-      tooltip: 'Antrenamente și exerciții',
+      tooltip: 'Workouts & exercises',
     ),
     BottomNavItem(
-      label: 'Nutriție',
+      label: 'Nutrition',
       icon: Icons.restaurant_menu_outlined,
       activeIcon: Icons.restaurant_menu,
       route: '/nutrition-planning',
-      tooltip: 'Planificare mese',
+      tooltip: 'Meal planning',
     ),
     BottomNavItem(
-      label: 'Progres',
+      label: 'Progress',
       icon: Icons.trending_up_outlined,
       activeIcon: Icons.trending_up,
       route: '/progress-tracking',
-      tooltip: 'Urmărire progres',
+      tooltip: 'Track progress',
     ),
     BottomNavItem(
-      label: 'Profil',
+      label: 'Profile',
       icon: Icons.person_outline,
       activeIcon: Icons.person,
       route: '/user-profile',
-      tooltip: 'Setări profil',
+      tooltip: 'Profile settings',
     ),
   ];
 }

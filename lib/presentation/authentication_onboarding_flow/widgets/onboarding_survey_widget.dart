@@ -96,30 +96,30 @@ class _OnboardingSurveyWidgetState extends State<OnboardingSurveyWidget> {
 
   String _getLabelForGoal(String goal) {
     const labels = {
-      'pierdere_greutate': 'Pierdere Greutate',
-      'crestere_masa_musculara': 'Creștere Masă Musculară',
-      'mentinere': 'Menținere',
-      'tonifiere': 'Tonifiere',
+      'pierdere_greutate': 'Weight Loss',
+      'crestere_masa_musculara': 'Muscle Gain',
+      'mentinere': 'Maintenance',
+      'tonifiere': 'Toning',
     };
     return labels[goal] ?? goal;
   }
 
   String _getLabelForActivity(String activity) {
     const labels = {
-      'sedentar': 'Sedentar',
-      'usor_activ': 'Ușor Activ',
-      'moderat_activ': 'Moderat Activ',
-      'foarte_activ': 'Foarte Activ',
-      'extrem_activ': 'Extrem de Activ',
+      'sedentar': 'Sedentary',
+      'usor_activ': 'Lightly Active',
+      'moderat_activ': 'Moderately Active',
+      'foarte_activ': 'Very Active',
+      'extrem_activ': 'Extremely Active',
     };
     return labels[activity] ?? activity;
   }
 
   String _getLabelForEquipment(String equipment) {
     const labels = {
-      'acasa_fara_echipament': 'Acasă fără Echipament',
-      'acasa_cu_echipament_basic': 'Acasă cu Echipament Basic',
-      'sala_fitness': 'Sală de Fitness',
+      'acasa_fara_echipament': 'Home (No Equipment)',
+      'acasa_cu_echipament_basic': 'Home (Basic Equipment)',
+      'sala_fitness': 'Gym',
       'mix': 'Mix',
     };
     return labels[equipment] ?? equipment;
@@ -127,13 +127,22 @@ class _OnboardingSurveyWidgetState extends State<OnboardingSurveyWidget> {
 
   String _getLabelForDiet(String diet) {
     const labels = {
-      'normal': 'Normal',
+      'normal': 'Standard',
       'vegetarian': 'Vegetarian',
       'vegan': 'Vegan',
-      'fara_gluten': 'Fără Gluten',
-      'fara_lactate': 'Fără Lactate',
+      'fara_gluten': 'Gluten-Free',
+      'fara_lactate': 'Dairy-Free',
     };
     return labels[diet] ?? diet;
+  }
+
+  String _getLabelForGender(String gender) {
+    const labels = {
+      'barbat': 'Male',
+      'femeie': 'Female',
+      'altul': 'Other',
+    };
+    return labels[gender] ?? gender;
   }
 
   Future<void> _saveOnboardingData() async {
@@ -225,8 +234,8 @@ class _OnboardingSurveyWidgetState extends State<OnboardingSurveyWidget> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(widget.isEditing
-                ? 'Planul a fost recalibrat cu succes!'
-                : 'Configurare finalizată!'),
+                ? 'Plan recalibrated successfully!'
+                : 'Setup complete!'),
             backgroundColor: Colors.green,
           ),
         );
@@ -236,11 +245,11 @@ class _OnboardingSurveyWidgetState extends State<OnboardingSurveyWidget> {
       if (widget.isEditing && mounted) {
         try {
           await GeminiAIService().generateCompletePlan(userId);
-          
+
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
-                content: Text('🎉 Planul AI a fost regenerat cu noile preferințe!'),
+                content: Text('AI plan regenerated with new preferences!'),
                 backgroundColor: Colors.green,
                 duration: Duration(seconds: 3),
               ),
@@ -250,7 +259,7 @@ class _OnboardingSurveyWidgetState extends State<OnboardingSurveyWidget> {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text('Atenție: Planul a fost salvat dar regenerarea a eșuat: $e'),
+                content: Text('Warning: Plan saved but regeneration failed: $e'),
                 backgroundColor: Colors.orange,
               ),
             );
@@ -267,16 +276,14 @@ class _OnboardingSurveyWidgetState extends State<OnboardingSurveyWidget> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Eroare: $e')));
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Error: $e')));
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
   }
 
-  // Add validation method
   bool _isCurrentStepValid() {
     switch (_currentStep) {
       case 0:
@@ -306,7 +313,7 @@ class _OnboardingSurveyWidgetState extends State<OnboardingSurveyWidget> {
   void _showValidationError() {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text('Te rugăm să completezi toate câmpurile obligatorii'),
+        content: Text('Please complete all required fields'),
         backgroundColor: Colors.red,
       ),
     );
@@ -317,7 +324,7 @@ class _OnboardingSurveyWidgetState extends State<OnboardingSurveyWidget> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Care este obiectivul tău de fitness?',
+          'What is your fitness goal?',
           style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.bold),
         ),
         SizedBox(height: 3.h),
@@ -338,7 +345,7 @@ class _OnboardingSurveyWidgetState extends State<OnboardingSurveyWidget> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Care este nivelul tău de activitate?',
+          'What is your activity level?',
           style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.bold),
         ),
         SizedBox(height: 3.h),
@@ -359,7 +366,7 @@ class _OnboardingSurveyWidgetState extends State<OnboardingSurveyWidget> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Ce echipament ai disponibil?',
+          'What equipment do you have available?',
           style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.bold),
         ),
         SizedBox(height: 3.h),
@@ -380,7 +387,7 @@ class _OnboardingSurveyWidgetState extends State<OnboardingSurveyWidget> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Preferințe dietetice',
+          'Dietary preferences',
           style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.bold),
         ),
         SizedBox(height: 3.h),
@@ -401,41 +408,46 @@ class _OnboardingSurveyWidgetState extends State<OnboardingSurveyWidget> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Informații personale',
+          'Personal information',
           style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.bold),
         ),
         SizedBox(height: 3.h),
         TextFormField(
-          decoration: const InputDecoration(labelText: 'Vârstă'),
+          decoration: const InputDecoration(labelText: 'Age'),
           keyboardType: TextInputType.number,
           onChanged: (value) => _age = int.tryParse(value),
         ),
         SizedBox(height: 2.h),
         DropdownButtonFormField<String>(
-          initialValue: _gender,
-          decoration: const InputDecoration(labelText: 'Gen'),
+          value: _gender,
+          decoration: const InputDecoration(labelText: 'Gender'),
           items: [
             'barbat',
             'femeie',
             'altul',
-          ].map((g) => DropdownMenuItem(value: g, child: Text(g))).toList(),
+          ]
+              .map((g) => DropdownMenuItem(
+                    value: g,
+                    child: Text(_getLabelForGender(g)),
+                  ))
+              .toList(),
           onChanged: (value) => setState(() => _gender = value),
         ),
         SizedBox(height: 2.h),
         TextFormField(
-          decoration: const InputDecoration(labelText: 'Înălțime (cm)'),
+          decoration: const InputDecoration(labelText: 'Height (cm)'),
           keyboardType: TextInputType.number,
           onChanged: (value) => _height = double.tryParse(value),
         ),
         SizedBox(height: 2.h),
         TextFormField(
-          decoration: const InputDecoration(labelText: 'Greutate Actuală (kg)'),
+          decoration: const InputDecoration(labelText: 'Current Weight (kg)'),
           keyboardType: TextInputType.number,
           onChanged: (value) => _currentWeight = double.tryParse(value),
         ),
         SizedBox(height: 2.h),
         TextFormField(
-          decoration: const InputDecoration(labelText: 'Greutate Țintă (kg)'),
+          decoration: const InputDecoration(labelText: 'Target Weight (kg)'),
           keyboardType: TextInputType.number,
           onChanged: (value) => _targetWeight = double.tryParse(value),
         ),
@@ -448,12 +460,12 @@ class _OnboardingSurveyWidgetState extends State<OnboardingSurveyWidget> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Program de antrenament',
+          'Training schedule',
           style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.bold),
         ),
         SizedBox(height: 3.h),
         Text(
-          'Câte antrenamente poți face pe săptămână?',
+          'How many workouts can you do per week?',
           style: TextStyle(fontSize: 14.sp),
         ),
         SizedBox(height: 2.h),
@@ -462,7 +474,7 @@ class _OnboardingSurveyWidgetState extends State<OnboardingSurveyWidget> {
           children: List.generate(7, (index) {
             final frequency = index + 1;
             return ChoiceChip(
-              label: Text('$frequency zile'),
+              label: Text('$frequency days'),
               selected: _weeklyTrainingFrequency == frequency,
               onSelected: (selected) {
                 if (selected) {
@@ -474,7 +486,7 @@ class _OnboardingSurveyWidgetState extends State<OnboardingSurveyWidget> {
         ),
         SizedBox(height: 3.h),
         Text(
-          'Câte ore ai disponibile per antrenament?',
+          'How many hours are available per session?',
           style: TextStyle(fontSize: 14.sp),
         ),
         SizedBox(height: 2.h),
@@ -501,14 +513,14 @@ class _OnboardingSurveyWidgetState extends State<OnboardingSurveyWidget> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Considerații medicale',
+          'Medical considerations',
           style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.bold),
         ),
         SizedBox(height: 3.h),
         TextFormField(
           decoration: const InputDecoration(
-            labelText: 'Condiții medicale (opțional)',
-            hintText: 'Ex: Diabet, probleme articulare, etc.',
+            labelText: 'Medical conditions (optional)',
+            hintText: 'E.g.: Diabetes, joint problems, etc.',
           ),
           maxLines: 3,
           onChanged: (value) => _medicalConditions = value,
@@ -521,7 +533,7 @@ class _OnboardingSurveyWidgetState extends State<OnboardingSurveyWidget> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.isEditing ? 'Recalibrare Plan' : 'Configurare Profil'),
+        title: Text(widget.isEditing ? 'Recalibrate Plan' : 'Setup Profile'),
         centerTitle: true,
       ),
       body: SafeArea(
@@ -535,7 +547,7 @@ class _OnboardingSurveyWidgetState extends State<OnboardingSurveyWidget> {
               ),
               SizedBox(height: 2.h),
               Text(
-                'Pasul ${_currentStep + 1} din 7',
+                'Step ${_currentStep + 1} of 7',
                 style: TextStyle(fontSize: 14.sp, color: Colors.grey),
               ),
               SizedBox(height: 3.h),
@@ -558,7 +570,7 @@ class _OnboardingSurveyWidgetState extends State<OnboardingSurveyWidget> {
                   if (_currentStep > 0)
                     TextButton(
                       onPressed: () => setState(() => _currentStep--),
-                      child: const Text('Înapoi'),
+                      child: const Text('Back'),
                     )
                   else
                     const SizedBox(),
@@ -566,7 +578,6 @@ class _OnboardingSurveyWidgetState extends State<OnboardingSurveyWidget> {
                     onPressed: _isLoading
                         ? null
                         : () {
-                            // Validate current step before proceeding
                             if (!_isCurrentStepValid()) {
                               _showValidationError();
                               return;
@@ -585,8 +596,10 @@ class _OnboardingSurveyWidgetState extends State<OnboardingSurveyWidget> {
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
                         : Text(_currentStep < 6
-                             ? 'Următorul'
-                             : (widget.isEditing ? 'Salvează și Recalibrează' : 'Finalizează')),
+                            ? 'Next'
+                            : (widget.isEditing
+                                ? 'Save & Recalibrate'
+                                : 'Finish')),
                   ),
                 ],
               ),

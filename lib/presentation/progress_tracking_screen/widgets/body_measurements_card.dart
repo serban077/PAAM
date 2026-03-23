@@ -17,18 +17,17 @@ class _BodyMeasurementsCardState extends State<BodyMeasurementsCard> {
   List<Map<String, dynamic>> _recentMeasurements = [];
   bool _isLoading = true;
 
-  // Measurement types with Romanian labels
   final Map<String, String> _measurementLabels = {
-    'head': 'Cap',
-    'neck': 'Gât',
-    'shoulders': 'Umeri',
-    'chest': 'Piept',
-    'waist': 'Talie',
-    'hips': 'Șolduri',
-    'arm': 'Braț',
-    'forearm': 'Antebraț',
-    'thigh': 'Coapsă',
-    'calf': 'Gambă',
+    'head': 'Head',
+    'neck': 'Neck',
+    'shoulders': 'Shoulders',
+    'chest': 'Chest',
+    'waist': 'Waist',
+    'hips': 'Hips',
+    'arm': 'Arm',
+    'forearm': 'Forearm',
+    'thigh': 'Thigh',
+    'calf': 'Calf',
   };
 
   @override
@@ -49,7 +48,7 @@ class _BodyMeasurementsCardState extends State<BodyMeasurementsCard> {
       setState(() => _isLoading = false);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Eroare la încărcarea măsurătorilor: $e')),
+          SnackBar(content: Text('Error loading measurements: $e')),
         );
       }
     }
@@ -83,7 +82,7 @@ class _BodyMeasurementsCardState extends State<BodyMeasurementsCard> {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(
-            'Măsurători Corporale',
+            'Body Measurements',
             style: theme.textTheme.titleLarge?.copyWith(
               fontWeight: FontWeight.bold,
               color: theme.colorScheme.primary,
@@ -99,7 +98,7 @@ class _BodyMeasurementsCardState extends State<BodyMeasurementsCard> {
             child: IconButton(
               icon: Icon(Icons.add_circle_outline, color: Colors.white),
               onPressed: () => _showAddMeasurementDialog(),
-              tooltip: 'Adaugă măsurătoare',
+              tooltip: 'Add measurement',
             ),
           ),
         ],
@@ -153,35 +152,16 @@ class _BodyMeasurementsCardState extends State<BodyMeasurementsCard> {
   List<Widget> _buildMeasurementButtons(ThemeData theme) {
     // Staggered positions - trunk buttons alternating left/right for clarity
     final measurementPoints = [
-      // Head - center top
-      {'type': 'head', 'top': 0.04, 'left': 0.50, 'label': 'Cap'},
-      
-      // Neck - slightly left
-      {'type': 'neck', 'top': 0.11, 'left': 0.42, 'label': 'Gât'},
-      
-      // Shoulders - slightly right
-      {'type': 'shoulders', 'top': 0.16, 'left': 0.58, 'label': 'Umeri'},
-      
-      // Chest - left side
-      {'type': 'chest', 'top': 0.24, 'left': 0.38, 'label': 'Piept'},
-      
-      // Waist - right side
-      {'type': 'waist', 'top': 0.36, 'left': 0.62, 'label': 'Talie'},
-      
-      // Hips - left side
-      {'type': 'hips', 'top': 0.46, 'left': 0.38, 'label': 'Șolduri'},
-      
-      // Left arm (arms down) - on the arm
-      {'type': 'arm', 'top': 0.28, 'left': 0.22, 'label': 'Braț'},
-      
-      // Left forearm - lower on arm
-      {'type': 'forearm', 'top': 0.40, 'left': 0.18, 'label': 'Antebraț'},
-      
-      // Left thigh - on leg
-      {'type': 'thigh', 'top': 0.56, 'left': 0.40, 'label': 'Coapsă'},
-      
-      // Left calf - lower leg
-      {'type': 'calf', 'top': 0.72, 'left': 0.42, 'label': 'Gambă'},
+      {'type': 'head', 'top': 0.04, 'left': 0.50, 'label': 'Head'},
+      {'type': 'neck', 'top': 0.11, 'left': 0.42, 'label': 'Neck'},
+      {'type': 'shoulders', 'top': 0.16, 'left': 0.58, 'label': 'Shoulders'},
+      {'type': 'chest', 'top': 0.24, 'left': 0.38, 'label': 'Chest'},
+      {'type': 'waist', 'top': 0.36, 'left': 0.62, 'label': 'Waist'},
+      {'type': 'hips', 'top': 0.46, 'left': 0.38, 'label': 'Hips'},
+      {'type': 'arm', 'top': 0.28, 'left': 0.22, 'label': 'Arm'},
+      {'type': 'forearm', 'top': 0.40, 'left': 0.18, 'label': 'Forearm'},
+      {'type': 'thigh', 'top': 0.56, 'left': 0.40, 'label': 'Thigh'},
+      {'type': 'calf', 'top': 0.72, 'left': 0.42, 'label': 'Calf'},
     ];
 
     return measurementPoints.map((point) {
@@ -273,7 +253,7 @@ class _BodyMeasurementsCardState extends State<BodyMeasurementsCard> {
         Padding(
           padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 1.h),
           child: Text(
-            'Măsurători Recente',
+            'Recent Measurements',
             style: theme.textTheme.titleMedium?.copyWith(
               fontWeight: FontWeight.bold,
             ),
@@ -346,14 +326,14 @@ class _BodyMeasurementsCardState extends State<BodyMeasurementsCard> {
             ),
             SizedBox(height: 2.h),
             Text(
-              'Nicio măsurătoare adăugată încă',
+              'No measurements added yet',
               style: theme.textTheme.titleMedium?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),
             ),
             SizedBox(height: 0.5.h),
             Text(
-              'Apasă pe butoanele + pentru a adăuga',
+              'Tap the + buttons to add measurements',
               style: theme.textTheme.bodySmall?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant.withOpacity(0.7),
               ),
@@ -385,7 +365,7 @@ class _BodyMeasurementsCardState extends State<BodyMeasurementsCard> {
             // Use captured scaffoldMessenger instead of context
             scaffoldMessenger.showSnackBar(
               SnackBar(
-                content: Text('Măsurătoare salvată cu succes!'),
+                content: Text('Measurement saved successfully!'),
                 backgroundColor: Colors.green,
                 behavior: SnackBarBehavior.floating,
               ),
@@ -394,7 +374,7 @@ class _BodyMeasurementsCardState extends State<BodyMeasurementsCard> {
             // Use captured scaffoldMessenger instead of context
             scaffoldMessenger.showSnackBar(
               SnackBar(
-                content: Text('Eroare: $e'),
+                content: Text('Error: $e'),
                 backgroundColor: Colors.red,
               ),
             );
@@ -564,7 +544,7 @@ class _AddMeasurementDialogState extends State<AddMeasurementDialog> {
 
     return AlertDialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      title: Text('Adaugă Măsurătoare'),
+      title: Text('Add Measurement'),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -572,7 +552,7 @@ class _AddMeasurementDialogState extends State<AddMeasurementDialog> {
             DropdownButtonFormField<String>(
               value: _selectedType,
               decoration: InputDecoration(
-                labelText: 'Tip Măsurătoare',
+                labelText: 'Measurement Type',
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
               ),
               items: widget.measurementLabels.entries.map((e) {
@@ -610,7 +590,7 @@ class _AddMeasurementDialogState extends State<AddMeasurementDialog> {
             controller: _valueController,
             keyboardType: TextInputType.numberWithOptions(decimal: true),
             decoration: InputDecoration(
-              labelText: 'Valoare',
+              labelText: 'Value',
               suffixText: 'cm',
               border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
               hintText: 'Ex: 75.5',
@@ -622,7 +602,7 @@ class _AddMeasurementDialogState extends State<AddMeasurementDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: Text('Anulează'),
+          child: Text('Cancel'),
         ),
         ElevatedButton(
           style: ElevatedButton.styleFrom(
@@ -636,13 +616,13 @@ class _AddMeasurementDialogState extends State<AddMeasurementDialog> {
             } else {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text('Introduceți o valoare validă'),
+                  content: Text('Please enter a valid value'),
                   backgroundColor: Colors.red,
                 ),
               );
             }
           },
-          child: Text('Salvează'),
+          child: Text('Save'),
         ),
       ],
     );

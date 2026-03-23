@@ -9,7 +9,7 @@ import '../../../widgets/custom_icon_widget.dart';
 /// Includes security options, data export, and account deletion
 class AccountManagementSectionWidget extends StatefulWidget {
   final VoidCallback onLogout;
-  
+
   const AccountManagementSectionWidget({
     super.key,
     required this.onLogout,
@@ -26,18 +26,16 @@ class _AccountManagementSectionWidgetState
 
   void _handleChangePassword() async {
     HapticFeedback.lightImpact();
-    
+
     final currentPasswordController = TextEditingController();
     final newPasswordController = TextEditingController();
     final confirmPasswordController = TextEditingController();
-    
+
     final result = await showDialog<bool>(
       context: context,
       builder: (dialogContext) {
-        final theme = Theme.of(dialogContext);
-        
         return AlertDialog(
-          title: Text('Schimbă Parola'),
+          title: Text('Change Password'),
           content: IntrinsicHeight(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -46,7 +44,7 @@ class _AccountManagementSectionWidgetState
                   controller: currentPasswordController,
                   obscureText: true,
                   decoration: InputDecoration(
-                    labelText: 'Parola Curentă',
+                    labelText: 'Current Password',
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
@@ -57,7 +55,7 @@ class _AccountManagementSectionWidgetState
                   controller: newPasswordController,
                   obscureText: true,
                   decoration: InputDecoration(
-                    labelText: 'Parola Nouă',
+                    labelText: 'New Password',
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
@@ -68,7 +66,7 @@ class _AccountManagementSectionWidgetState
                   controller: confirmPasswordController,
                   obscureText: true,
                   decoration: InputDecoration(
-                    labelText: 'Confirmă Parola Nouă',
+                    labelText: 'Confirm New Password',
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
@@ -80,37 +78,35 @@ class _AccountManagementSectionWidgetState
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(dialogContext, false),
-              child: Text('Anulează'),
+              child: Text('Cancel'),
             ),
             ElevatedButton(
               onPressed: () {
-                // Validate passwords match
-                if (newPasswordController.text != confirmPasswordController.text) {
+                if (newPasswordController.text !=
+                    confirmPasswordController.text) {
                   ScaffoldMessenger.of(dialogContext).showSnackBar(
                     SnackBar(
-                      content: Text('Parolele nu coincid'),
+                      content: Text('Passwords do not match'),
                       backgroundColor: Colors.red,
                       behavior: SnackBarBehavior.floating,
                     ),
                   );
                   return;
                 }
-                
+
                 Navigator.pop(dialogContext, true);
               },
-              child: Text('Salvează'),
+              child: Text('Save'),
             ),
           ],
         );
       },
     );
-    
-    // Controllers will be automatically disposed when method ends
-    // Show success if saved
+
     if (result == true && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Parola a fost schimbată cu succes'),
+          content: Text('Password changed successfully'),
           backgroundColor: Theme.of(context).colorScheme.primary,
           behavior: SnackBarBehavior.floating,
         ),
@@ -131,19 +127,19 @@ class _AccountManagementSectionWidgetState
     final shouldSignOut = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: Text('Deconectare'),
-        content: Text('Ești sigur că vrei să te deconectezi?'),
+        title: Text('Sign Out'),
+        content: Text('Are you sure you want to sign out?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext, false),
-            child: Text('Anulează'),
+            child: Text('Cancel'),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(dialogContext, true),
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.red,
             ),
-            child: Text('Deconectare'),
+            child: Text('Sign Out'),
           ),
         ],
       ),
@@ -151,7 +147,6 @@ class _AccountManagementSectionWidgetState
 
     if (shouldSignOut != true) return;
 
-    // Call the parent's logout handler
     widget.onLogout();
   }
 
@@ -213,14 +208,14 @@ class _AccountManagementSectionWidgetState
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Gestionare Cont',
+                          'Account Management',
                           style: theme.textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.w600,
                           ),
                         ),
                         SizedBox(height: 0.5.h),
                         Text(
-                          'Securitate și confidențialitate',
+                          'Security & privacy',
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: theme.colorScheme.onSurfaceVariant,
                           ),
@@ -249,39 +244,33 @@ class _AccountManagementSectionWidgetState
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          // Change Password
                           _buildActionTile(
                             icon: 'lock',
-                            title: 'Schimbă Parola',
-                            description: 'Actualizează parola contului tău',
+                            title: 'Change Password',
+                            description: 'Update your account password',
                             onTap: _handleChangePassword,
                             theme: theme,
                           ),
                           SizedBox(height: 2.h),
 
-                          // Export Data
                           _buildActionTile(
                             icon: 'download',
-                            title: 'Exportă Date',
-                            description: 'Descarcă toate datele tale personale',
+                            title: 'Export Data',
+                            description: 'Download all your personal data',
                             onTap: _handleExportData,
                             theme: theme,
                           ),
                           SizedBox(height: 2.h),
 
-                          // Privacy Policy
                           _buildActionTile(
                             icon: 'privacy_tip',
-                            title: 'Politica de Confidențialitate',
-                            description:
-                                'Conformitate GDPR pentru utilizatorii români',
+                            title: 'Privacy Policy',
+                            description: 'View our privacy policy',
                             onTap: () {
                               HapticFeedback.lightImpact();
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
-                                  content: Text(
-                                    'Deschidere politică de confidențialitate...',
-                                  ),
+                                  content: Text('Opening privacy policy...'),
                                   behavior: SnackBarBehavior.floating,
                                 ),
                               );
@@ -290,23 +279,21 @@ class _AccountManagementSectionWidgetState
                           ),
                           SizedBox(height: 3.h),
 
-                          // Sign Out
                           _buildActionTile(
                             icon: 'logout',
-                            title: 'Deconectare',
-                            description: 'Ieși din contul tău',
+                            title: 'Sign Out',
+                            description: 'Sign out of your account',
                             onTap: _handleSignOut,
                             theme: theme,
                             isDestructive: true,
                           ),
                           SizedBox(height: 2.h),
 
-                          // Delete Account
                           _buildActionTile(
                             icon: 'delete_forever',
-                            title: 'Șterge Cont',
+                            title: 'Delete Account',
                             description:
-                                'Șterge permanent contul și toate datele',
+                                'Permanently delete your account and all data',
                             onTap: _handleDeleteAccount,
                             theme: theme,
                             isDestructive: true,
@@ -395,53 +382,50 @@ class _AccountManagementSectionWidgetState
     );
   }
 
-
   Widget _buildExportDataDialog() {
     final theme = Theme.of(context);
 
     return AlertDialog(
-      title: Text('Exportă Date'),
+      title: Text('Export Data'),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Vei primi un fișier cu toate datele tale personale în format JSON.',
+            'You will receive a file with all your personal data in JSON format.',
             style: theme.textTheme.bodyMedium,
           ),
           SizedBox(height: 2.h),
           Text(
-            'Acest fișier va include:',
+            'This file will include:',
             style: theme.textTheme.bodyMedium?.copyWith(
               fontWeight: FontWeight.w600,
             ),
           ),
           SizedBox(height: 1.h),
-          Text('• Informații profil', style: theme.textTheme.bodySmall),
-          Text('• Istoric antrenamente', style: theme.textTheme.bodySmall),
-          Text('• Date nutriționale', style: theme.textTheme.bodySmall),
-          Text('• Progres și măsurători', style: theme.textTheme.bodySmall),
+          Text('• Profile information', style: theme.textTheme.bodySmall),
+          Text('• Workout history', style: theme.textTheme.bodySmall),
+          Text('• Nutrition data', style: theme.textTheme.bodySmall),
+          Text('• Progress & measurements', style: theme.textTheme.bodySmall),
         ],
       ),
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: Text('Anulează'),
+          child: Text('Cancel'),
         ),
         ElevatedButton(
           onPressed: () {
             Navigator.pop(context);
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text(
-                  'Datele tale sunt în curs de pregătire pentru export',
-                ),
+                content: Text('Your data is being prepared for export'),
                 backgroundColor: theme.colorScheme.primary,
                 behavior: SnackBarBehavior.floating,
               ),
             );
           },
-          child: Text('Exportă'),
+          child: Text('Export'),
         ),
       ],
     );
@@ -452,7 +436,7 @@ class _AccountManagementSectionWidgetState
 
     return AlertDialog(
       title: Text(
-        'Șterge Cont',
+        'Delete Account',
         style: TextStyle(color: theme.colorScheme.error),
       ),
       content: Column(
@@ -460,7 +444,7 @@ class _AccountManagementSectionWidgetState
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Această acțiune este permanentă și nu poate fi anulată.',
+            'This action is permanent and cannot be undone.',
             style: theme.textTheme.bodyMedium?.copyWith(
               fontWeight: FontWeight.w600,
               color: theme.colorScheme.error,
@@ -468,17 +452,17 @@ class _AccountManagementSectionWidgetState
           ),
           SizedBox(height: 2.h),
           Text(
-            'Toate datele tale vor fi șterse definitiv:',
+            'All your data will be permanently deleted:',
             style: theme.textTheme.bodyMedium,
           ),
           SizedBox(height: 1.h),
-          Text('• Profil și setări', style: theme.textTheme.bodySmall),
-          Text('• Istoric antrenamente', style: theme.textTheme.bodySmall),
-          Text('• Date nutriționale', style: theme.textTheme.bodySmall),
-          Text('• Fotografii progres', style: theme.textTheme.bodySmall),
+          Text('• Profile & settings', style: theme.textTheme.bodySmall),
+          Text('• Workout history', style: theme.textTheme.bodySmall),
+          Text('• Nutrition data', style: theme.textTheme.bodySmall),
+          Text('• Progress photos', style: theme.textTheme.bodySmall),
           SizedBox(height: 2.h),
           Text(
-            'Ești sigur că vrei să continui?',
+            'Are you sure you want to continue?',
             style: theme.textTheme.bodyMedium?.copyWith(
               fontWeight: FontWeight.w600,
             ),
@@ -488,14 +472,14 @@ class _AccountManagementSectionWidgetState
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: Text('Anulează'),
+          child: Text('Cancel'),
         ),
         ElevatedButton(
           onPressed: () {
             Navigator.pop(context);
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text('Contul tău a fost șters'),
+                content: Text('Your account has been deleted'),
                 backgroundColor: theme.colorScheme.error,
                 behavior: SnackBarBehavior.floating,
               ),
@@ -505,7 +489,7 @@ class _AccountManagementSectionWidgetState
             backgroundColor: theme.colorScheme.error,
             foregroundColor: theme.colorScheme.onError,
           ),
-          child: Text('Șterge Cont'),
+          child: Text('Delete Account'),
         ),
       ],
     );

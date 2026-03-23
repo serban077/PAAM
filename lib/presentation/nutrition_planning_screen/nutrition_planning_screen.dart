@@ -66,7 +66,7 @@ class _NutritionPlanningScreenState extends State<NutritionPlanningScreen> {
       setState(() => _isLoading = false);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Eroare la încărcarea datelor: $e')),
+          SnackBar(content: Text('Error loading data: $e')),
         );
       }
     }
@@ -105,7 +105,7 @@ class _NutritionPlanningScreenState extends State<NutritionPlanningScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Cantitate actualizată!'),
+            content: Text('Quantity updated!'),
             backgroundColor: Colors.green,
           ),
         );
@@ -114,7 +114,7 @@ class _NutritionPlanningScreenState extends State<NutritionPlanningScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Eroare: $e'),
+            content: Text('Error: $e'),
             backgroundColor: Colors.red,
           ),
         );
@@ -126,7 +126,7 @@ class _NutritionPlanningScreenState extends State<NutritionPlanningScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Planificare Nutriție'),
+        title: const Text('Nutrition Planning'),
         centerTitle: true,
         actions: [
           IconButton(
@@ -159,8 +159,8 @@ class _NutritionPlanningScreenState extends State<NutritionPlanningScreen> {
                     // Date display
                     Text(
                       DateFormat(
-                        'EEEE, d MMMM yyyy',
-                        'ro_RO',
+                        'EEEE, MMMM d, yyyy',
+                        'en_US',
                       ).format(_selectedDate),
                       style: TextStyle(
                         fontSize: 16.sp,
@@ -179,7 +179,7 @@ class _NutritionPlanningScreenState extends State<NutritionPlanningScreen> {
 
                     // Macro progress
                     MacroProgressWidget(
-                      label: 'Proteine',
+                      label: 'Protein',
                       consumed: _dailyTotals['total_protein_g']?.toDouble() ?? 0.0,
                       target: (_dailyGoal['protein_goal_g'] ?? 150).toDouble(),
                       unit: 'g',
@@ -187,7 +187,7 @@ class _NutritionPlanningScreenState extends State<NutritionPlanningScreen> {
                     ),
                     SizedBox(height: 1.h),
                     MacroProgressWidget(
-                      label: 'Carbohidrați',
+                      label: 'Carbohydrates',
                       consumed: _dailyTotals['total_carbs_g']?.toDouble() ?? 0.0,
                       target: (_dailyGoal['carbs_goal_g'] ?? 200).toDouble(),
                       unit: 'g',
@@ -195,7 +195,7 @@ class _NutritionPlanningScreenState extends State<NutritionPlanningScreen> {
                     ),
                     SizedBox(height: 1.h),
                     MacroProgressWidget(
-                      label: 'Grăsimi',
+                      label: 'Fats',
                       consumed: _dailyTotals['total_fat_g']?.toDouble() ?? 0.0,
                       target: (_dailyGoal['fat_goal_g'] ?? 67).toDouble(),
                       unit: 'g',
@@ -205,7 +205,7 @@ class _NutritionPlanningScreenState extends State<NutritionPlanningScreen> {
 
                     // Meal cards (4 simple cards)
                     SimpleMealCard(
-                      title: 'Mic Dejun',
+                      title: 'Breakfast',
                       mealType: 'mic_dejun',
                       meals: _getMealsForType('mic_dejun'),
                       onAddFood: () => _showAddFoodModal('mic_dejun'),
@@ -218,7 +218,7 @@ class _NutritionPlanningScreenState extends State<NutritionPlanningScreen> {
                     SizedBox(height: 1.5.h),
 
                     SimpleMealCard(
-                      title: 'Prânz',
+                      title: 'Lunch',
                       mealType: 'pranz',
                       meals: _getMealsForType('pranz'),
                       onAddFood: () => _showAddFoodModal('pranz'),
@@ -231,7 +231,7 @@ class _NutritionPlanningScreenState extends State<NutritionPlanningScreen> {
                     SizedBox(height: 1.5.h),
 
                     SimpleMealCard(
-                      title: 'Cină',
+                      title: 'Dinner',
                       mealType: 'cina',
                       meals: _getMealsForType('cina'),
                       onAddFood: () => _showAddFoodModal('cina'),
@@ -244,7 +244,7 @@ class _NutritionPlanningScreenState extends State<NutritionPlanningScreen> {
                     SizedBox(height: 1.5.h),
 
                     SimpleMealCard(
-                      title: 'Gustare',
+                      title: 'Snack',
                       mealType: 'gustare_dimineata',
                       meals: _getMealsForType('gustare_dimineata'),
                       onAddFood: () => _showAddFoodModal('gustare_dimineata'),

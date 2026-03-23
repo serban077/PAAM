@@ -66,9 +66,9 @@ Update `## Current Status` in `CLAUDE.md` at the end of every session.
 - [x] Create `MainDashboardInitialPage` — home tab showing daily plan overview
 - [x] Implement `CustomBottomBar` with 5 tabs: Home / Workouts / Nutrition / Progress / Profile
 - [x] Wire bottom nav tabs to correct routes in exact order
-- [ ] Dashboard home tab: show today's workout card (linked to AI-generated plan)
-- [ ] Dashboard home tab: show today's meal summary (calories, macros)
-- [ ] Dashboard home tab: show weekly progress ring / streak indicator
+- [x] Dashboard home tab: show today's workout card (linked to AI-generated plan)
+- [x] Dashboard home tab: show today's meal summary (calories, macros)
+- [x] Dashboard home tab: show weekly progress ring / streak indicator
 
 ---
 
@@ -79,8 +79,8 @@ Update `## Current Status` in `CLAUDE.md` at the end of every session.
 - [x] Create `ExerciseCardWidget` with image, name, target muscles, equipment
 - [x] Fix overflow bug in skeleton card
 - [x] Create `ExerciseDetailsScreen` — shows sets, reps, rest time for a session
-- [ ] Add search bar with real-time filter by name
-- [ ] Add filter chips for muscle group and equipment type
+- [x] Add search bar with real-time filter by name
+- [x] Add filter chips for muscle group and equipment type
 - [ ] Integrate `youtube_player_flutter` to show exercise demo video on detail screen
 
 ---
@@ -113,9 +113,9 @@ Update `## Current Status` in `CLAUDE.md` at the end of every session.
 
 - [x] Create `UserProfileManagement` screen — display and edit profile info
 - [x] Show user name, email, fitness goals from onboarding
-- [ ] Allow editing profile fields (goal, fitness level, dietary preference)
-- [ ] Allow updating physical stats (weight, height) and recalculating TDEE
-- [ ] Add sign-out button with confirmation dialog
+- [x] Allow editing profile fields (goal, fitness level, dietary preference)
+- [x] Allow updating physical stats (weight, height) and recalculating TDEE
+- [x] Add sign-out button with confirmation dialog
 - [ ] Add dark mode toggle (ThemeMode is hardcoded to `ThemeMode.light`)
 
 ---

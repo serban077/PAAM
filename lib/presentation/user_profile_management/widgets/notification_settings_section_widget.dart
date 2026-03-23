@@ -114,7 +114,7 @@ class _NotificationSettingsSectionWidgetState
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Setări Notificări',
+                          'Notification Settings',
                           style: theme.textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.w600,
                           ),
@@ -152,9 +152,9 @@ class _NotificationSettingsSectionWidgetState
                         children: [
                           // Workout Reminders
                           _buildNotificationToggle(
-                            title: 'Memento-uri Antrenament',
+                            title: 'Workout Reminders',
                             description:
-                                'Primește notificări pentru antrenamentele programate',
+                                'Receive reminders for scheduled workouts',
                             value: _workoutReminders,
                             onChanged: (value) =>
                                 _handleToggle('workout', value),
@@ -164,9 +164,9 @@ class _NotificationSettingsSectionWidgetState
 
                           // Progress Updates
                           _buildNotificationToggle(
-                            title: 'Actualizări Progres',
+                            title: 'Progress Updates',
                             description:
-                                'Notificări săptămânale despre progresul tău',
+                                'Weekly notifications about your progress',
                             value: _progressUpdates,
                             onChanged: (value) =>
                                 _handleToggle('progress', value),
@@ -176,9 +176,9 @@ class _NotificationSettingsSectionWidgetState
 
                           // Motivational Messages
                           _buildNotificationToggle(
-                            title: 'Mesaje Motivaționale',
+                            title: 'Motivational Messages',
                             description:
-                                'Primește citate și sfaturi motivaționale zilnice',
+                                'Receive daily motivational quotes and tips',
                             value: _motivationalMessages,
                             onChanged: (value) =>
                                 _handleToggle('motivational', value),
@@ -252,6 +252,6 @@ class _NotificationSettingsSectionWidgetState
     if (_progressUpdates) count++;
     if (_motivationalMessages) count++;
 
-    return count == 0 ? 'Toate dezactivate' : '$count active';
+    return count == 0 ? 'All disabled' : '$count active';
   }
 }

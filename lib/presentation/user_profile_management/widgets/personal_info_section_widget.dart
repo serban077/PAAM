@@ -39,32 +39,32 @@ class _PersonalInfoSectionWidgetState extends State<PersonalInfoSectionWidget> {
   late TextEditingController _heightController;
   late TextEditingController _targetWeightController;
   late TextEditingController _targetTimeframeController;
-  String _selectedActivityLevel = "Moderat Activ";
+  String _selectedActivityLevel = "Moderately Active";
 
   final List<String> _activityLevels = [
-    "Sedentar",
-    "Ușor Activ",
-    "Moderat Activ",
-    "Foarte Activ",
-    "Extrem de Activ",
+    "Sedentary",
+    "Lightly Active",
+    "Moderately Active",
+    "Very Active",
+    "Extremely Active",
   ];
 
   // Map DB values to Display values
   final Map<String, String> _dbToDisplay = {
-    'sedentar': 'Sedentar',
-    'usor_activ': 'Ușor Activ',
-    'moderat_activ': 'Moderat Activ',
-    'foarte_activ': 'Foarte Activ',
-    'extrem_activ': 'Extrem de Activ',
+    'sedentar': 'Sedentary',
+    'usor_activ': 'Lightly Active',
+    'moderat_activ': 'Moderately Active',
+    'foarte_activ': 'Very Active',
+    'extrem_activ': 'Extremely Active',
   };
 
   // Map Display values to DB values
   final Map<String, String> _displayToDb = {
-    'Sedentar': 'sedentar',
-    'Ușor Activ': 'usor_activ',
-    'Moderat Activ': 'moderat_activ',
-    'Foarte Activ': 'foarte_activ',
-    'Extrem de Activ': 'extrem_activ',
+    'Sedentary': 'sedentar',
+    'Lightly Active': 'usor_activ',
+    'Moderately Active': 'moderat_activ',
+    'Very Active': 'foarte_activ',
+    'Extremely Active': 'extrem_activ',
   };
 
   @override
@@ -84,7 +84,7 @@ class _PersonalInfoSectionWidgetState extends State<PersonalInfoSectionWidget> {
       text: widget.targetTimeframeWeeks?.toString() ?? '12',
     );
     // Convert DB value to Display value, default to "Moderat Activ" if not found
-    _selectedActivityLevel = _dbToDisplay[widget.activityLevel] ?? "Moderat Activ";
+    _selectedActivityLevel = _dbToDisplay[widget.activityLevel] ?? "Moderately Active";
   }
 
   @override
@@ -114,7 +114,7 @@ class _PersonalInfoSectionWidgetState extends State<PersonalInfoSectionWidget> {
       needsRebuild = true;
     }
     if (oldWidget.activityLevel != widget.activityLevel) {
-      _selectedActivityLevel = _dbToDisplay[widget.activityLevel] ?? "Moderat Activ";
+      _selectedActivityLevel = _dbToDisplay[widget.activityLevel] ?? "Moderately Active";
       needsRebuild = true;
     }
     
@@ -142,27 +142,27 @@ class _PersonalInfoSectionWidgetState extends State<PersonalInfoSectionWidget> {
     final targetTimeframe = int.tryParse(_targetTimeframeController.text) ?? 12;
 
     if (age < 18 || age > 100) {
-      _showValidationError('Vârsta trebuie să fie între 18 și 100 de ani');
+      _showValidationError('Age must be between 18 and 100');
       return;
     }
 
     if (weight < 40 || weight > 200) {
-      _showValidationError('Greutatea trebuie să fie între 40 și 200 kg');
+      _showValidationError('Weight must be between 40 and 200 kg');
       return;
     }
 
     if (targetWeight != null && (targetWeight < 40 || targetWeight > 200)) {
-      _showValidationError('Greutatea țintă trebuie să fie între 40 și 200 kg');
+      _showValidationError('Target weight must be between 40 and 200 kg');
       return;
     }
 
     if (targetTimeframe < 1 || targetTimeframe > 104) {
-      _showValidationError('Perioada trebuie să fie între 1 și 104 săptămâni');
+      _showValidationError('Period must be between 1 and 104 weeks');
       return;
     }
 
     if (height < 140 || height > 220) {
-      _showValidationError('Înălțimea trebuie să fie între 140 și 220 cm');
+      _showValidationError('Height must be between 140 and 220 cm');
       return;
     }
 
@@ -240,14 +240,14 @@ class _PersonalInfoSectionWidgetState extends State<PersonalInfoSectionWidget> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Informații Personale',
+                          'Personal Information',
                           style: theme.textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.w600,
                           ),
                         ),
                         SizedBox(height: 0.5.h),
                         Text(
-                          '${_ageController.text} ani • ${_weightController.text} kg • ${_heightController.text} cm',
+                          '${_ageController.text} y/o • ${_weightController.text} kg • ${_heightController.text} cm',
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: theme.colorScheme.onSurfaceVariant,
                           ),
@@ -279,8 +279,8 @@ class _PersonalInfoSectionWidgetState extends State<PersonalInfoSectionWidget> {
                           // Age Field
                           _buildTextField(
                             controller: _ageController,
-                            label: 'Vârstă',
-                            suffix: 'ani',
+                            label: 'Age',
+                            suffix: 'yrs',
                             keyboardType: TextInputType.number,
                             theme: theme,
                           ),
@@ -301,7 +301,7 @@ class _PersonalInfoSectionWidgetState extends State<PersonalInfoSectionWidget> {
                           // Height Field
                           _buildTextField(
                             controller: _heightController,
-                            label: 'Înălțime',
+                            label: 'Height',
                             suffix: 'cm',
                             keyboardType: TextInputType.number,
                             theme: theme,
@@ -311,7 +311,7 @@ class _PersonalInfoSectionWidgetState extends State<PersonalInfoSectionWidget> {
                           // Target Weight Field
                           _buildTextField(
                             controller: _targetWeightController,
-                            label: 'Greutate Țintă (opțional)',
+                            label: 'Target Weight (optional)',
                             suffix: 'kg',
                             keyboardType: const TextInputType.numberWithOptions(
                               decimal: true,
@@ -323,8 +323,8 @@ class _PersonalInfoSectionWidgetState extends State<PersonalInfoSectionWidget> {
                           // Target Timeframe Field
                           _buildTextField(
                             controller: _targetTimeframeController,
-                            label: 'Perioadă Obiectiv',
-                            suffix: 'săptămâni',
+                            label: 'Goal Period',
+                            suffix: 'weeks',
                             keyboardType: TextInputType.number,
                             theme: theme,
                           ),
@@ -339,7 +339,7 @@ class _PersonalInfoSectionWidgetState extends State<PersonalInfoSectionWidget> {
                             width: double.infinity,
                             child: ElevatedButton(
                               onPressed: _handleSave,
-                              child: Text('Salvează Modificările'),
+                              child: Text('Save Changes'),
                             ),
                           ),
                         ],
@@ -395,7 +395,7 @@ class _PersonalInfoSectionWidgetState extends State<PersonalInfoSectionWidget> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Nivel de Activitate',
+          'Activity Level',
           style: theme.textTheme.bodyMedium?.copyWith(
             fontWeight: FontWeight.w500,
             color: theme.colorScheme.onSurfaceVariant,

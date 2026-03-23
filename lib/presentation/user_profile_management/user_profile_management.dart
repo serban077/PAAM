@@ -76,7 +76,7 @@ class _UserProfileManagementState extends State<UserProfileManagement> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('🎉 Planul tău a fost actualizat cu noile preferințe!'),
+          content: Text('Your plan has been updated with new preferences!'),
           backgroundColor: Colors.green,
           duration: Duration(seconds: 3),
         ),
@@ -87,7 +87,7 @@ class _UserProfileManagementState extends State<UserProfileManagement> {
       
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Eroare la regenerarea planului: $e'),
+          content: Text('Error regenerating plan: $e'),
           backgroundColor: Colors.red,
         ),
       );
@@ -134,7 +134,7 @@ class _UserProfileManagementState extends State<UserProfileManagement> {
       if (mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text('Eroare la deconectare: $e')));
+        ).showSnackBar(SnackBar(content: Text('Error signing out: $e')));
       }
     }
   }
@@ -147,16 +147,16 @@ class _UserProfileManagementState extends State<UserProfileManagement> {
 
     if (_userProfile == null) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Profil')),
-        body: const Center(child: Text('Profil indisponibil')),
+        appBar: AppBar(title: const Text('Profile')),
+        body: const Center(child: Text('Profile unavailable')),
       );
     }
 
-    final fullName = _userProfile!['full_name'] ?? 'Utilizator';
+    final fullName = _userProfile!['full_name'] ?? 'User';
     final email = _userProfile!['email'] ?? '';
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Profilul meu'), centerTitle: true),
+      appBar: AppBar(title: const Text('My Profile'), centerTitle: true),
       body: SingleChildScrollView(
         padding: EdgeInsets.all(4.w),
         child: Column(
@@ -249,7 +249,7 @@ class _UserProfileManagementState extends State<UserProfileManagement> {
                   if (mounted) {
                      ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
-                        content: Text('Informațiile personale au fost salvate!'),
+                        content: Text('Personal information saved!'),
                         backgroundColor: Colors.green,
                       ),
                     );
@@ -257,7 +257,7 @@ class _UserProfileManagementState extends State<UserProfileManagement> {
                 } catch (e) {
                   if (mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Eroare: $e'), backgroundColor: Colors.red),
+                      SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
                     );
                   }
                 }
@@ -342,7 +342,7 @@ class _UserProfileManagementState extends State<UserProfileManagement> {
                   if (mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
-                        content: Text('Preferințele au fost salvate!'),
+                        content: Text('Preferences saved!'),
                         backgroundColor: Colors.green,
                       ),
                     );
@@ -355,7 +355,7 @@ class _UserProfileManagementState extends State<UserProfileManagement> {
                 } catch (e) {
                   if (mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Eroare: $e'), backgroundColor: Colors.red),
+                      SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
                     );
                   }
                 }
@@ -368,8 +368,7 @@ class _UserProfileManagementState extends State<UserProfileManagement> {
               progressUpdates: _userProfile!['progress_updates'] ?? true,
               motivationalMessages: _userProfile!['motivational_messages'] ?? true,
               onUpdate: (data) async {
-                // Încercăm să salvăm setările de notificări
-                // Dacă coloanele nu există în Supabase, va apărea eroarea exactă în consolă/SnackBar
+                // Save notification settings to Supabase
                 try {
                   final userId = SupabaseService.instance.client.auth.currentUser?.id;
                   if (userId == null) return;
@@ -390,19 +389,18 @@ class _UserProfileManagementState extends State<UserProfileManagement> {
                   if (mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
-                        content: Text('Setările de notificări au fost salvate!'),
+                        content: Text('Notification settings saved!'),
                         backgroundColor: Colors.green,
                       ),
                     );
                   }
                 } catch (e) {
-                  // Logăm eroarea completă în consolă pentru debugging
                   debugPrint('Supabase Error saving notifications: $e');
-                  
+
                   if (mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
-                        content: Text('Eroare Supabase: $e'), 
+                        content: Text('Supabase error: $e'),
                         backgroundColor: Colors.red,
                         duration: const Duration(seconds: 5),
                       ),
@@ -449,7 +447,7 @@ class _UserProfileManagementState extends State<UserProfileManagement> {
                   ),
                 ),
                 icon: const Icon(Icons.refresh),
-                label: const Text('Recalibrează Planul AI'),
+                label: const Text('Recalibrate AI Plan'),
               ),
             ),
             SizedBox(height: 2.h),

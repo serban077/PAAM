@@ -172,7 +172,7 @@ class _AuthenticationOnboardingFlowState
                 ),
                 SizedBox(height: 2.h),
                 Text(
-                  _isLogin ? 'Conectează-te' : 'Creează cont',
+                  _isLogin ? 'Sign In' : 'Create Account',
                   style: TextStyle(fontSize: 20.sp, fontWeight: FontWeight.w600),
                 ),
                 SizedBox(height: 4.h),
@@ -190,8 +190,8 @@ class _AuthenticationOnboardingFlowState
                   onPressed: () => setState(() => _isLogin = !_isLogin),
                   child: Text(
                     _isLogin
-                        ? 'Nu ai cont? Înregistrează-te'
-                        : 'Ai deja cont? Conectează-te',
+                        ? 'Don\'t have an account? Sign up'
+                        : 'Already have an account? Sign in',
                     style: TextStyle(fontSize: 14.sp),
                   ),
                 ),

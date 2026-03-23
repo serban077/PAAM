@@ -66,7 +66,7 @@ class _ProgressTrackingScreenState extends State<ProgressTrackingScreen> {
     final height = _userProfile?['height_cm']?.toDouble() ?? 0.0;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Urmărire Progres'), centerTitle: true),
+      appBar: AppBar(title: const Text('Progress Tracking'), centerTitle: true),
       body: SingleChildScrollView(
         padding: EdgeInsets.all(4.w),
         child: Column(
@@ -105,7 +105,7 @@ class _ProgressTrackingScreenState extends State<ProgressTrackingScreen> {
 
             // Photo progress
             Text(
-              'Progres foto',
+              'Photo progress',
               style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.bold),
             ),
             SizedBox(height: 1.h),
