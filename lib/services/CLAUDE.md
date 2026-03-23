@@ -42,9 +42,14 @@ Rules:
 | `onboarding_responses` | User fitness profile from onboarding survey (checked for completion at login) |
 | `workouts` | Saved workout sessions |
 | `workout_exercises` | Exercises within a workout session |
-| `nutrition_logs` | Daily food entries per user |
-| `body_measurements` | Weight, chest, waist, hips, arms — timestamped |
-| `user_profiles` | Extended user info beyond Supabase auth |
+| `user_meals` | Daily food entries per user; `meal_type` uses Romanian keys: `mic_dejun`, `pranz`, `cina`, `gustare_dimineata` |
+| `food_database` | Global food lookup — `name`, `calories`, `protein_g`, `carbs_g`, `fat_g`, `barcode`, `is_verified` |
+| `body_measurements` | Body measurements — `measurement_type` (head/neck/shoulders/chest/waist/hips/arm/forearm/thigh/calf), `value` cm, `measured_at` |
+| `user_profiles` | Extended user info beyond Supabase auth; notification flags, nutrition goals |
+| `strength_progress` | PR entries — `user_id`, `exercise_id`, `session_id`, `weight_kg`, `reps` |
+| `user_workout_schedules` | Links user to active plan (`plan_id`, `is_active`) |
+| `workout_sessions` | Sessions within a plan — `name`, `day_number`, `focus_area`, `estimated_duration_minutes` |
+| `session_exercises` | Exercises within a session — `sets`, `reps_min`, `reps_max`, `order_in_session` |
 
 Get current user ID: `SupabaseService.instance.client.auth.currentUser!.id`
 
@@ -52,7 +57,7 @@ Get current user ID: `SupabaseService.instance.client.auth.currentUser!.id`
 
 ## GeminiAIService
 
-File: `gemini_ai_service.dart` (918 lines) — read before any AI work.
+File: `gemini_ai_service.dart` — read before any AI work.
 
 Generates both workout and nutrition plans in a single call. Returns `AIPlanResponse`.
 
@@ -89,8 +94,25 @@ Pure calculation service — no API calls, no Supabase. TDEE formula:
 
 ## BodyMeasurementsService
 
-Reads/writes to `body_measurements` Supabase table. Most recently added service (M7).
+Reads/writes to `body_measurements` Supabase table.
 Always scope queries to `user_id` — never fetch all users' measurements.
+`getMeasurementHistory(type, limit)` delegates to `getMeasurements(measurementType: type, limit: limit)`.
+
+---
+
+## ThemeService
+
+File: `theme_service.dart` — static class, no instantiation needed.
+
+```dart
+await ThemeService.init();              // call once in main() before runApp
+ThemeService.themeNotifier             // ValueNotifier<ThemeMode> — listen in MaterialApp
+ThemeService.setDarkMode(true);        // persists to SharedPreferences
+ThemeService.isDark                    // bool getter
+```
+
+`main.dart` wraps `MaterialApp` in `ValueListenableBuilder<ThemeMode>(valueListenable: ThemeService.themeNotifier, ...)`.
+Profile screen uses its own `ValueListenableBuilder` for the toggle tile.
 
 ---
 
@@ -128,3 +150,4 @@ Both follow the same pattern: scope all queries by `user_id`, add `.timeout(15s)
 | `body_measurements_service.dart` | Body metrics CRUD |
 | `nutrition_service.dart` | Food log CRUD |
 | `workout_service.dart` | Workout session CRUD |
+| `theme_service.dart` | Dark/light mode toggle — `ValueNotifier<ThemeMode>` + SharedPreferences |

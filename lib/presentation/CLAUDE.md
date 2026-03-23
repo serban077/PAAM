@@ -87,7 +87,7 @@ Shell: `MainDashboard` uses a nested `Navigator` + `CustomBottomBar`.
 Tab order (index 0→4): `main-dashboard` / `exercise-library` / `nutrition-planning` / `progress-tracking` / `user-profile`
 
 - Tab labels must match this order exactly in `custom_bottom_bar.dart`
-- ⚠ Labels are currently in Romanian — M9 task replaces them with English
+- Labels are now English: Home / Workouts / Nutrition / Progress / Profile
 
 ---
 
@@ -151,3 +151,40 @@ fontSize: 14.sp // responsive font size
 | Strength Progress | `strength_progress/` | ✅ |
 | Workout Detail | `workout_detail_screen/` | ✅ |
 | User Profile | `user_profile_management/` | ✅ |
+| Barcode Scanner | `nutrition_planning_screen/widgets/barcode_scanner_page.dart` | ✅ |
+| Exercise Detail Sheet | `exercise_library/widgets/exercise_detail_sheet.dart` | ✅ |
+
+---
+
+## Patterns Added This Session
+
+**Bottom-sheet detail panel** (`ExerciseDetailSheet`):
+```dart
+showModalBottomSheet(
+  context: context,
+  isScrollControlled: true,
+  builder: (context) => ExerciseDetailSheet(exercise: data),
+);
+```
+Uses `DraggableScrollableSheet` inside. `YoutubePlayer` shown only when `videoId != null`.
+
+**Reactive theme toggle** (profile screen):
+```dart
+ValueListenableBuilder<ThemeMode>(
+  valueListenable: ThemeService.themeNotifier,
+  builder: (context, themeMode, child) => SwitchListTile(
+    value: themeMode == ThemeMode.dark,
+    onChanged: (isDark) => ThemeService.setDarkMode(isDark),
+    ...
+  ),
+)
+```
+Do NOT use `setState` to update the toggle — `ValueListenableBuilder` handles it.
+
+**Meal type keys** — Romanian internal keys are kept in DB; display names are English:
+| DB key | Display |
+|---|---|
+| `mic_dejun` | Breakfast |
+| `pranz` | Lunch |
+| `cina` | Dinner |
+| `gustare_dimineata` | Snack |
