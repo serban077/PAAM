@@ -13,7 +13,9 @@ class OnboardingSurveyScreen extends StatefulWidget {
 
 class _OnboardingSurveyScreenState extends State<OnboardingSurveyScreen> {
   final _authService = AuthService();
-  final _formKey = GlobalKey<FormState>();
+  final _formKeyStep1 = GlobalKey<FormState>();
+  final _formKeyStep2 = GlobalKey<FormState>();
+  final _formKeyStep3 = GlobalKey<FormState>();
   int _currentStep = 0;
   bool _isLoading = false;
 
@@ -35,8 +37,6 @@ class _OnboardingSurveyScreenState extends State<OnboardingSurveyScreen> {
   }
 
   Future<void> _submitOnboarding() async {
-    if (!_formKey.currentState!.validate()) return;
-
     setState(() => _isLoading = true);
 
     try {
@@ -46,7 +46,8 @@ class _OnboardingSurveyScreenState extends State<OnboardingSurveyScreen> {
           'gender': _gender,
           'height_cm': double.tryParse(_heightController.text),
           'weight_kg': double.tryParse(_weightController.text),
-          'target_weight_kg': double.tryParse(_targetWeightController.text),
+          'target_weight_kg':
+              double.tryParse(_targetWeightController.text),
           'fitness_goal': _fitnessGoal,
           'experience_level': _experienceLevel,
           'onboarding_completed': true,
@@ -68,6 +69,40 @@ class _OnboardingSurveyScreenState extends State<OnboardingSurveyScreen> {
     }
   }
 
+  void _onStepContinue() {
+    bool isValid = false;
+    switch (_currentStep) {
+      case 0:
+        if (_formKeyStep1.currentState!.validate()) {
+          if (_dateOfBirth != null) {
+            isValid = true;
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Vă rugăm selectați data nașterii.'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+        }
+        break;
+      case 1:
+        if (_formKeyStep2.currentState!.validate()) {
+          isValid = true;
+        }
+        break;
+      case 2:
+        if (_formKeyStep3.currentState!.validate()) {
+          _submitOnboarding();
+        }
+        break;
+    }
+
+    if (isValid) {
+      setState(() => _currentStep++);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -76,58 +111,51 @@ class _OnboardingSurveyScreenState extends State<OnboardingSurveyScreen> {
         automaticallyImplyLeading: false,
       ),
       body: SafeArea(
-        child: Form(
-          key: _formKey,
-          child: Stepper(
-            currentStep: _currentStep,
-            onStepContinue: () {
-              if (_currentStep < 2) {
-                setState(() => _currentStep++);
-              } else {
-                _submitOnboarding();
-              }
-            },
-            onStepCancel: () {
-              if (_currentStep > 0) {
-                setState(() => _currentStep--);
-              }
-            },
-            controlsBuilder: (context, details) {
-              return Padding(
-                padding: EdgeInsets.only(top: 2.h),
-                child: Row(
-                  children: [
-                    ElevatedButton(
-                      onPressed: _isLoading ? null : details.onStepContinue,
-                      child: _isLoading
-                          ? const SizedBox(
-                              height: 20,
-                              width: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : Text(
-                              _currentStep == 2 ? 'Finalizează' : 'Continuă',
-                            ),
+        child: Stepper(
+          currentStep: _currentStep,
+          onStepContinue: _onStepContinue,
+          onStepCancel: () {
+            if (_currentStep > 0) {
+              setState(() => _currentStep--);
+            }
+          },
+          controlsBuilder: (context, details) {
+            return Padding(
+              padding: EdgeInsets.only(top: 2.h),
+              child: Row(
+                children: [
+                  ElevatedButton(
+                    onPressed: _isLoading ? null : details.onStepContinue,
+                    child: _isLoading
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : Text(
+                            _currentStep == 2 ? 'Finalizează' : 'Continuă',
+                          ),
+                  ),
+                  if (_currentStep > 0) ...[
+                    SizedBox(width: 2.w),
+                    TextButton(
+                      onPressed: details.onStepCancel,
+                      child: const Text('Înapoi'),
                     ),
-                    if (_currentStep > 0) ...[
-                      SizedBox(width: 2.w),
-                      TextButton(
-                        onPressed: details.onStepCancel,
-                        child: const Text('Înapoi'),
-                      ),
-                    ],
                   ],
-                ),
-              );
-            },
-            steps: [
-              Step(
-                title: const Text('Informații Personale'),
-                isActive: _currentStep >= 0,
-                state: _currentStep > 0
-                    ? StepState.complete
-                    : StepState.indexed,
-                content: Column(
+                ],
+              ),
+            );
+          },
+          steps: [
+            Step(
+              title: const Text('Informații Personale'),
+              isActive: _currentStep >= 0,
+              state:
+                  _currentStep > 0 ? StepState.complete : StepState.indexed,
+              content: Form(
+                key: _formKeyStep1,
+                child: Column(
                   children: [
                     // Date of Birth
                     ListTile(
@@ -141,9 +169,8 @@ class _OnboardingSurveyScreenState extends State<OnboardingSurveyScreen> {
                       onTap: () async {
                         final date = await showDatePicker(
                           context: context,
-                          initialDate: DateTime.now().subtract(
-                            const Duration(days: 365 * 25),
-                          ),
+                          initialDate: DateTime.now()
+                              .subtract(const Duration(days: 365 * 25)),
                           firstDate: DateTime(1900),
                           lastDate: DateTime.now(),
                         );
@@ -161,7 +188,7 @@ class _OnboardingSurveyScreenState extends State<OnboardingSurveyScreen> {
                           borderRadius: BorderRadius.circular(12.0),
                         ),
                       ),
-                      initialValue: _gender,
+                      value: _gender,
                       items: const [
                         DropdownMenuItem(
                           value: 'male',
@@ -184,13 +211,15 @@ class _OnboardingSurveyScreenState extends State<OnboardingSurveyScreen> {
                   ],
                 ),
               ),
-              Step(
-                title: const Text('Măsurători Corporale'),
-                isActive: _currentStep >= 1,
-                state: _currentStep > 1
-                    ? StepState.complete
-                    : StepState.indexed,
-                content: Column(
+            ),
+            Step(
+              title: const Text('Măsurători Corporale'),
+              isActive: _currentStep >= 1,
+              state:
+                  _currentStep > 1 ? StepState.complete : StepState.indexed,
+              content: Form(
+                key: _formKeyStep2,
+                child: Column(
                   children: [
                     TextFormField(
                       controller: _heightController,
@@ -243,14 +272,26 @@ class _OnboardingSurveyScreenState extends State<OnboardingSurveyScreen> {
                           borderRadius: BorderRadius.circular(12.0),
                         ),
                       ),
+                      validator: (value) {
+                        if (value != null && value.isNotEmpty) {
+                          final weight = double.tryParse(value);
+                          if (weight == null || weight < 30 || weight > 300) {
+                            return 'Greutate țintă invalidă';
+                          }
+                        }
+                        return null;
+                      },
                     ),
                   ],
                 ),
               ),
-              Step(
-                title: const Text('Obiective Fitness'),
-                isActive: _currentStep >= 2,
-                content: Column(
+            ),
+            Step(
+              title: const Text('Obiective Fitness'),
+              isActive: _currentStep >= 2,
+              content: Form(
+                key: _formKeyStep3,
+                child: Column(
                   children: [
                     DropdownButtonFormField<String>(
                       decoration: InputDecoration(
@@ -259,7 +300,7 @@ class _OnboardingSurveyScreenState extends State<OnboardingSurveyScreen> {
                           borderRadius: BorderRadius.circular(12.0),
                         ),
                       ),
-                      initialValue: _fitnessGoal,
+                      value: _fitnessGoal,
                       items: const [
                         DropdownMenuItem(
                           value: 'weight_loss',
@@ -295,7 +336,7 @@ class _OnboardingSurveyScreenState extends State<OnboardingSurveyScreen> {
                           borderRadius: BorderRadius.circular(12.0),
                         ),
                       ),
-                      initialValue: _experienceLevel,
+                      value: _experienceLevel,
                       items: const [
                         DropdownMenuItem(
                           value: 'beginner',
@@ -318,8 +359,8 @@ class _OnboardingSurveyScreenState extends State<OnboardingSurveyScreen> {
                   ],
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

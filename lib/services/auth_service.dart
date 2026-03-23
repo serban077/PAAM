@@ -15,7 +15,7 @@ class AuthService {
         email: email,
         password: password,
         data: {'full_name': fullName},
-      );
+      ).timeout(const Duration(seconds: 15));
       return response;
     } catch (error) {
       throw Exception('Sign-up failed: $error');
@@ -31,7 +31,7 @@ class AuthService {
       final response = await _client.auth.signInWithPassword(
         email: email,
         password: password,
-      );
+      ).timeout(const Duration(seconds: 15));
       return response;
     } catch (error) {
       throw Exception('Sign-in failed: $error');
@@ -41,7 +41,7 @@ class AuthService {
   // Sign Out
   Future<void> signOut() async {
     try {
-      await _client.auth.signOut();
+      await _client.auth.signOut().timeout(const Duration(seconds: 10));
     } catch (error) {
       throw Exception('Sign-out failed: $error');
     }
@@ -90,7 +90,8 @@ class AuthService {
           .from('user_profiles')
           .select()
           .eq('id', userId)
-          .single();
+          .maybeSingle()
+          .timeout(const Duration(seconds: 10));
 
       return response;
     } catch (error) {
