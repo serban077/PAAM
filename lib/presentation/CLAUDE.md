@@ -188,3 +188,29 @@ Do NOT use `setState` to update the toggle — `ValueListenableBuilder` handles 
 | `pranz` | Lunch |
 | `cina` | Dinner |
 | `gustare_dimineata` | Snack |
+
+---
+
+## Localization — M9 Complete (2026-03-25)
+
+All user-visible Romanian strings have been translated to English across all 50 presentation files.
+
+### Intentionally remaining Romanian (do NOT translate):
+- `lib/services/gemini_ai_service.dart` — AI prompt text instructs Gemini to generate Romanian content (meal plans, coaching tips). Changing these would break AI output.
+- `ai_meal_plan_section.dart` mealTypeMap keys (`'Prânz'`, `'Cină'`, etc.) — matched against Gemini-generated meal names which come back in Romanian per the prompt.
+- `exercise_detail_sheet.dart` switch cases `'începător'`/`'intermediar'`/`'avansat'` — backward-compat fallbacks alongside the English cases.
+
+### Critical sync: exercise data ↔ filter chips
+`verified_exercises_data.dart` `bodyPart` values **must** match `filter_bottom_sheet_widget.dart` filter chip strings exactly (uses `.contains()` for filtering). Both are now English:
+`Chest / Back / Legs / Shoulders / Arms / Abs / Cardio`
+
+### Shimmer skeletons (M9)
+Use `shimmer` package for data loads >300ms. Pattern:
+```dart
+Shimmer.fromColors(
+  baseColor: Colors.grey.shade300,
+  highlightColor: Colors.grey.shade100,
+  child: _buildSkeletonCard(),
+)
+```
+Shimmer is shown while `_isLoading == true`; replaced with real content on data arrival.

@@ -12,9 +12,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Current Status
 
-**Last updated:** 2026-03-24
+**Last updated:** 2026-03-25
 **Last session:** M9 complete — shimmer skeletons (StrengthProgress, ProgressTracking, Dashboard, Nutrition), pull-to-refresh on all data screens, haptic feedback on primary actions, empty states audit, tap target fixes, overflow fixes on 375px, branded splash screen, flutter analyze clean (0 warnings), full Romanian→English UI localization across 50 files (exercise data, filter chips, all widgets/screens)
-**Next session starts with:** M10 or final polish — check TASKS.md for remaining milestones
+**Next session starts with:** M10 — Workout Session Live Tracking (set-by-set logging with rest timer)
 **Active branches:** main
 **Blockers:** `pubspec.lock` is gitignored — run `flutter pub get` at every session start. PAAM/ folder not yet committed (check if needed).
 

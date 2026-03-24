@@ -5,6 +5,16 @@ Update `## Current Status` in `CLAUDE.md` at the end of every session.
 
 ---
 
+## Current Status
+
+**Last updated:** 2026-03-25
+**Last session completed:** M9 — Full Romanian→English UI localization (50 files), shimmer skeletons, pull-to-refresh, haptic feedback, empty states, tap target fixes, overflow fixes, splash screen, flutter analyze clean
+**Next session starts with:** M10 — Workout Session Live Tracking (set-by-set logging with rest timer)
+**Active branches:** main
+**Blockers / notes:** `pubspec.lock` gitignored — run `flutter pub get` at session start. PAAM/ folder untracked (check if needed for university submission).
+
+---
+
 ## Legend
 
 - `[x]` — Done

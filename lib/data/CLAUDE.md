@@ -57,6 +57,15 @@ Static list of exercises used by `ExerciseLibrary`. Each entry is a `Map<String,
 
 This is the **source of truth** for exercise names. When Gemini generates exercise names, they should match entries in this list for video/image linking to work.
 
+**IMPORTANT — `bodyPart` values must stay English (M9 change):**
+The `bodyPart` field uses exact `.contains()` matching in the exercise library filter. Values must match the filter chip strings in `filter_bottom_sheet_widget.dart`:
+`Chest | Back | Legs | Shoulders | Arms | Abs | Cardio`
+
+**IMPORTANT — `difficulty` values must stay English (M9 change):**
+Switch cases in `exercise_card_widget.dart` and `exercise_detail_sheet.dart` match on:
+`'Beginner' | 'Intermediate' | 'Advanced'`
+Do NOT use Romanian values (`Începător`, `Intermediar`, `Avansat`) in this file.
+
 ---
 
 ## AIPlanService (`data/services/ai_plan_service.dart`)
