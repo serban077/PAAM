@@ -13,8 +13,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Current Status
 
 **Last updated:** 2026-03-24
-**Last session:** M1–M8 sub-tasks — All incomplete sub-tasks implemented: retry logic (GeminiClient), shimmer skeletons (AI generators), real nutrition data wiring (NutritionSummaryWidget), YouTube player on exercise detail sheet, meal eaten toggle (SimpleMealCard), barcode scanner (MobileScanner + BarcodeScannerPage), measurements fl_chart LineChart with ChoiceChip selector, before/after photo strings translated, PR badges with trophy icon (ExerciseDetailsScreen), dark mode toggle with SharedPreferences (ThemeService)
-**Next session starts with:** M9 remaining polish — empty states for all screens, pull-to-refresh where missing, shimmer skeletons for data loads >300ms, layout overflow review on 375px width
+**Last session:** M9 complete — shimmer skeletons (StrengthProgress, ProgressTracking, Dashboard, Nutrition), pull-to-refresh on all data screens, haptic feedback on primary actions, empty states audit, tap target fixes, overflow fixes on 375px, branded splash screen, flutter analyze clean (0 warnings), full Romanian→English UI localization across 50 files (exercise data, filter chips, all widgets/screens)
+**Next session starts with:** M10 or final polish — check TASKS.md for remaining milestones
 **Active branches:** main
 **Blockers:** `pubspec.lock` is gitignored — run `flutter pub get` at every session start. PAAM/ folder not yet committed (check if needed).
 

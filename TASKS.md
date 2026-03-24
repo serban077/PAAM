@@ -128,13 +128,13 @@ Update `## Current Status` in `CLAUDE.md` at the end of every session.
   - [x] `UserProfileManagement` widgets, `AccountManagementSectionWidget`
   - [x] `AIWorkoutGenerator`, `AINutritionPlanner`, `ExerciseLibrary`, `StrengthProgressScreen`
   - [x] `PhotoProgressWidget`, `SimpleMealCard`, `AIMealPlanSection`, `FoodSearchDialog`
-- [ ] Add empty states for all screens that load data (no workouts yet, no meals yet, etc.)
-- [ ] Add pull-to-refresh on all list screens
-- [ ] Add proper loading shimmer skeletons (replace all `CircularProgressIndicator` for data loads >300ms)
-- [ ] Ensure all tap targets are at minimum 44×44pt
-- [ ] Review and fix any remaining layout overflow issues on small screens (375px width)
-- [ ] Add haptic feedback (`HapticFeedback.lightImpact()`) to primary actions (already on bottom nav)
-- [ ] Implement app splash screen / icon assets in `assets/`
+- [x] Add empty states for all screens that load data (no workouts yet, no meals yet, etc.)
+- [x] Add pull-to-refresh on all list screens
+- [x] Add proper loading shimmer skeletons (replace all `CircularProgressIndicator` for data loads >300ms)
+- [x] Ensure all tap targets are at minimum 44×44pt
+- [x] Review and fix any remaining layout overflow issues on small screens (375px width)
+- [x] Add haptic feedback (`HapticFeedback.lightImpact()`) to primary actions (already on bottom nav)
+- [x] Implement app splash screen / icon assets in `assets/`
 
 ---
 
@@ -212,3 +212,4 @@ Update `## Current Status` in `CLAUDE.md` at the end of every session.
 | 2026-03-23 | M7 — Body measurements | BodyMeasurementsService, measurements UI, pending commits | Commit pending changes → M9 UI Polish |
 | 2026-03-24 | Docs setup | CLAUDE.md hierarchy, TASKS.md, SESSION_WORKFLOW.md, docs/ reference files | M9 — Romanian → English UI strings |
 | 2026-03-24 | M1–M8 sub-tasks | Retry logic, shimmer skeletons, real nutrition data, YouTube player, meal eaten toggle, barcode scan, measurements LineChart, PR badges, dark mode toggle | M9 remaining polish tasks |
+| 2026-03-24 | M9 complete | Shimmer skeletons, pull-to-refresh, haptic feedback, empty states, tap targets, overflow fixes, splash screen, flutter analyze clean, full Romanian→English localization (50 files) | M10 — Workout Session Live Tracking |
