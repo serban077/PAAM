@@ -21,7 +21,6 @@ class VideoPlayerModal extends StatefulWidget {
 class _VideoPlayerModalState extends State<VideoPlayerModal> {
   late YoutubePlayerController _controller;
   bool _hasError = false;
-  String _errorMessage = '';
 
 
   @override
@@ -67,7 +66,7 @@ class _VideoPlayerModalState extends State<VideoPlayerModal> {
     } else {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Nu se poate deschide YouTube')),
+          const SnackBar(content: Text('Cannot open YouTube')),
         );
       }
     }
@@ -163,7 +162,7 @@ class _VideoPlayerModalState extends State<VideoPlayerModal> {
                               SizedBox(width: 2.w),
                               Expanded(
                                 child: Text(
-                                  'Acest videoclip nu poate fi redat în aplicație',
+                                  'This video cannot be played in the app',
                                   style: GoogleFonts.inter(
                                     fontSize: 14.sp,
                                     fontWeight: FontWeight.w600,
@@ -175,7 +174,7 @@ class _VideoPlayerModalState extends State<VideoPlayerModal> {
                           ),
                           SizedBox(height: 1.h),
                           Text(
-                            'Proprietarul videoclipului a restricționat redarea în aplicații externe.',
+                            'The video owner has restricted playback in external apps.',
                             style: GoogleFonts.inter(
                               fontSize: 12.sp,
                               color: Colors.grey[700],
@@ -186,7 +185,7 @@ class _VideoPlayerModalState extends State<VideoPlayerModal> {
                             onPressed: _openInYouTube,
                             icon: const Icon(Icons.open_in_new),
                             label: Text(
-                              'Deschide în YouTube',
+                              'Open in YouTube',
                               style: GoogleFonts.inter(fontWeight: FontWeight.w600),
                             ),
                             style: ElevatedButton.styleFrom(

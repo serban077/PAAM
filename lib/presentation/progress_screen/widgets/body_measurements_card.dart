@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:sizer/sizer.dart';
 
 import '../../../services/body_measurements_service.dart';
-import '../../../services/supabase_service.dart';
 import 'package:intl/intl.dart';
 
 /// Body Measurements Card with 3D interactive model
@@ -21,16 +20,16 @@ class _BodyMeasurementsCardState extends State<BodyMeasurementsCard> {
 
   // Measurement types with Romanian labels
   final Map<String, String> _measurementLabels = {
-    'head': 'Circumferință Cap',
-    'neck': 'Circumferință Gât',
-    'shoulders': 'Lățime Umeri',
-    'chest': 'Circumferință Piept',
-    'waist': 'Circumferință Talie',
-    'hips': 'Circumferință Șolduri',
-    'arm': 'Circumferință Braț',
-    'forearm': 'Circumferință Antebraț',
-    'thigh': 'Circumferință Coapsă',
-    'calf': 'Circumferință Gambă',
+    'head': 'Head Circumference',
+    'neck': 'Neck Circumference',
+    'shoulders': 'Shoulder Width',
+    'chest': 'Chest Circumference',
+    'waist': 'Waist Circumference',
+    'hips': 'Hip Circumference',
+    'arm': 'Arm Circumference',
+    'forearm': 'Forearm Circumference',
+    'thigh': 'Thigh Circumference',
+    'calf': 'Calf Circumference',
   };
 
   @override
@@ -51,7 +50,7 @@ class _BodyMeasurementsCardState extends State<BodyMeasurementsCard> {
       setState(() => _isLoading = false);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Eroare la încărcarea măsurătorilor: $e')),
+          SnackBar(content: Text('Error loading measurements: $e')),
         );
       }
     }
@@ -85,7 +84,7 @@ class _BodyMeasurementsCardState extends State<BodyMeasurementsCard> {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(
-            'Măsurători Corporale',
+            'Body Measurements',
             style: theme.textTheme.titleLarge?.copyWith(
               fontWeight: FontWeight.bold,
             ),
@@ -93,7 +92,7 @@ class _BodyMeasurementsCardState extends State<BodyMeasurementsCard> {
           IconButton(
             icon: Icon(Icons.add_circle, color: theme.colorScheme.primary),
             onPressed: () => _showAddMeasurementDialog(),
-            tooltip: 'Adaugă măsurătoare',
+            tooltip: 'Add measurement',
           ),
         ],
       ),
@@ -129,7 +128,7 @@ class _BodyMeasurementsCardState extends State<BodyMeasurementsCard> {
                 ),
                 SizedBox(height: 2.h),
                 Text(
-                  'Model 3D Corp',
+                  '3D Body Model',
                   style: theme.textTheme.bodyLarge?.copyWith(
                     color: theme.colorScheme.onSurfaceVariant,
                   ),
@@ -206,7 +205,7 @@ class _BodyMeasurementsCardState extends State<BodyMeasurementsCard> {
         Padding(
           padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 2.h),
           child: Text(
-            'Măsurători Recente',
+            'Recent Measurements',
             style: theme.textTheme.titleMedium?.copyWith(
               fontWeight: FontWeight.bold,
             ),
@@ -256,14 +255,14 @@ class _BodyMeasurementsCardState extends State<BodyMeasurementsCard> {
             ),
             SizedBox(height: 1.h),
             Text(
-              'Nicio măsurătoare adăugată încă',
+              'No measurements added yet',
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),
             ),
             SizedBox(height: 0.5.h),
             Text(
-              'Apasă pe butoanele + pentru a adăuga',
+              'Tap the + buttons to add',
               style: theme.textTheme.bodySmall?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant.withOpacity(0.7),
               ),
@@ -291,7 +290,7 @@ class _BodyMeasurementsCardState extends State<BodyMeasurementsCard> {
             if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
-                  content: Text('Măsurătoare salvată cu succes!'),
+                  content: Text('Measurement saved successfully!'),
                   backgroundColor: Colors.green,
                 ),
               );
@@ -300,7 +299,7 @@ class _BodyMeasurementsCardState extends State<BodyMeasurementsCard> {
             if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text('Eroare: $e'),
+                  content: Text('Error: $e'),
                   backgroundColor: Colors.red,
                 ),
               );
@@ -350,7 +349,7 @@ class _AddMeasurementDialogState extends State<AddMeasurementDialog> {
     final theme = Theme.of(context);
 
     return AlertDialog(
-      title: Text('Adaugă Măsurătoare'),
+      title: Text('Add Measurement'),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -358,7 +357,7 @@ class _AddMeasurementDialogState extends State<AddMeasurementDialog> {
             DropdownButtonFormField<String>(
               value: _selectedType,
               decoration: InputDecoration(
-                labelText: 'Tip Măsurătoare',
+                labelText: 'Measurement Type',
                 border: OutlineInputBorder(),
               ),
               items: widget.measurementLabels.entries.map((e) {
@@ -394,7 +393,7 @@ class _AddMeasurementDialogState extends State<AddMeasurementDialog> {
             controller: _valueController,
             keyboardType: TextInputType.numberWithOptions(decimal: true),
             decoration: InputDecoration(
-              labelText: 'Valoare',
+              labelText: 'Value',
               suffixText: 'cm',
               border: OutlineInputBorder(),
               hintText: 'Ex: 75.5',
@@ -406,7 +405,7 @@ class _AddMeasurementDialogState extends State<AddMeasurementDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: Text('Anulează'),
+          child: Text('Cancel'),
         ),
         ElevatedButton(
           onPressed: () {
@@ -417,13 +416,13 @@ class _AddMeasurementDialogState extends State<AddMeasurementDialog> {
             } else {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text('Introduceți o valoare validă'),
+                  content: Text('Enter a valid value'),
                   backgroundColor: Colors.red,
                 ),
               );
             }
           },
-          child: Text('Salvează'),
+          child: Text('Save'),
         ),
       ],
     );

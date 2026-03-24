@@ -78,7 +78,7 @@ class TodayWorkoutCardWidget extends StatelessWidget {
                     ),
                     SizedBox(width: 1.w),
                     Text(
-                      '${workout["exercises"]} exerciții',
+                      '${workout["exercises"]} exercises',
                       style: theme.textTheme.bodyMedium?.copyWith(
                         color: theme.colorScheme.onSurfaceVariant,
                       ),
@@ -108,7 +108,7 @@ class TodayWorkoutCardWidget extends StatelessWidget {
                         ),
                         SizedBox(width: 2.w),
                         Text(
-                          'Începe Antrenamentul',
+                          'Start Workout',
                           style: theme.textTheme.titleMedium?.copyWith(
                             color: theme.colorScheme.onPrimary,
                           ),

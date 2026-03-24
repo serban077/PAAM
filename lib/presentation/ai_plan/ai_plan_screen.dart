@@ -50,7 +50,7 @@ class _AIPlanScreenState extends State<AIPlanScreen>
       // Obține utilizatorul curent din Supabase
       final user = SupabaseService.instance.client.auth.currentUser;
       if (user == null) {
-        throw Exception('Nu ești autentificat. Te rugăm să te loghezi.');
+        throw Exception('Not authenticated. Please sign in.');
       }
       
       final planData = await _geminiService.generateCompletePlan(user.id);
@@ -117,10 +117,10 @@ class _AIPlanScreenState extends State<AIPlanScreen>
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Frecvență schimbată'),
+        title: const Text('Frequency changed'),
         content: Text(
-          'Ai schimbat frecvența antrenamentelor de la $_currentFrequency zile/săptămână la $newFrequency zile/săptămână.\n\n'
-          'Vrei să regenerezi planul de antrenament pentru a se potrivi noii frecvențe?'
+          'You changed your training frequency from $_currentFrequency to $newFrequency days/week.\n\n'
+          'Would you like to regenerate your workout plan to match the new frequency?'
         ),
         actions: [
           TextButton(
@@ -130,14 +130,14 @@ class _AIPlanScreenState extends State<AIPlanScreen>
               });
               Navigator.pop(context);
             },
-            child: const Text('Nu acum'),
+            child: const Text('Not now'),
           ),
           ElevatedButton(
             onPressed: () {
               Navigator.pop(context);
               _regeneratePlan();
             },
-            child: const Text('Da, regenerează'),
+            child: const Text('Yes, regenerate'),
           ),
         ],
       ),
@@ -150,7 +150,7 @@ class _AIPlanScreenState extends State<AIPlanScreen>
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Planul a fost regenerat cu succes!'),
+          content: Text('Plan regenerated successfully!'),
           backgroundColor: Colors.green,
         ),
       );
@@ -170,27 +170,27 @@ class _AIPlanScreenState extends State<AIPlanScreen>
           if (!_isLoading)
             IconButton(
               icon: const Icon(Icons.refresh),
-              tooltip: 'Regenerează planul',
+              tooltip: 'Regenerate plan',
               onPressed: () {
                 showDialog(
                   context: context,
                   builder: (context) => AlertDialog(
-                    title: const Text('Regenerează planul'),
+                    title: const Text('Regenerate plan'),
                     content: const Text(
-                      'Vrei să regenerezi planul de antrenament și nutriție? '
-                      'Acest lucru va crea un plan nou bazat pe profilul tău actual.'
+                      'Would you like to regenerate your workout and nutrition plan? '
+                      'This will create a new plan based on your current profile.'
                     ),
                     actions: [
                       TextButton(
                         onPressed: () => Navigator.pop(context),
-                        child: const Text('Anulează'),
+                        child: const Text('Cancel'),
                       ),
                       ElevatedButton(
                         onPressed: () {
                           Navigator.pop(context);
                           _regeneratePlan();
                         },
-                        child: const Text('Regenerează'),
+                        child: const Text('Regenerate'),
                       ),
                     ],
                   ),

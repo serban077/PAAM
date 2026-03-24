@@ -54,7 +54,7 @@ class _AddFoodModalWidgetState extends State<AddFoodModalWidget> {
       if (mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text('Eroare la căutare: $e')));
+        ).showSnackBar(SnackBar(content: Text('Search error: $e')));
       }
     }
   }
@@ -65,7 +65,7 @@ class _AddFoodModalWidgetState extends State<AddFoodModalWidget> {
     final servingQuantity = double.tryParse(_servingController.text);
     if (servingQuantity == null || servingQuantity <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Introduceți o cantitate validă')),
+        const SnackBar(content: Text('Please enter a valid quantity')),
       );
       return;
     }
@@ -84,7 +84,7 @@ class _AddFoodModalWidgetState extends State<AddFoodModalWidget> {
       if (mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text('Eroare la adăugare: $e')));
+        ).showSnackBar(SnackBar(content: Text('Error adding food: $e')));
       }
     }
   }
@@ -150,7 +150,7 @@ class _AddFoodModalWidgetState extends State<AddFoodModalWidget> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'Adaugă Aliment',
+                  'Add Food',
                   style: TextStyle(
                     fontSize: 18.sp,
                     fontWeight: FontWeight.bold,
@@ -170,7 +170,7 @@ class _AddFoodModalWidgetState extends State<AddFoodModalWidget> {
             child: TextField(
               controller: _searchController,
               decoration: InputDecoration(
-                hintText: 'Caută alimente...',
+                hintText: 'Search foods...',
                 prefixIcon: const Icon(Icons.search),
                 suffixIcon: _isSearching
                     ? Padding(
@@ -197,7 +197,7 @@ class _AddFoodModalWidgetState extends State<AddFoodModalWidget> {
                       controller: _servingController,
                       keyboardType: TextInputType.number,
                       decoration: InputDecoration(
-                        labelText: 'Cantitate',
+                        labelText: 'Quantity',
                         suffix: Text(
                           'x ${_selectedFood!['serving_size']}${_selectedFood!['serving_unit']}',
                           style: TextStyle(fontSize: 12.sp),
@@ -218,7 +218,7 @@ class _AddFoodModalWidgetState extends State<AddFoodModalWidget> {
                               color: Colors.white,
                             ),
                           )
-                        : const Text('Adaugă'),
+                        : const Text('Add'),
                   ),
                 ],
               ),
@@ -232,8 +232,8 @@ class _AddFoodModalWidgetState extends State<AddFoodModalWidget> {
                 ? Center(
                     child: Text(
                       _searchController.text.length < 2
-                          ? 'Începeți să căutați alimente'
-                          : 'Nu s-au găsit rezultate',
+                          ? 'Start searching for foods'
+                          : 'No results found',
                       style: TextStyle(
                         fontSize: 14.sp,
                         color: Colors.grey.shade600,

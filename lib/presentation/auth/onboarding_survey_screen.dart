@@ -79,7 +79,7 @@ class _OnboardingSurveyScreenState extends State<OnboardingSurveyScreen> {
           } else {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
-                content: Text('Vă rugăm selectați data nașterii.'),
+                content: Text('Please select your date of birth.'),
                 backgroundColor: Colors.red,
               ),
             );
@@ -107,7 +107,7 @@ class _OnboardingSurveyScreenState extends State<OnboardingSurveyScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Configurare Profil'),
+        title: const Text('Profile Setup'),
         automaticallyImplyLeading: false,
       ),
       body: SafeArea(
@@ -133,14 +133,14 @@ class _OnboardingSurveyScreenState extends State<OnboardingSurveyScreen> {
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
                         : Text(
-                            _currentStep == 2 ? 'Finalizează' : 'Continuă',
+                            _currentStep == 2 ? 'Finish' : 'Continue',
                           ),
                   ),
                   if (_currentStep > 0) ...[
                     SizedBox(width: 2.w),
                     TextButton(
                       onPressed: details.onStepCancel,
-                      child: const Text('Înapoi'),
+                      child: const Text('Back'),
                     ),
                   ],
                 ],
@@ -149,7 +149,7 @@ class _OnboardingSurveyScreenState extends State<OnboardingSurveyScreen> {
           },
           steps: [
             Step(
-              title: const Text('Informații Personale'),
+              title: const Text('Personal Info'),
               isActive: _currentStep >= 0,
               state:
                   _currentStep > 0 ? StepState.complete : StepState.indexed,
@@ -159,11 +159,11 @@ class _OnboardingSurveyScreenState extends State<OnboardingSurveyScreen> {
                   children: [
                     // Date of Birth
                     ListTile(
-                      title: const Text('Data Nașterii'),
+                      title: const Text('Date of Birth'),
                       subtitle: Text(
                         _dateOfBirth != null
                             ? '${_dateOfBirth!.day}/${_dateOfBirth!.month}/${_dateOfBirth!.year}'
-                            : 'Selectează data',
+                            : 'Select date',
                       ),
                       trailing: const Icon(Icons.calendar_today),
                       onTap: () async {
@@ -183,7 +183,7 @@ class _OnboardingSurveyScreenState extends State<OnboardingSurveyScreen> {
                     // Gender
                     DropdownButtonFormField<String>(
                       decoration: InputDecoration(
-                        labelText: 'Gen',
+                        labelText: 'Gender',
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12.0),
                         ),
@@ -192,28 +192,28 @@ class _OnboardingSurveyScreenState extends State<OnboardingSurveyScreen> {
                       items: const [
                         DropdownMenuItem(
                           value: 'male',
-                          child: Text('Masculin'),
+                          child: Text('Male'),
                         ),
                         DropdownMenuItem(
                           value: 'female',
-                          child: Text('Feminin'),
+                          child: Text('Female'),
                         ),
-                        DropdownMenuItem(value: 'other', child: Text('Altul')),
+                        DropdownMenuItem(value: 'other', child: Text('Other')),
                         DropdownMenuItem(
                           value: 'prefer_not_to_say',
-                          child: Text('Prefer să nu spun'),
+                          child: Text('Prefer not to say'),
                         ),
                       ],
                       onChanged: (value) => setState(() => _gender = value),
                       validator: (value) =>
-                          value == null ? 'Selectează genul' : null,
+                          value == null ? 'Select gender' : null,
                     ),
                   ],
                 ),
               ),
             ),
             Step(
-              title: const Text('Măsurători Corporale'),
+              title: const Text('Body Measurements'),
               isActive: _currentStep >= 1,
               state:
                   _currentStep > 1 ? StepState.complete : StepState.indexed,
@@ -225,18 +225,18 @@ class _OnboardingSurveyScreenState extends State<OnboardingSurveyScreen> {
                       controller: _heightController,
                       keyboardType: TextInputType.number,
                       decoration: InputDecoration(
-                        labelText: 'Înălțime (cm)',
+                        labelText: 'Height (cm)',
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12.0),
                         ),
                       ),
                       validator: (value) {
                         if (value == null || value.isEmpty) {
-                          return 'Introdu înălțimea';
+                          return 'Enter your height';
                         }
                         final height = double.tryParse(value);
                         if (height == null || height < 100 || height > 250) {
-                          return 'Înălțime invalidă';
+                          return 'Invalid height';
                         }
                         return null;
                       },
@@ -246,18 +246,18 @@ class _OnboardingSurveyScreenState extends State<OnboardingSurveyScreen> {
                       controller: _weightController,
                       keyboardType: TextInputType.number,
                       decoration: InputDecoration(
-                        labelText: 'Greutate Actuală (kg)',
+                        labelText: 'Current Weight (kg)',
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12.0),
                         ),
                       ),
                       validator: (value) {
                         if (value == null || value.isEmpty) {
-                          return 'Introdu greutatea';
+                          return 'Enter your weight';
                         }
                         final weight = double.tryParse(value);
                         if (weight == null || weight < 30 || weight > 300) {
-                          return 'Greutate invalidă';
+                          return 'Invalid weight';
                         }
                         return null;
                       },
@@ -267,7 +267,7 @@ class _OnboardingSurveyScreenState extends State<OnboardingSurveyScreen> {
                       controller: _targetWeightController,
                       keyboardType: TextInputType.number,
                       decoration: InputDecoration(
-                        labelText: 'Greutate Țintă (kg)',
+                        labelText: 'Target Weight (kg)',
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12.0),
                         ),
@@ -276,7 +276,7 @@ class _OnboardingSurveyScreenState extends State<OnboardingSurveyScreen> {
                         if (value != null && value.isNotEmpty) {
                           final weight = double.tryParse(value);
                           if (weight == null || weight < 30 || weight > 300) {
-                            return 'Greutate țintă invalidă';
+                            return 'Invalid target weight';
                           }
                         }
                         return null;
@@ -287,7 +287,7 @@ class _OnboardingSurveyScreenState extends State<OnboardingSurveyScreen> {
               ),
             ),
             Step(
-              title: const Text('Obiective Fitness'),
+              title: const Text('Fitness Goals'),
               isActive: _currentStep >= 2,
               content: Form(
                 key: _formKeyStep3,
@@ -295,7 +295,7 @@ class _OnboardingSurveyScreenState extends State<OnboardingSurveyScreen> {
                   children: [
                     DropdownButtonFormField<String>(
                       decoration: InputDecoration(
-                        labelText: 'Obiectiv Fitness',
+                        labelText: 'Fitness Goal',
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12.0),
                         ),
@@ -304,34 +304,34 @@ class _OnboardingSurveyScreenState extends State<OnboardingSurveyScreen> {
                       items: const [
                         DropdownMenuItem(
                           value: 'weight_loss',
-                          child: Text('Pierdere în Greutate'),
+                          child: Text('Weight Loss'),
                         ),
                         DropdownMenuItem(
                           value: 'muscle_gain',
-                          child: Text('Creștere Musculară'),
+                          child: Text('Muscle Gain'),
                         ),
                         DropdownMenuItem(
                           value: 'endurance',
-                          child: Text('Rezistență'),
+                          child: Text('Endurance'),
                         ),
                         DropdownMenuItem(
                           value: 'flexibility',
-                          child: Text('Flexibilitate'),
+                          child: Text('Flexibility'),
                         ),
                         DropdownMenuItem(
                           value: 'general_fitness',
-                          child: Text('Fitness General'),
+                          child: Text('General Fitness'),
                         ),
                       ],
                       onChanged: (value) =>
                           setState(() => _fitnessGoal = value),
                       validator: (value) =>
-                          value == null ? 'Selectează obiectivul' : null,
+                          value == null ? 'Select a goal' : null,
                     ),
                     SizedBox(height: 2.h),
                     DropdownButtonFormField<String>(
                       decoration: InputDecoration(
-                        labelText: 'Nivel Experiență',
+                        labelText: 'Experience Level',
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12.0),
                         ),
@@ -340,21 +340,21 @@ class _OnboardingSurveyScreenState extends State<OnboardingSurveyScreen> {
                       items: const [
                         DropdownMenuItem(
                           value: 'beginner',
-                          child: Text('Începător'),
+                          child: Text('Beginner'),
                         ),
                         DropdownMenuItem(
                           value: 'intermediate',
-                          child: Text('Intermediar'),
+                          child: Text('Intermediate'),
                         ),
                         DropdownMenuItem(
                           value: 'advanced',
-                          child: Text('Avansat'),
+                          child: Text('Advanced'),
                         ),
                       ],
                       onChanged: (value) =>
                           setState(() => _experienceLevel = value),
                       validator: (value) =>
-                          value == null ? 'Selectează nivelul' : null,
+                          value == null ? 'Select a level' : null,
                     ),
                   ],
                 ),

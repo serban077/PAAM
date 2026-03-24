@@ -11,8 +11,8 @@ class WorkoutAnalyticsWidget extends StatefulWidget {
 }
 
 class _WorkoutAnalyticsWidgetState extends State<WorkoutAnalyticsWidget> {
-  String _selectedPeriod = 'Lună';
-  final List<String> _periods = ['Săptămână', 'Lună', '3 Luni'];
+  String _selectedPeriod = 'Month';
+  final List<String> _periods = ['Week', 'Month', '3 Months'];
 
   // Mock workout data
   final Map<String, dynamic> _workoutStats = {
@@ -25,17 +25,17 @@ class _WorkoutAnalyticsWidgetState extends State<WorkoutAnalyticsWidget> {
   };
 
   final List<Map<String, dynamic>> _weeklyWorkouts = [
-    {"day": "L", "completed": 1, "total": 1},
     {"day": "M", "completed": 1, "total": 1},
-    {"day": "M", "completed": 0, "total": 1},
-    {"day": "J", "completed": 1, "total": 1},
-    {"day": "V", "completed": 1, "total": 1},
+    {"day": "T", "completed": 1, "total": 1},
+    {"day": "W", "completed": 0, "total": 1},
+    {"day": "T", "completed": 1, "total": 1},
+    {"day": "F", "completed": 1, "total": 1},
     {"day": "S", "completed": 1, "total": 1},
-    {"day": "D", "completed": 0, "total": 1},
+    {"day": "S", "completed": 0, "total": 1},
   ];
 
   final List<Map<String, dynamic>> _strengthProgress = [
-    {"exercise": "Genuflexiuni", "weight": 80.0, "change": 10.0},
+    {"exercise": "Squats", "weight": 80.0, "change": 10.0},
     {"exercise": "Bench Press", "weight": 70.0, "change": 5.0},
     {"exercise": "Deadlift", "weight": 100.0, "change": 15.0},
     {"exercise": "Overhead Press", "weight": 45.0, "change": 5.0},
@@ -80,7 +80,7 @@ class _WorkoutAnalyticsWidgetState extends State<WorkoutAnalyticsWidget> {
             Expanded(
               child: _buildStatCard(
                 theme,
-                'Antrenamente',
+                'Workouts',
                 '${_workoutStats["totalWorkouts"]}',
                 Icons.fitness_center,
                 theme.colorScheme.primary,
@@ -90,7 +90,7 @@ class _WorkoutAnalyticsWidgetState extends State<WorkoutAnalyticsWidget> {
             Expanded(
               child: _buildStatCard(
                 theme,
-                'Rată Finalizare',
+                'Completion Rate',
                 '${_workoutStats["completionRate"]}%',
                 Icons.check_circle,
                 theme.colorScheme.tertiary,
@@ -104,7 +104,7 @@ class _WorkoutAnalyticsWidgetState extends State<WorkoutAnalyticsWidget> {
             Expanded(
               child: _buildStatCard(
                 theme,
-                'Durată Medie',
+                'Avg. Duration',
                 '${_workoutStats["averageDuration"]} min',
                 Icons.timer,
                 theme.colorScheme.secondary,
@@ -114,7 +114,7 @@ class _WorkoutAnalyticsWidgetState extends State<WorkoutAnalyticsWidget> {
             Expanded(
               child: _buildStatCard(
                 theme,
-                'Calorii Arse',
+                'Calories Burned',
                 '${_workoutStats["caloriesBurned"]}',
                 Icons.local_fire_department,
                 Colors.orange,
@@ -221,7 +221,7 @@ class _WorkoutAnalyticsWidgetState extends State<WorkoutAnalyticsWidget> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Finalizare Săptămânală',
+            'Weekly Completion',
             style: theme.textTheme.titleMedium?.copyWith(
               fontWeight: FontWeight.w600,
             ),
@@ -230,7 +230,7 @@ class _WorkoutAnalyticsWidgetState extends State<WorkoutAnalyticsWidget> {
           SizedBox(
             height: 25.h,
             child: Semantics(
-              label: "Grafic bare finalizare antrenamente săptămânale",
+              label: "Bar chart for weekly workout completion",
               child: BarChart(
                 BarChartData(
                   alignment: BarChartAlignment.spaceAround,
@@ -298,11 +298,11 @@ class _WorkoutAnalyticsWidgetState extends State<WorkoutAnalyticsWidget> {
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              _buildLegendItem(theme, 'Finalizat', theme.colorScheme.primary),
+              _buildLegendItem(theme, 'Completed', theme.colorScheme.primary),
               SizedBox(width: 4.w),
               _buildLegendItem(
                 theme,
-                'Nefinalizat',
+                'Not completed',
                 theme.colorScheme.outline.withValues(alpha: 0.3),
               ),
             ],
@@ -342,7 +342,7 @@ class _WorkoutAnalyticsWidgetState extends State<WorkoutAnalyticsWidget> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Progres Forță',
+            'Strength Progress',
             style: theme.textTheme.titleMedium?.copyWith(
               fontWeight: FontWeight.w600,
             ),
@@ -462,7 +462,7 @@ class _WorkoutAnalyticsWidgetState extends State<WorkoutAnalyticsWidget> {
               ),
               SizedBox(width: 2.w),
               Text(
-                'Realizări',
+                'Achievements',
                 style: theme.textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.w600,
                   color: theme.colorScheme.primary,
@@ -478,21 +478,21 @@ class _WorkoutAnalyticsWidgetState extends State<WorkoutAnalyticsWidget> {
                 theme,
                 Icons.local_fire_department,
                 '${_workoutStats["currentStreak"]}',
-                'Zile Consecutive',
+                'Day Streak',
                 Colors.orange,
               ),
               _buildBadge(
                 theme,
                 Icons.star,
                 '${_workoutStats["longestStreak"]}',
-                'Record Zile',
+                'Day Record',
                 Colors.amber,
               ),
               _buildBadge(
                 theme,
                 Icons.trending_up,
                 '${_workoutStats["totalWorkouts"]}',
-                'Total Antrenamente',
+                'Total Workouts',
                 theme.colorScheme.tertiary,
               ),
             ],

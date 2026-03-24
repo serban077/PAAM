@@ -20,7 +20,6 @@ class PhotoProgressWidget extends StatefulWidget {
 class _PhotoProgressWidgetState extends State<PhotoProgressWidget> {
   List<CameraDescription>? _cameras;
   CameraController? _cameraController;
-  XFile? _capturedImage;
   bool _isCameraInitialized = false;
   bool _showCamera = false;
   final ImagePicker _imagePicker = ImagePicker();
@@ -119,9 +118,8 @@ class _PhotoProgressWidgetState extends State<PhotoProgressWidget> {
     }
 
     try {
-      final XFile photo = await _cameraController!.takePicture();
+      await _cameraController!.takePicture();
       setState(() {
-        _capturedImage = photo;
         _showCamera = false;
       });
 
@@ -152,9 +150,6 @@ class _PhotoProgressWidgetState extends State<PhotoProgressWidget> {
       );
 
       if (image != null) {
-        setState(() {
-          _capturedImage = image;
-        });
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(

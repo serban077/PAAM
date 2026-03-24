@@ -90,7 +90,7 @@ class _WeightProgressCardState extends State<WeightProgressCard> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Progres către Obiectiv',
+              'Progress Towards Goal',
               style: theme.textTheme.titleLarge?.copyWith(
                 fontWeight: FontWeight.bold,
               ),
@@ -102,7 +102,7 @@ class _WeightProgressCardState extends State<WeightProgressCard> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'Obiectiv:',
+                  'Goal:',
                   style: theme.textTheme.bodyMedium?.copyWith(
                     color: Colors.grey[600],
                   ),
@@ -150,7 +150,7 @@ class _WeightProgressCardState extends State<WeightProgressCard> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Curent',
+                      'Current',
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: Colors.grey[600],
                       ),
@@ -173,7 +173,7 @@ class _WeightProgressCardState extends State<WeightProgressCard> {
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     Text(
-                      'Țintă',
+                      'Target',
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: Colors.grey[600],
                       ),
@@ -209,8 +209,8 @@ class _WeightProgressCardState extends State<WeightProgressCard> {
                   SizedBox(width: 2.w),
                   Text(
                     remaining > 0
-                        ? 'Rămas: ${remaining.toStringAsFixed(1)} kg'
-                        : 'Obiectiv atins! 🎉',
+                        ? 'Remaining: ${remaining.toStringAsFixed(1)} kg'
+                        : 'Goal reached!',
                     style: theme.textTheme.bodyLarge?.copyWith(
                       fontWeight: FontWeight.bold,
                       color: remaining > 0 ? Colors.orange : Colors.green,

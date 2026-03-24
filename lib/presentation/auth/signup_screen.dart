@@ -81,7 +81,7 @@ class _SignupScreenState extends State<SignupScreen> {
                 SizedBox(height: 2.h),
                 // Title
                 Text(
-                  'Creează cont nou',
+                  'Create new account',
                   style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
@@ -89,7 +89,7 @@ class _SignupScreenState extends State<SignupScreen> {
                 ),
                 SizedBox(height: 1.h),
                 Text(
-                  'Înregistrează-te pentru a începe',
+                  'Sign up to get started',
                   style: Theme.of(
                     context,
                   ).textTheme.bodyMedium?.copyWith(color: Colors.grey),
@@ -100,7 +100,7 @@ class _SignupScreenState extends State<SignupScreen> {
                 TextFormField(
                   controller: _nameController,
                   decoration: InputDecoration(
-                    labelText: 'Nume Complet',
+                    labelText: 'Full Name',
                     prefixIcon: const Icon(Icons.person_outline),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12.0),
@@ -108,7 +108,7 @@ class _SignupScreenState extends State<SignupScreen> {
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Te rog introdu numele';
+                      return 'Please enter your name';
                     }
                     return null;
                   },
@@ -127,10 +127,10 @@ class _SignupScreenState extends State<SignupScreen> {
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Te rog introdu email-ul';
+                      return 'Please enter your email';
                     }
                     if (!value.contains('@')) {
-                      return 'Te rog introdu un email valid';
+                      return 'Please enter a valid email';
                     }
                     return null;
                   },
@@ -141,7 +141,7 @@ class _SignupScreenState extends State<SignupScreen> {
                   controller: _passwordController,
                   obscureText: _obscurePassword,
                   decoration: InputDecoration(
-                    labelText: 'Parolă',
+                    labelText: 'Password',
                     prefixIcon: const Icon(Icons.lock_outline),
                     suffixIcon: IconButton(
                       icon: Icon(
@@ -159,10 +159,10 @@ class _SignupScreenState extends State<SignupScreen> {
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Te rog introdu parola';
+                      return 'Please enter your password';
                     }
                     if (value.length < 6) {
-                      return 'Parola trebuie să aibă cel puțin 6 caractere';
+                      return 'Password must be at least 6 characters';
                     }
                     return null;
                   },
@@ -173,7 +173,7 @@ class _SignupScreenState extends State<SignupScreen> {
                   controller: _confirmPasswordController,
                   obscureText: _obscureConfirmPassword,
                   decoration: InputDecoration(
-                    labelText: 'Confirmă Parola',
+                    labelText: 'Confirm Password',
                     prefixIcon: const Icon(Icons.lock_outline),
                     suffixIcon: IconButton(
                       icon: Icon(
@@ -194,10 +194,10 @@ class _SignupScreenState extends State<SignupScreen> {
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Te rog confirmă parola';
+                      return 'Please confirm your password';
                     }
                     if (value != _passwordController.text) {
-                      return 'Parolele nu se potrivesc';
+                      return "Passwords don't match";
                     }
                     return null;
                   },
@@ -219,7 +219,7 @@ class _SignupScreenState extends State<SignupScreen> {
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
                       : Text(
-                          'Înregistrează-te',
+                          'Sign Up',
                           style: TextStyle(fontSize: 16.sp),
                         ),
                 ),
@@ -228,7 +228,7 @@ class _SignupScreenState extends State<SignupScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text('Ai deja cont? ', style: TextStyle(fontSize: 14.sp)),
+                    Text('Already have an account? ', style: TextStyle(fontSize: 14.sp)),
                     TextButton(
                       onPressed: () {
                         Navigator.of(
@@ -236,7 +236,7 @@ class _SignupScreenState extends State<SignupScreen> {
                         ).pushReplacementNamed(AppRoutes.loginScreen);
                       },
                       child: Text(
-                        'Conectează-te',
+                        'Sign In',
                         style: TextStyle(
                           fontSize: 14.sp,
                           fontWeight: FontWeight.bold,

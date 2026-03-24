@@ -119,7 +119,7 @@ class _WeeklyCalendarWidgetState extends State<WeeklyCalendarWidget> {
         Padding(
           padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 1.h),
           child: Text(
-            'Calendar Antrenamente',
+            'Workout Calendar',
             style: GoogleFonts.inter(
               fontSize: 16.sp,
               fontWeight: FontWeight.bold,
@@ -167,7 +167,7 @@ class _WeeklyCalendarWidgetState extends State<WeeklyCalendarWidget> {
                     widget.onSessionSelected(session['id']);
                   } else {
                      ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Niciun antrenament programat pentru această zi.')),
+                      const SnackBar(content: Text('No workout scheduled for this day.')),
                     );
                   }
                 },
@@ -197,7 +197,7 @@ class _WeeklyCalendarWidgetState extends State<WeeklyCalendarWidget> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
-                        DateFormat('E', 'ro_RO').format(date).toUpperCase(), 
+                        DateFormat('E', 'en_US').format(date).toUpperCase(),
                         style: GoogleFonts.inter(
                           fontSize: 10.sp,
                           fontWeight: FontWeight.w600,

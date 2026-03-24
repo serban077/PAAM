@@ -24,7 +24,7 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
         ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
 
     if (args == null) {
-      _showError('Date invalide');
+      _showError('Invalid data');
       return;
     }
 
@@ -38,7 +38,7 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
     }
     // Invalid arguments
     else {
-      _showError('Sesiune de antrenament sau exercițiu invalid');
+      _showError('Invalid workout session or exercise');
     }
   }
 
@@ -103,7 +103,7 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
       });
     } catch (e) {
       setState(() {
-        _errorMessage = 'Eroare la încărcarea antrenamentului: $e';
+        _errorMessage = 'Error loading workout: $e';
         _isLoading = false;
       });
     }
@@ -130,7 +130,7 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
       // 2. Show success and pop
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('🎉 Antrenament finalizat cu succes!'),
+          content: Text('Workout completed successfully!'),
           backgroundColor: Colors.green,
         ),
       );
@@ -141,7 +141,7 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
       if (!mounted) return;
       setState(() => _isLoading = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Eroare la salvare: $e')),
+        SnackBar(content: Text('Error saving: $e')),
       );
     }
   }
@@ -154,18 +154,18 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
 
     if (_errorMessage != null) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Eroare')),
+        appBar: AppBar(title: const Text('Error')),
         body: Center(child: Text(_errorMessage!)),
       );
     }
 
     if (_workoutSession == null) {
       return const Scaffold(
-        body: Center(child: Text('Sesiune de antrenament negăsită')),
+        body: Center(child: Text('Workout session not found')),
       );
     }
 
-    final sessionName = _workoutSession!['session_name'] ?? 'Antrenament';
+    final sessionName = _workoutSession!['session_name'] ?? 'Workout';
     final focusArea = _workoutSession!['focus_area'] ?? '';
     final duration = _workoutSession!['estimated_duration_minutes'] ?? 60;
 
@@ -219,7 +219,7 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                     ),
                     SizedBox(width: 1.w),
                     Text(
-                      '${_exercises.length} exerciții',
+                      '${_exercises.length} exercises',
                       style: TextStyle(color: Colors.white, fontSize: 14.sp),
                     ),
                   ],
@@ -230,7 +230,7 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
           // Exercises list
           Expanded(
             child: _exercises.isEmpty
-                ? const Center(child: Text('Niciun exercițiu disponibil'))
+                ? const Center(child: Text('No exercises available'))
                 : ListView.builder(
                     padding: EdgeInsets.fromLTRB(3.w, 3.w, 3.w, 10.h), // Add bottom padding for button
                     itemCount: _exercises.length,
@@ -276,7 +276,7 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
               elevation: 4,
             ),
             child: Text(
-              'Finalizează Antrenamentul',
+              'Finish Workout',
               style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.bold),
             ),
           ),

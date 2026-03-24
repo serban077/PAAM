@@ -54,7 +54,7 @@ class _LoginFormWidgetState extends State<LoginFormWidget> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  '🔑 Credențiale Demo:',
+                  'Demo Credentials:',
                   style: TextStyle(
                     fontSize: 14.sp,
                     fontWeight: FontWeight.w600,
@@ -63,7 +63,7 @@ class _LoginFormWidgetState extends State<LoginFormWidget> {
                 ),
                 SizedBox(height: 1.h),
                 Text(
-                  'Email: test@smartfitai.ro\nParolă: Test123!',
+                  'Email: test@smartfitai.ro\nPassword: Test123!',
                   style: TextStyle(
                     fontSize: 13.sp,
                     color: Colors.blue.shade800,
@@ -86,10 +86,10 @@ class _LoginFormWidgetState extends State<LoginFormWidget> {
             ),
             validator: (value) {
               if (value == null || value.isEmpty) {
-                return 'Introduceți adresa de email';
+                return 'Enter your email address';
               }
               if (!value.contains('@')) {
-                return 'Email invalid';
+                return 'Invalid email';
               }
               return null;
             },
@@ -99,7 +99,7 @@ class _LoginFormWidgetState extends State<LoginFormWidget> {
             controller: _passwordController,
             obscureText: _obscurePassword,
             decoration: InputDecoration(
-              labelText: 'Parolă',
+              labelText: 'Password',
               prefixIcon: const Icon(Icons.lock_outlined),
               suffixIcon: IconButton(
                 icon: Icon(
@@ -114,7 +114,7 @@ class _LoginFormWidgetState extends State<LoginFormWidget> {
             ),
             validator: (value) {
               if (value == null || value.isEmpty) {
-                return 'Introduceți parola';
+                return 'Enter your password';
               }
               return null;
             },
@@ -127,7 +127,7 @@ class _LoginFormWidgetState extends State<LoginFormWidget> {
                 // ... keep existing code ...
               },
               child: Text(
-                'Ai uitat parola?',
+                'Forgot password?',
                 style: TextStyle(fontSize: 13.sp),
               ),
             ),
@@ -147,7 +147,7 @@ class _LoginFormWidgetState extends State<LoginFormWidget> {
                     width: 20,
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
-                : Text('Conectează-te', style: TextStyle(fontSize: 16.sp)),
+                : Text('Sign In', style: TextStyle(fontSize: 16.sp)),
           ),
         ],
       ),

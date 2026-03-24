@@ -58,7 +58,6 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
 
     return AppBar(
       title: subtitle != null
@@ -96,7 +95,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
                       Navigator.of(context).pop();
                     }
                   },
-                  tooltip: 'Înapoi',
+                  tooltip: 'Back',
                 )
               : null),
       actions: actions,
@@ -155,7 +154,7 @@ class CustomSearchAppBar extends StatelessWidget
 
   const CustomSearchAppBar({
     super.key,
-    this.hintText = 'Caută...',
+    this.hintText = 'Search...',
     this.onSearchChanged,
     this.onSearchSubmitted,
     this.leading,
@@ -292,7 +291,7 @@ class CustomWorkoutAppBar extends StatelessWidget
             Navigator.of(context).pop();
           }
         },
-        tooltip: 'Închide antrenament',
+        tooltip: 'End workout',
       ),
       actions: [
         if (onPauseResume != null)
@@ -302,7 +301,7 @@ class CustomWorkoutAppBar extends StatelessWidget
               HapticFeedback.lightImpact();
               onPauseResume!();
             },
-            tooltip: isPaused ? 'Reia' : 'Pauză',
+            tooltip: isPaused ? 'Resume' : 'Pause',
           ),
         const SizedBox(width: 8),
       ],

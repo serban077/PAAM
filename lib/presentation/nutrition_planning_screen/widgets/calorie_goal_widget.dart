@@ -36,7 +36,7 @@ class CalorieGoalWidget extends StatelessWidget {
       child: Column(
         children: [
           Text(
-            'Obiectiv Zilnic',
+            'Daily Goal',
             style: theme.textTheme.titleMedium?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
             ),
@@ -57,7 +57,7 @@ class CalorieGoalWidget extends StatelessWidget {
                   ),
                 ),
                 Text(
-                  'din ${dailyGoal.toStringAsFixed(0)} kcal',
+                  'of ${dailyGoal.toStringAsFixed(0)} kcal',
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: theme.colorScheme.onSurfaceVariant,
                   ),
@@ -79,7 +79,7 @@ class CalorieGoalWidget extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
               _buildStatColumn(
-                'Consumate',
+                'Consumed',
                 consumed.toStringAsFixed(0),
                 theme.colorScheme.primary,
                 theme,
@@ -90,7 +90,7 @@ class CalorieGoalWidget extends StatelessWidget {
                 color: theme.colorScheme.outline.withValues(alpha: 0.3),
               ),
               _buildStatColumn(
-                remaining >= 0 ? 'Rămase' : 'Peste',
+                remaining >= 0 ? 'Remaining' : 'Over',
                 remaining.abs().toStringAsFixed(0),
                 remaining >= 0
                     ? theme.colorScheme.secondary

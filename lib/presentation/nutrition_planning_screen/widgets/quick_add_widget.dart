@@ -16,7 +16,7 @@ class QuickAddWidget extends StatelessWidget {
 
     final List<Map<String, dynamic>> quickFoods = [
       {
-        "name": "Apă (250ml)",
+        "name": "Water (250ml)",
         "icon": "water_drop",
         "calories": 0.0,
         "protein": 0.0,
@@ -24,7 +24,7 @@ class QuickAddWidget extends StatelessWidget {
         "fats": 0.0,
       },
       {
-        "name": "Cafea neagră",
+        "name": "Black Coffee",
         "icon": "coffee",
         "calories": 2.0,
         "protein": 0.0,
@@ -32,7 +32,7 @@ class QuickAddWidget extends StatelessWidget {
         "fats": 0.0,
       },
       {
-        "name": "Banană",
+        "name": "Banana",
         "icon": "emoji_food_beverage",
         "calories": 105.0,
         "protein": 1.0,
@@ -40,7 +40,7 @@ class QuickAddWidget extends StatelessWidget {
         "fats": 0.0,
       },
       {
-        "name": "Ou fiert",
+        "name": "Boiled Egg",
         "icon": "egg",
         "calories": 70.0,
         "protein": 6.0,
@@ -48,7 +48,7 @@ class QuickAddWidget extends StatelessWidget {
         "fats": 5.0,
       },
       {
-        "name": "Pâine (1 felie)",
+        "name": "Bread (1 slice)",
         "icon": "bakery_dining",
         "calories": 70.0,
         "protein": 3.0,
@@ -56,7 +56,7 @@ class QuickAddWidget extends StatelessWidget {
         "fats": 1.0,
       },
       {
-        "name": "Lapte (200ml)",
+        "name": "Milk (200ml)",
         "icon": "local_drink",
         "calories": 120.0,
         "protein": 6.0,
@@ -73,7 +73,7 @@ class QuickAddWidget extends StatelessWidget {
           Padding(
             padding: EdgeInsets.symmetric(horizontal: 2.w),
             child: Text(
-              'Adăugare Rapidă',
+              'Quick Add',
               style: theme.textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.w600,
               ),

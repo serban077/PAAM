@@ -76,7 +76,7 @@ class MealSectionWidget extends StatelessWidget {
                 padding: EdgeInsets.symmetric(vertical: 2.h),
                 child: Center(
                   child: Text(
-                    'Niciun aliment adăugat',
+                    'No foods added',
                     style: TextStyle(
                       fontSize: 12.sp,
                       color: Colors.grey.shade500,
@@ -102,7 +102,7 @@ class MealSectionWidget extends StatelessWidget {
                 return ListTile(
                   contentPadding: EdgeInsets.zero,
                   title: Text(
-                    food['name'] ?? 'Aliment necunoscut',
+                    food['name'] ?? 'Unknown food',
                     style: TextStyle(fontSize: 14.sp),
                   ),
                   subtitle: Text(

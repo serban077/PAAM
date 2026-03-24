@@ -81,7 +81,7 @@ class NutritionModalWidget extends StatelessWidget {
                           ),
                         ),
                         Text(
-                          'calorii',
+                          'calories',
                           style: theme.textTheme.bodyLarge?.copyWith(
                             color: theme.colorScheme.onSurfaceVariant,
                           ),
@@ -94,7 +94,7 @@ class NutritionModalWidget extends StatelessWidget {
 
                   // Macronutrients
                   Text(
-                    'Macronutrienți',
+                    'Macronutrients',
                     style: theme.textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.w600,
                     ),
@@ -102,7 +102,7 @@ class NutritionModalWidget extends StatelessWidget {
                   SizedBox(height: 2.h),
 
                   _buildMacroRow(
-                    'Proteine',
+                    'Protein',
                     foodItem["protein"].toStringAsFixed(1),
                     'g',
                     theme.colorScheme.primary,
@@ -110,7 +110,7 @@ class NutritionModalWidget extends StatelessWidget {
                   ),
                   SizedBox(height: 1.h),
                   _buildMacroRow(
-                    'Carbohidrați',
+                    'Carbohydrates',
                     foodItem["carbs"].toStringAsFixed(1),
                     'g',
                     theme.colorScheme.secondary,
@@ -118,7 +118,7 @@ class NutritionModalWidget extends StatelessWidget {
                   ),
                   SizedBox(height: 1.h),
                   _buildMacroRow(
-                    'Grăsimi',
+                    'Fat',
                     foodItem["fats"].toStringAsFixed(1),
                     'g',
                     theme.colorScheme.tertiary,
@@ -129,7 +129,7 @@ class NutritionModalWidget extends StatelessWidget {
 
                   // Preparation instructions (if available)
                   Text(
-                    'Informații Suplimentare',
+                    'Additional Info',
                     style: theme.textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.w600,
                     ),
@@ -146,13 +146,13 @@ class NutritionModalWidget extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _buildInfoRow('Porție', '100g', theme),
+                        _buildInfoRow('Serving', '100g', theme),
                         SizedBox(height: 1.h),
-                        _buildInfoRow('Categorie', 'Aliment întreg', theme),
+                        _buildInfoRow('Category', 'Whole food', theme),
                         SizedBox(height: 1.h),
                         _buildInfoRow(
-                          'Sursă',
-                          'Bază de date nutrițională',
+                          'Source',
+                          'Nutrition database',
                           theme,
                         ),
                       ],

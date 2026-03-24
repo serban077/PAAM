@@ -11,8 +11,8 @@ class WeightTrackingWidget extends StatefulWidget {
 }
 
 class _WeightTrackingWidgetState extends State<WeightTrackingWidget> {
-  String _selectedPeriod = 'Lună';
-  final List<String> _periods = ['Săptămână', 'Lună', '3 Luni', 'An'];
+  String _selectedPeriod = 'Month';
+  final List<String> _periods = ['Week', 'Month', '3 Months', 'Year'];
 
   // Mock weight data
   final List<Map<String, dynamic>> _weightData = [
@@ -84,7 +84,7 @@ class _WeightTrackingWidgetState extends State<WeightTrackingWidget> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Greutate Curentă',
+            'Current Weight',
             style: theme.textTheme.titleMedium?.copyWith(
               color: theme.colorScheme.onPrimary.withValues(alpha: 0.9),
             ),
@@ -140,7 +140,7 @@ class _WeightTrackingWidgetState extends State<WeightTrackingWidget> {
           ),
           SizedBox(height: 1.h),
           Text(
-            'Ultima actualizare: Astăzi, 08:30',
+            'Last updated: Today, 08:30',
             style: theme.textTheme.bodySmall?.copyWith(
               color: theme.colorScheme.onPrimary.withValues(alpha: 0.8),
             ),
@@ -202,7 +202,7 @@ class _WeightTrackingWidgetState extends State<WeightTrackingWidget> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Evoluție Greutate',
+            'Weight Progress',
             style: theme.textTheme.titleMedium?.copyWith(
               fontWeight: FontWeight.w600,
             ),
@@ -211,7 +211,7 @@ class _WeightTrackingWidgetState extends State<WeightTrackingWidget> {
           Expanded(
             child: Semantics(
               label:
-                  "Grafic evoluție greutate - linie descendentă de la 85.5 kg la 83.2 kg",
+                  "Weight progress chart - descending line from 85.5 kg to 83.2 kg",
               child: LineChart(
                 LineChartData(
                   gridData: FlGridData(
@@ -349,7 +349,7 @@ class _WeightTrackingWidgetState extends State<WeightTrackingWidget> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'Progres către Obiectiv',
+                'Progress Towards Goal',
                 style: theme.textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.w600,
                 ),
@@ -400,7 +400,7 @@ class _WeightTrackingWidgetState extends State<WeightTrackingWidget> {
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Text(
-                    'Obiectiv',
+                    'Goal',
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: theme.colorScheme.onSurfaceVariant,
                     ),
@@ -433,7 +433,7 @@ class _WeightTrackingWidgetState extends State<WeightTrackingWidget> {
                 SizedBox(width: 2.w),
                 Expanded(
                   child: Text(
-                    'Mai ai ${(currentWeight - goalWeight).toStringAsFixed(1)} kg până la obiectiv',
+                    '${(currentWeight - goalWeight).toStringAsFixed(1)} kg remaining to goal',
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: theme.colorScheme.onSurface,
                     ),
@@ -452,7 +452,7 @@ class _WeightTrackingWidgetState extends State<WeightTrackingWidget> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Statistici',
+          'Statistics',
           style: theme.textTheme.titleMedium?.copyWith(
             fontWeight: FontWeight.w600,
           ),
@@ -463,7 +463,7 @@ class _WeightTrackingWidgetState extends State<WeightTrackingWidget> {
             Expanded(
               child: _buildStatCard(
                 theme,
-                'Pierdere Totală',
+                'Total Loss',
                 '-2.3 kg',
                 Icons.trending_down,
                 theme.colorScheme.tertiary,
@@ -473,7 +473,7 @@ class _WeightTrackingWidgetState extends State<WeightTrackingWidget> {
             Expanded(
               child: _buildStatCard(
                 theme,
-                'Medie Săptămânală',
+                'Weekly Average',
                 '-0.3 kg',
                 Icons.calendar_today,
                 theme.colorScheme.secondary,
@@ -487,8 +487,8 @@ class _WeightTrackingWidgetState extends State<WeightTrackingWidget> {
             Expanded(
               child: _buildStatCard(
                 theme,
-                'Zile Consecutive',
-                '17 zile',
+                'Consecutive Days',
+                '17 days',
                 Icons.local_fire_department,
                 Colors.orange,
               ),
@@ -497,7 +497,7 @@ class _WeightTrackingWidgetState extends State<WeightTrackingWidget> {
             Expanded(
               child: _buildStatCard(
                 theme,
-                'Înregistrări',
+                'Records',
                 '9 total',
                 Icons.edit_note,
                 theme.colorScheme.primary,

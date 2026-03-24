@@ -29,29 +29,29 @@ class _FilterBottomSheetWidgetState extends State<FilterBottomSheetWidget> {
   };
 
   final Map<String, List<String>> _filterOptions = {
-    'bodyPart': ['Piept', 'Spate', 'Picioare', 'Umeri', 'Brațe', 'Abdomen'],
+    'bodyPart': ['Chest', 'Back', 'Legs', 'Shoulders', 'Arms', 'Abs'],
     'equipment': [
-      'Bară',
-      'Gantere',
-      'Mașină',
-      'Cablu',
-      'Greutate Corporală',
-      'Bară Tracțiuni',
-      'Paralele',
+      'Barbell',
+      'Dumbbells',
+      'Machine',
+      'Cable',
+      'Bodyweight',
+      'Pull-up Bar',
+      'Parallel Bars',
     ],
-    'difficulty': ['Începător', 'Intermediar', 'Avansat'],
+    'difficulty': ['Beginner', 'Intermediate', 'Advanced'],
     'restrictions': [
-      'Probleme Cardiovasculare',
-      'Diabet',
-      'Probleme Articulare',
+      'Cardiovascular Issues',
+      'Diabetes',
+      'Joint Problems',
     ],
   };
 
   final Map<String, String> _sectionTitles = {
-    'bodyPart': 'Partea Corpului',
-    'equipment': 'Echipament',
-    'difficulty': 'Dificultate',
-    'restrictions': 'Restricții Medicale',
+    'bodyPart': 'Body Part',
+    'equipment': 'Equipment',
+    'difficulty': 'Difficulty',
+    'restrictions': 'Medical Restrictions',
   };
 
   @override
@@ -120,7 +120,7 @@ class _FilterBottomSheetWidgetState extends State<FilterBottomSheetWidget> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'Filtre',
+                  'Filters',
                   style: theme.textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.w600,
                   ),
@@ -131,7 +131,7 @@ class _FilterBottomSheetWidgetState extends State<FilterBottomSheetWidget> {
                       TextButton(
                         onPressed: _clearAllFilters,
                         child: Text(
-                          'Șterge tot',
+                          'Clear All',
                           style: theme.textTheme.labelLarge?.copyWith(
                             color: theme.colorScheme.error,
                           ),
@@ -184,8 +184,8 @@ class _FilterBottomSheetWidgetState extends State<FilterBottomSheetWidget> {
                   onPressed: _applyFilters,
                   child: Text(
                     _getTotalSelectedFilters() > 0
-                        ? 'Aplică Filtre (${_getTotalSelectedFilters()})'
-                        : 'Aplică Filtre',
+                        ? 'Apply Filters (${_getTotalSelectedFilters()})'
+                        : 'Apply Filters',
                   ),
                 ),
               ),

@@ -50,7 +50,7 @@ class _QuantityInputDialogState extends State<QuantityInputDialog> {
     final servingUnit = widget.food['serving_unit'] ?? 'g';
 
     return AlertDialog(
-      title: Text(widget.food['name'] ?? 'Aliment'),
+      title: Text(widget.food['name'] ?? 'Food'),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -61,7 +61,7 @@ class _QuantityInputDialogState extends State<QuantityInputDialog> {
               FilteringTextInputFormatter.allow(RegExp(r'[\d.]')),
             ],
             decoration: InputDecoration(
-              labelText: 'Cantitate',
+              labelText: 'Quantity',
               suffixText: servingUnit,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
@@ -82,25 +82,25 @@ class _QuantityInputDialogState extends State<QuantityInputDialog> {
             child: Column(
               children: [
                 _buildNutritionRow(
-                  'Calorii',
+                  'Calories',
                   '${_calculatedCalories.toStringAsFixed(0)} kcal',
                   Colors.orange,
                 ),
                 SizedBox(height: 1.h),
                 _buildNutritionRow(
-                  'Proteine',
+                  'Protein',
                   '${_calculatedProtein.toStringAsFixed(1)} g',
                   Colors.blue,
                 ),
                 SizedBox(height: 1.h),
                 _buildNutritionRow(
-                  'Carbohidrați',
+                  'Carbs',
                   '${_calculatedCarbs.toStringAsFixed(1)} g',
                   Colors.green,
                 ),
                 SizedBox(height: 1.h),
                 _buildNutritionRow(
-                  'Grăsimi',
+                  'Fat',
                   '${_calculatedFat.toStringAsFixed(1)} g',
                   Colors.red,
                 ),
@@ -112,7 +112,7 @@ class _QuantityInputDialogState extends State<QuantityInputDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('Anulează'),
+          child: const Text('Cancel'),
         ),
         ElevatedButton(
           onPressed: () {
@@ -128,7 +128,7 @@ class _QuantityInputDialogState extends State<QuantityInputDialog> {
               });
             }
           },
-          child: const Text('Adaugă'),
+          child: const Text('Add'),
         ),
       ],
     );

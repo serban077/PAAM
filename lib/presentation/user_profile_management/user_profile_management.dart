@@ -23,7 +23,6 @@ class UserProfileManagement extends StatefulWidget {
 
 class _UserProfileManagementState extends State<UserProfileManagement> {
   bool _isLoading = true;
-  bool _isRegenerating = false;
   Map<String, dynamic>? _userProfile;
 
   @override
@@ -61,11 +60,11 @@ class _UserProfileManagementState extends State<UserProfileManagement> {
   Future<void> _regenerateAIPlan() async {
     try {
       if (!mounted) return;
-      setState(() => _isRegenerating = true);
+      
 
       final userId = SupabaseService.instance.client.auth.currentUser?.id;
       if (userId == null) {
-        if (mounted) setState(() => _isRegenerating = false);
+        
         return;
       }
 
@@ -73,7 +72,7 @@ class _UserProfileManagementState extends State<UserProfileManagement> {
       await GeminiAIService().generateCompletePlan(userId);
 
       if (!mounted) return;
-      setState(() => _isRegenerating = false);
+      
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -84,7 +83,7 @@ class _UserProfileManagementState extends State<UserProfileManagement> {
       );
     } catch (e) {
       if (!mounted) return;
-      setState(() => _isRegenerating = false);
+      
       
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(

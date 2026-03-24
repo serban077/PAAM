@@ -273,14 +273,6 @@ class _ExerciseLibraryState extends State<ExerciseLibrary> {
     );
   }
 
-  void _createCustomWorkout() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Funcție de creare antrenament personalizat în curând'),
-      ),
-    );
-  }
-
   int _getTotalActiveFilters() {
     return _activeFilters.values.fold(0, (sum, list) => sum + list.length);
   }
@@ -323,7 +315,7 @@ class _ExerciseLibraryState extends State<ExerciseLibrary> {
                       onChanged: (_) => _applyFilters(),
                       style: theme.textTheme.bodyLarge,
                       decoration: InputDecoration(
-                        hintText: 'Caută exerciții...',
+                        hintText: 'Search exercises...',
                         hintStyle: theme.textTheme.bodyLarge?.copyWith(
                           color: theme.colorScheme.onSurfaceVariant.withAlpha(153),
                         ),
@@ -439,7 +431,7 @@ class _ExerciseLibraryState extends State<ExerciseLibrary> {
                         padding: EdgeInsets.only(left: 2.w),
                         child: ActionChip(
                           label: Text(
-                            'Șterge tot',
+                            'Clear All',
                             style: theme.textTheme.labelMedium?.copyWith(
                               color: theme.colorScheme.error,
                             ),
@@ -576,7 +568,7 @@ class _ExerciseLibraryState extends State<ExerciseLibrary> {
             ),
             SizedBox(height: 2.h),
             Text(
-              'Nu am găsit exerciții',
+              'No exercises found',
               style: theme.textTheme.titleLarge?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),
@@ -585,8 +577,8 @@ class _ExerciseLibraryState extends State<ExerciseLibrary> {
             SizedBox(height: 1.h),
             Text(
               _getTotalActiveFilters() > 0
-                  ? 'Încearcă să ștergi câteva filtre pentru a vedea mai multe rezultate'
-                  : 'Încearcă o căutare diferită',
+                  ? 'Try removing some filters to see more results'
+                  : 'Try a different search term',
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant.withAlpha(178),
               ),
@@ -601,7 +593,7 @@ class _ExerciseLibraryState extends State<ExerciseLibrary> {
                   color: theme.colorScheme.onPrimary,
                   size: 20,
                 ),
-                label: const Text('Șterge Filtrele'),
+                label: const Text('Clear Filters'),
               ),
           ],
         ),

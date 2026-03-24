@@ -33,7 +33,7 @@ class VideoPlayerWidget extends StatelessWidget {
             Padding(
               padding: EdgeInsets.symmetric(horizontal: 5.w),
               child: Text(
-                'Apasă butonul pentru a viziona video-ul',
+                'Tap the button to watch the video',
                 style: TextStyle(fontSize: 16.sp),
                 textAlign: TextAlign.center,
               ),
@@ -42,7 +42,7 @@ class VideoPlayerWidget extends StatelessWidget {
             ElevatedButton.icon(
               onPressed: _launchVideo,
               icon: const Icon(Icons.play_arrow),
-              label: const Text('Vizionează Video'),
+              label: const Text('Watch Video'),
               style: ElevatedButton.styleFrom(
                 padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 1.5.h),
               ),

@@ -154,7 +154,7 @@ class _RealWorkoutStatsWidgetState extends State<RealWorkoutStatsWidget> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Statistici Săptămână Curentă',
+              'Current Week Statistics',
               style: theme.textTheme.titleLarge?.copyWith(
                 fontWeight: FontWeight.bold,
               ),
@@ -164,7 +164,7 @@ class _RealWorkoutStatsWidgetState extends State<RealWorkoutStatsWidget> {
             // Workout completion
             _buildStatRow(
               icon: Icons.fitness_center,
-              label: 'Antrenamente Completate',
+              label: 'Completed Workouts',
               value: '$_completedWorkouts / $_scheduledWorkouts',
               color: Colors.blue,
             ),
@@ -173,7 +173,7 @@ class _RealWorkoutStatsWidgetState extends State<RealWorkoutStatsWidget> {
             // Completion rate
             _buildStatRow(
               icon: Icons.trending_up,
-              label: 'Rată Finalizare',
+              label: 'Completion Rate',
               value: '$completionRate%',
               color: completionRate >= 80 ? Colors.green : Colors.orange,
             ),
@@ -182,7 +182,7 @@ class _RealWorkoutStatsWidgetState extends State<RealWorkoutStatsWidget> {
             // Total minutes
             _buildStatRow(
               icon: Icons.schedule,
-              label: 'Minute Active',
+              label: 'Active Minutes',
               value: '$_totalMinutes min',
               color: Colors.purple,
             ),
@@ -191,8 +191,8 @@ class _RealWorkoutStatsWidgetState extends State<RealWorkoutStatsWidget> {
             // Calorie streak
             _buildStatRow(
               icon: Icons.local_fire_department,
-              label: 'Streak Calorii',
-              value: '$_calorieStreak zile',
+              label: 'Calorie Streak',
+              value: '$_calorieStreak days',
               color: Colors.deepOrange,
             ),
           ],

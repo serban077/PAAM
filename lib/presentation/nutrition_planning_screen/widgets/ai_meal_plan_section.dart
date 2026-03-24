@@ -112,56 +112,6 @@ class _AIMealPlanSectionState extends State<AIMealPlanSection> {
     }
   }
 
-  Future<void> _addMealToDay(Map<String, dynamic> meal) async {
-    try {
-      final userId = SupabaseService.instance.client.auth.currentUser?.id;
-      if (userId == null) return;
-
-      final mealType = meal['type'] as String;
-      final foods = meal['foods'] as List<dynamic>;
-
-      for (var food in foods) {
-        final foodName = food['name'] as String;
-        final quantity = (food['quantity'] as num).toDouble();
-
-        final foodData = await SupabaseService.instance.client
-            .from('food_database')
-            .select('id')
-            .eq('name', foodName)
-            .maybeSingle();
-
-        if (foodData != null) {
-          await SupabaseService.instance.client.from('user_meals').insert({
-            'user_id': userId,
-            'food_id': foodData['id'],
-            'meal_type': mealType,
-            'serving_quantity': quantity,
-            'consumed_at': DateTime.now().toIso8601String(),
-          });
-        }
-      }
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Meal added successfully!'),
-            backgroundColor: Colors.green,
-          ),
-        );
-        widget.onMealAdded();
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Eroare: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -402,7 +352,7 @@ class _AIMealPlanSectionState extends State<AIMealPlanSection> {
           .insert({
             'name': 'Plan AI - $mealName',
             'serving_size': 1, // 1 portion
-            'serving_unit': 'porție',
+            'serving_unit': 'portion',
             'calories': calories, // Total calories for the meal
             'protein_g': protein, // Total protein for the meal
             'carbs_g': carbs, // Total carbs for the meal

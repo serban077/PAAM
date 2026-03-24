@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:sizer/sizer.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:intl/intl.dart';
@@ -124,6 +125,7 @@ class _NutritionPlanningScreenState extends State<NutritionPlanningScreen> {
   }
 
   Future<void> _openBarcodeScanner() async {
+    HapticFeedback.lightImpact();
     final food = await Navigator.push<Map<String, dynamic>>(
       context,
       MaterialPageRoute(builder: (context) => const BarcodeScannerPage()),
@@ -170,7 +172,7 @@ class _NutritionPlanningScreenState extends State<NutritionPlanningScreen> {
         child: const Icon(Icons.qr_code_scanner),
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? _buildSkeleton(context)
           : RefreshIndicator(
               onRefresh: _loadNutritionData,
               child: SingleChildScrollView(
@@ -292,6 +294,41 @@ class _NutritionPlanningScreenState extends State<NutritionPlanningScreen> {
                 ),
               ),
             ),
+    );
+  }
+
+  Widget _buildSkeleton(BuildContext context) {
+    final theme = Theme.of(context);
+    final color = theme.colorScheme.surfaceContainerHighest.withAlpha(76);
+    return SingleChildScrollView(
+      padding: EdgeInsets.all(4.w),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(height: 2.h, width: 50.w, color: color),
+          SizedBox(height: 2.h),
+          Container(
+            height: 12.h,
+            decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(12)),
+          ),
+          SizedBox(height: 2.h),
+          ...List.generate(3, (_) => Padding(
+            padding: EdgeInsets.only(bottom: 1.h),
+            child: Container(
+              height: 3.h,
+              decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(8)),
+            ),
+          )),
+          SizedBox(height: 3.h),
+          ...List.generate(4, (_) => Padding(
+            padding: EdgeInsets.only(bottom: 1.5.h),
+            child: Container(
+              height: 10.h,
+              decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(12)),
+            ),
+          )),
+        ],
+      ),
     );
   }
 }

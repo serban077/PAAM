@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:sizer/sizer.dart';
 
 /// Simple Meal Card - Streamlined meal display with integrated add button
@@ -42,6 +43,7 @@ class _SimpleMealCardState extends State<SimpleMealCard> {
   }
 
   void _toggleEaten(String mealId) {
+    HapticFeedback.lightImpact();
     setState(() {
       if (_eatenMealIds.contains(mealId)) {
         _eatenMealIds.remove(mealId);
@@ -140,13 +142,16 @@ class _SimpleMealCardState extends State<SimpleMealCard> {
         padding: EdgeInsets.only(bottom: 0.8.h),
         child: Row(
           children: [
-            // Eaten checkbox
+            // Eaten checkbox — minimum 44pt tap target
             GestureDetector(
               onTap: () => _toggleEaten(mealId),
-              child: Container(
+              child: SizedBox(
+                width: 44,
+                height: 44,
+                child: Center(
+                  child: Container(
                 width: 22,
                 height: 22,
-                margin: EdgeInsets.only(right: 2.w),
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: isEaten
@@ -159,9 +164,11 @@ class _SimpleMealCardState extends State<SimpleMealCard> {
                     width: 1.5,
                   ),
                 ),
-                child: isEaten
-                    ? const Icon(Icons.check, size: 14, color: Colors.white)
-                    : null,
+                    child: isEaten
+                        ? const Icon(Icons.check, size: 14, color: Colors.white)
+                        : null,
+                  ),
+                ),
               ),
             ),
             // Food info
@@ -208,7 +215,7 @@ class _SimpleMealCardState extends State<SimpleMealCard> {
                       unit,
                     ),
                     padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
+                    constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
                   ),
                 SizedBox(width: 1.w),
                 IconButton(

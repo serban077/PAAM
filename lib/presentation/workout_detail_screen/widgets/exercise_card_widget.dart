@@ -39,12 +39,12 @@ class ExerciseCardWidget extends StatelessWidget {
               backgroundColor: Colors.transparent,
               builder: (context) => VideoPlayerModal(
                 videoUrl: videoUrl,
-                exerciseName: exercise['name'] ?? 'Exercițiu',
+                exerciseName: exercise['name'] ?? 'Exercise',
               ),
             );
           } else {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Video indisponibil pentru acest exercițiu')),
+              const SnackBar(content: Text('Video unavailable for this exercise')),
             );
           }
         },
@@ -85,12 +85,12 @@ class ExerciseCardWidget extends StatelessWidget {
                     ),
                     SizedBox(height: 1.h),
                     Text(
-                      '$sets seturi x $reps repetări',
+                      '$sets sets x $reps reps',
                       style: theme.textTheme.bodyMedium,
                     ),
                     SizedBox(height: 0.5.h),
                     Text(
-                      'Pauză: $restSeconds secunde',
+                      'Rest: $restSeconds seconds',
                       style: theme.textTheme.bodySmall
                           ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
                     ),

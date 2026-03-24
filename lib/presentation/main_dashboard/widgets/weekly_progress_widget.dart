@@ -102,7 +102,7 @@ class _WeeklyProgressWidgetState extends State<WeeklyProgressWidget> {
     }
 
     // Generate weekly data based on scheduled days
-    final dayNames = ["L", "M", "M", "J", "V", "S", "D"];
+    final dayNames = ["M", "T", "W", "T", "F", "S", "S"];
     final List<Map<String, dynamic>> weeklyData = List.generate(7, (index) {
       final dayNumber = index + 1;
       return {
@@ -133,7 +133,7 @@ class _WeeklyProgressWidgetState extends State<WeeklyProgressWidget> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('Activitate Săptămână', style: theme.textTheme.titleMedium),
+              Text('Weekly Activity', style: theme.textTheme.titleMedium),
               Container(
                 padding: EdgeInsets.symmetric(horizontal: 3.w, vertical: 1.h),
                 decoration: BoxDecoration(
@@ -149,7 +149,7 @@ class _WeeklyProgressWidgetState extends State<WeeklyProgressWidget> {
                     ),
                     SizedBox(width: 1.w),
                     Text(
-                      '$completedWorkouts/7 zile',
+                      '$completedWorkouts/7 days',
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: AppTheme.successLight,
                         fontWeight: FontWeight.w600,
@@ -166,7 +166,7 @@ class _WeeklyProgressWidgetState extends State<WeeklyProgressWidget> {
           SizedBox(
             height: 20.h,
             child: Semantics(
-              label: "Grafic activitate săptămânală cu antrenamente programate",
+              label: "Weekly activity chart with scheduled workouts",
               child: BarChart(
                 BarChartData(
                   alignment: BarChartAlignment.spaceAround,
@@ -238,7 +238,7 @@ class _WeeklyProgressWidgetState extends State<WeeklyProgressWidget> {
             children: [
               _buildSummaryItem(
                 context,
-                'Zile Programate',
+                'Scheduled Days',
                 '$completedWorkouts',
                 'fitness_center',
                 theme.colorScheme.primary,
@@ -250,7 +250,7 @@ class _WeeklyProgressWidgetState extends State<WeeklyProgressWidget> {
               ),
               _buildSummaryItem(
                 context,
-                'Zile Odihnă',
+                'Rest Days',
                 '${7 - completedWorkouts}',
                 'hotel',
                 theme.colorScheme.secondary,
@@ -262,7 +262,7 @@ class _WeeklyProgressWidgetState extends State<WeeklyProgressWidget> {
               ),
               _buildSummaryItem(
                 context,
-                'Frecvență',
+                'Frequency',
                 '${(completedWorkouts / 7 * 100).toInt()}%',
                 'local_fire_department',
                 theme.colorScheme.tertiary,

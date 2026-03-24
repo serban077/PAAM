@@ -82,7 +82,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 SizedBox(height: 2.h),
                 // Title
                 Text(
-                  'Bine ai venit înapoi!',
+                  'Welcome back!',
                   style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
@@ -90,7 +90,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 SizedBox(height: 1.h),
                 Text(
-                  'Conectează-te pentru a continua',
+                  'Sign in to continue',
                   style: Theme.of(
                     context,
                   ).textTheme.bodyMedium?.copyWith(color: Colors.grey),
@@ -110,10 +110,10 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Te rog introdu email-ul';
+                      return 'Please enter your email';
                     }
                     if (!value.contains('@')) {
-                      return 'Te rog introdu un email valid';
+                      return 'Please enter a valid email';
                     }
                     return null;
                   },
@@ -124,7 +124,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   controller: _passwordController,
                   obscureText: _obscurePassword,
                   decoration: InputDecoration(
-                    labelText: 'Parolă',
+                    labelText: 'Password',
                     prefixIcon: const Icon(Icons.lock_outline),
                     suffixIcon: IconButton(
                       icon: Icon(
@@ -142,10 +142,10 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Te rog introdu parola';
+                      return 'Please enter your password';
                     }
                     if (value.length < 6) {
-                      return 'Parola trebuie să aibă cel puțin 6 caractere';
+                      return 'Password must be at least 6 characters';
                     }
                     return null;
                   },
@@ -167,7 +167,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
                       : Text(
-                          'Conectează-te',
+                          'Sign In',
                           style: TextStyle(fontSize: 16.sp),
                         ),
                 ),
@@ -176,7 +176,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text('Nu ai cont? ', style: TextStyle(fontSize: 14.sp)),
+                    Text("Don't have an account? ", style: TextStyle(fontSize: 14.sp)),
                     TextButton(
                       onPressed: () {
                         Navigator.of(
@@ -184,7 +184,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         ).pushReplacementNamed(AppRoutes.signupScreen);
                       },
                       child: Text(
-                        'Înregistrează-te',
+                        'Sign Up',
                         style: TextStyle(
                           fontSize: 14.sp,
                           fontWeight: FontWeight.bold,
@@ -206,7 +206,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Credențiale Demo:',
+                        'Demo Credentials:',
                         style: TextStyle(
                           fontSize: 14.sp,
                           fontWeight: FontWeight.bold,
@@ -260,7 +260,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 _emailController.text = email;
                 ScaffoldMessenger.of(
                   context,
-                ).showSnackBar(const SnackBar(content: Text('Email copiat')));
+                ).showSnackBar(const SnackBar(content: Text('Email copied')));
               },
             ),
           ],
@@ -269,7 +269,7 @@ class _LoginScreenState extends State<LoginScreen> {
           children: [
             Expanded(
               child: Text(
-                'Parolă: $password',
+                'Password: $password',
                 style: TextStyle(fontSize: 11.sp),
               ),
             ),
@@ -279,7 +279,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 _passwordController.text = password;
                 ScaffoldMessenger.of(
                   context,
-                ).showSnackBar(const SnackBar(content: Text('Parolă copiată')));
+                ).showSnackBar(const SnackBar(content: Text('Password copied')));
               },
             ),
           ],

@@ -51,7 +51,7 @@ class _WaterTrackingCardState extends State<WaterTrackingCard> {
     final result = await showDialog<int>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Adaugă Apă'),
+        title: const Text('Add Water'),
         content: TextField(
           controller: controller,
           keyboardType: TextInputType.number,
@@ -59,7 +59,7 @@ class _WaterTrackingCardState extends State<WaterTrackingCard> {
             FilteringTextInputFormatter.digitsOnly,
           ],
           decoration: InputDecoration(
-            labelText: 'Cantitate (ml)',
+            labelText: 'Amount (ml)',
             suffixText: 'ml',
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
@@ -70,7 +70,7 @@ class _WaterTrackingCardState extends State<WaterTrackingCard> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Anulează'),
+            child: const Text('Cancel'),
           ),
           ElevatedButton(
             onPressed: () {
@@ -79,7 +79,7 @@ class _WaterTrackingCardState extends State<WaterTrackingCard> {
                 Navigator.pop(context, ml);
               }
             },
-            child: const Text('Adaugă'),
+            child: const Text('Add'),
           ),
         ],
       ),
@@ -112,7 +112,7 @@ class _WaterTrackingCardState extends State<WaterTrackingCard> {
                     Icon(Icons.water_drop, color: Colors.blue, size: 24),
                     SizedBox(width: 2.w),
                     Text(
-                      'Apă Consumată',
+                      'Water Consumed',
                       style: theme.textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
@@ -164,7 +164,7 @@ class _WaterTrackingCardState extends State<WaterTrackingCard> {
                 ),
                 if (progress >= 100)
                   Text(
-                    'Obiectiv atins! 🎉',
+                    'Goal reached!',
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: Colors.green,
                       fontWeight: FontWeight.bold,

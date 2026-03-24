@@ -19,22 +19,22 @@ class _MeasurementsTrackingWidgetState
 
   // Mock measurements data
   final Map<String, List<Map<String, dynamic>>> _measurementsData = {
-    "Piept": [
+    "Chest": [
       {"date": "2026-01-01", "value": 102.0},
       {"date": "2026-01-08", "value": 101.5},
       {"date": "2026-01-15", "value": 101.0},
     ],
-    "Talie": [
+    "Waist": [
       {"date": "2026-01-01", "value": 92.0},
       {"date": "2026-01-08", "value": 90.5},
       {"date": "2026-01-15", "value": 89.0},
     ],
-    "Brațe": [
+    "Arms": [
       {"date": "2026-01-01", "value": 35.0},
       {"date": "2026-01-08", "value": 35.5},
       {"date": "2026-01-15", "value": 36.0},
     ],
-    "Coapse": [
+    "Thighs": [
       {"date": "2026-01-01", "value": 58.0},
       {"date": "2026-01-08", "value": 57.5},
       {"date": "2026-01-15", "value": 57.0},
@@ -83,7 +83,7 @@ class _MeasurementsTrackingWidgetState
       child: Column(
         children: [
           Text(
-            'Selectează Zona Corpului',
+            'Select Body Area',
             style: theme.textTheme.titleMedium?.copyWith(
               fontWeight: FontWeight.w600,
             ),
@@ -103,36 +103,36 @@ class _MeasurementsTrackingWidgetState
                   height: 35.h,
                   fit: BoxFit.contain,
                   semanticLabel:
-                      "Siluetă corp uman pentru selectare zone măsurători",
+                      "Human body silhouette for selecting measurement zones",
                 ),
                 // Interactive zones
                 Positioned(
                   top: 8.h,
-                  child: _buildBodyPartButton(theme, 'Piept', 12.w),
+                  child: _buildBodyPartButton(theme, 'Chest', 12.w),
                 ),
                 Positioned(
                   top: 15.h,
-                  child: _buildBodyPartButton(theme, 'Talie', 12.w),
+                  child: _buildBodyPartButton(theme, 'Waist', 12.w),
                 ),
                 Positioned(
                   top: 12.h,
                   left: 20.w,
-                  child: _buildBodyPartButton(theme, 'Brațe', 10.w),
+                  child: _buildBodyPartButton(theme, 'Arms', 10.w),
                 ),
                 Positioned(
                   top: 12.h,
                   right: 20.w,
-                  child: _buildBodyPartButton(theme, 'Brațe', 10.w),
+                  child: _buildBodyPartButton(theme, 'Arms', 10.w),
                 ),
                 Positioned(
                   top: 22.h,
                   left: 25.w,
-                  child: _buildBodyPartButton(theme, 'Coapse', 10.w),
+                  child: _buildBodyPartButton(theme, 'Thighs', 10.w),
                 ),
                 Positioned(
                   top: 22.h,
                   right: 25.w,
-                  child: _buildBodyPartButton(theme, 'Coapse', 10.w),
+                  child: _buildBodyPartButton(theme, 'Thighs', 10.w),
                 ),
               ],
             ),
@@ -181,7 +181,7 @@ class _MeasurementsTrackingWidgetState
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Zone Măsurate',
+          'Measured Areas',
           style: theme.textTheme.titleMedium?.copyWith(
             fontWeight: FontWeight.w600,
           ),
@@ -260,7 +260,7 @@ class _MeasurementsTrackingWidgetState
                           ),
                         ),
                         Text(
-                          '${measurements.length} măsurători',
+                          '${measurements.length} measurements',
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: theme.colorScheme.onSurfaceVariant,
                           ),
@@ -342,7 +342,7 @@ class _MeasurementsTrackingWidgetState
           ),
           SizedBox(height: 2.h),
           Text(
-            'Istoric Măsurători',
+            'Measurement History',
             style: theme.textTheme.titleSmall?.copyWith(
               fontWeight: FontWeight.w600,
             ),
@@ -395,7 +395,7 @@ class _MeasurementsTrackingWidgetState
               ),
               SizedBox(width: 2.w),
               Text(
-                'Sfat pentru Măsurători',
+                'Measurement Tip',
                 style: theme.textTheme.titleSmall?.copyWith(
                   fontWeight: FontWeight.w600,
                   color: theme.colorScheme.primary,
@@ -405,7 +405,7 @@ class _MeasurementsTrackingWidgetState
           ),
           SizedBox(height: 1.h),
           Text(
-            'Pentru rezultate consistente, măsoară-te dimineața, înainte de micul dejun, în aceleași condiții.',
+            'For consistent results, measure yourself in the morning, before breakfast, under the same conditions.',
             style: theme.textTheme.bodySmall?.copyWith(
               color: theme.colorScheme.onSurface,
             ),

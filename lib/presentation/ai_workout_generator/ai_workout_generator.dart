@@ -91,7 +91,7 @@ class _AIWorkoutGeneratorState extends State<AIWorkoutGenerator> {
 
     try {
       final user = SupabaseService.instance.client.auth.currentUser;
-      if (user == null) throw Exception('Nu sunteți autentificat');
+      if (user == null) throw Exception('Not authenticated');
 
       setState(() {
         _progressValue = 0.3;

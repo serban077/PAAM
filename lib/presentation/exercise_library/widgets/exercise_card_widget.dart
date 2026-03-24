@@ -17,11 +17,11 @@ class ExerciseCardWidget extends StatelessWidget {
 
   Color _getDifficultyColor(String difficulty, ThemeData theme) {
     switch (difficulty) {
-      case 'Începător':
+      case 'Beginner':
         return theme.colorScheme.tertiary;
-      case 'Intermediar':
+      case 'Intermediate':
         return Colors.orange;
-      case 'Avansat':
+      case 'Advanced':
         return theme.colorScheme.error;
       default:
         return theme.colorScheme.primary;
@@ -30,11 +30,11 @@ class ExerciseCardWidget extends StatelessWidget {
 
   IconData _getDifficultyIcon(String difficulty) {
     switch (difficulty) {
-      case 'Începător':
+      case 'Beginner':
         return Icons.signal_cellular_alt_1_bar;
-      case 'Intermediar':
+      case 'Intermediate':
         return Icons.signal_cellular_alt_2_bar;
-      case 'Avansat':
+      case 'Advanced':
         return Icons.signal_cellular_alt;
       default:
         return Icons.signal_cellular_alt_1_bar;

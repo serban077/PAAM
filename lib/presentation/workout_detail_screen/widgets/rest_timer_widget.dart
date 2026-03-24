@@ -99,7 +99,7 @@ class _RestTimerWidgetState extends State<RestTimerWidget>
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'Pauză între seturi',
+                'Rest Between Sets',
                 style: theme.textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.w600,
                   color: theme.colorScheme.primary,
@@ -115,7 +115,7 @@ class _RestTimerWidgetState extends State<RestTimerWidget>
                   HapticFeedback.lightImpact();
                   widget.onSkip();
                 },
-                tooltip: 'Închide',
+                tooltip: 'Close',
               ),
             ],
           ),
@@ -157,7 +157,7 @@ class _RestTimerWidgetState extends State<RestTimerWidget>
                       ),
                     ),
                     Text(
-                      'secunde',
+                      'seconds',
                       style: theme.textTheme.bodyMedium?.copyWith(
                         color: theme.colorScheme.onSurfaceVariant,
                       ),
@@ -179,7 +179,7 @@ class _RestTimerWidgetState extends State<RestTimerWidget>
                     color: theme.colorScheme.primary,
                     size: 24,
                   ),
-                  label: Text(_isPaused ? 'Reia' : 'Pauză'),
+                  label: Text(_isPaused ? 'Resume' : 'Pause'),
                   style: OutlinedButton.styleFrom(
                     padding: EdgeInsets.symmetric(vertical: 1.5.h),
                   ),
@@ -197,7 +197,7 @@ class _RestTimerWidgetState extends State<RestTimerWidget>
                     color: theme.colorScheme.onPrimary,
                     size: 24,
                   ),
-                  label: const Text('Omite'),
+                  label: const Text('Skip'),
                   style: ElevatedButton.styleFrom(
                     padding: EdgeInsets.symmetric(vertical: 1.5.h),
                   ),

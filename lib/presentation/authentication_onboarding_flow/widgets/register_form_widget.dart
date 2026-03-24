@@ -39,7 +39,7 @@ class _RegisterFormWidgetState extends State<RegisterFormWidget> {
     if (_formKey.currentState?.validate() ?? false) {
       if (!_acceptedTerms) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Acceptați termenii și condițiile')),
+          const SnackBar(content: Text('Please accept the terms and conditions')),
         );
         return;
       }
@@ -61,7 +61,7 @@ class _RegisterFormWidgetState extends State<RegisterFormWidget> {
           TextFormField(
             controller: _fullNameController,
             decoration: InputDecoration(
-              labelText: 'Nume Complet',
+              labelText: 'Full Name',
               prefixIcon: const Icon(Icons.person_outlined),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8.0),
@@ -69,7 +69,7 @@ class _RegisterFormWidgetState extends State<RegisterFormWidget> {
             ),
             validator: (value) {
               if (value == null || value.isEmpty) {
-                return 'Introduceți numele complet';
+                return 'Enter your full name';
               }
               return null;
             },
@@ -87,10 +87,10 @@ class _RegisterFormWidgetState extends State<RegisterFormWidget> {
             ),
             validator: (value) {
               if (value == null || value.isEmpty) {
-                return 'Introduceți adresa de email';
+                return 'Enter your email address';
               }
               if (!value.contains('@')) {
-                return 'Email invalid';
+                return 'Invalid email';
               }
               return null;
             },
@@ -100,7 +100,7 @@ class _RegisterFormWidgetState extends State<RegisterFormWidget> {
             controller: _passwordController,
             obscureText: _obscurePassword,
             decoration: InputDecoration(
-              labelText: 'Parolă',
+              labelText: 'Password',
               prefixIcon: const Icon(Icons.lock_outlined),
               suffixIcon: IconButton(
                 icon: Icon(
@@ -115,10 +115,10 @@ class _RegisterFormWidgetState extends State<RegisterFormWidget> {
             ),
             validator: (value) {
               if (value == null || value.isEmpty) {
-                return 'Introduceți parola';
+                return 'Enter your password';
               }
               if (value.length < 6) {
-                return 'Parola trebuie să aibă minim 6 caractere';
+                return 'Password must be at least 6 characters';
               }
               return null;
             },
@@ -128,7 +128,7 @@ class _RegisterFormWidgetState extends State<RegisterFormWidget> {
             controller: _confirmPasswordController,
             obscureText: _obscureConfirmPassword,
             decoration: InputDecoration(
-              labelText: 'Confirmă Parola',
+              labelText: 'Confirm Password',
               prefixIcon: const Icon(Icons.lock_outlined),
               suffixIcon: IconButton(
                 icon: Icon(
@@ -146,10 +146,10 @@ class _RegisterFormWidgetState extends State<RegisterFormWidget> {
             ),
             validator: (value) {
               if (value == null || value.isEmpty) {
-                return 'Confirmați parola';
+                return 'Confirm your password';
               }
               if (value != _passwordController.text) {
-                return 'Parolele nu se potrivesc';
+                return "Passwords don't match";
               }
               return null;
             },
@@ -166,7 +166,7 @@ class _RegisterFormWidgetState extends State<RegisterFormWidget> {
                 child: GestureDetector(
                   onTap: () => setState(() => _acceptedTerms = !_acceptedTerms),
                   child: Text(
-                    'Accept termenii și condițiile',
+                    'I accept the terms and conditions',
                     style: TextStyle(fontSize: 13.sp),
                   ),
                 ),
@@ -188,7 +188,7 @@ class _RegisterFormWidgetState extends State<RegisterFormWidget> {
                     width: 20,
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
-                : Text('Creează cont', style: TextStyle(fontSize: 16.sp)),
+                : Text('Create Account', style: TextStyle(fontSize: 16.sp)),
           ),
         ],
       ),

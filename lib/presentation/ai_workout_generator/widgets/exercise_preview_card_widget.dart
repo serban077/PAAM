@@ -68,19 +68,19 @@ class ExercisePreviewCardWidget extends StatelessWidget {
             _buildInfoRow(
               theme,
               Icons.outlined_flag,
-              'Dificultate',
+              'Difficulty',
               exercise['difficulty'] ?? '',
             ),
             _buildInfoRow(
               theme,
               Icons.repeat,
-              'Serii',
+              'Sets',
               '${exercise['sets']} x ${exercise['reps']}',
             ),
             _buildInfoRow(
               theme,
               Icons.timer,
-              'Pauză',
+              'Rest',
               '${exercise['restSeconds']}s',
             ),
             if (exercise['whyRecommended'] != null) ...[
@@ -117,7 +117,7 @@ class ExercisePreviewCardWidget extends StatelessWidget {
                 child: OutlinedButton.icon(
                   onPressed: () => _launchVideo(exercise['videoUrl']),
                   icon: const Icon(Icons.play_circle_outline),
-                  label: const Text('Vezi Video Demonstrativ'),
+                  label: const Text('Watch Demo Video'),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: theme.colorScheme.primary,
                   ),

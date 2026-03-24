@@ -38,7 +38,7 @@ class WorkoutPlanCardWidget extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        plan['planName'] ?? 'Plan de Antrenament',
+                        plan['planName'] ?? 'Workout Plan',
                         style: theme.textTheme.titleLarge?.copyWith(
                           fontWeight: FontWeight.bold,
                         ),
@@ -46,7 +46,7 @@ class WorkoutPlanCardWidget extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                       ),
                       Text(
-                        '${plan['durationWeeks'] ?? 4} săptămâni',
+                        '${plan['durationWeeks'] ?? 4} weeks',
                         style: theme.textTheme.bodyMedium?.copyWith(
                           color: theme.colorScheme.primary,
                         ),

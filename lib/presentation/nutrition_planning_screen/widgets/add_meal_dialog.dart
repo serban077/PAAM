@@ -65,7 +65,7 @@ class _AddMealDialogState extends State<AddMealDialog> {
     if (_selectedFoods.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Adaugă cel puțin un aliment'),
+          content: Text('Add at least one food'),
           backgroundColor: Colors.orange,
         ),
       );
@@ -94,7 +94,7 @@ class _AddMealDialogState extends State<AddMealDialog> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              'Masă salvată: ${_totalCalories.toStringAsFixed(0)} kcal',
+              'Meal saved: ${_totalCalories.toStringAsFixed(0)} kcal',
             ),
             backgroundColor: Colors.green,
           ),
@@ -104,7 +104,7 @@ class _AddMealDialogState extends State<AddMealDialog> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Eroare: $e'),
+            content: Text('Error: $e'),
             backgroundColor: Colors.red,
           ),
         );
@@ -130,7 +130,7 @@ class _AddMealDialogState extends State<AddMealDialog> {
               children: [
                 Expanded(
                   child: Text(
-                    'Adaugă Masă',
+                    'Add Meal',
                     style: theme.textTheme.titleLarge?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
@@ -146,7 +146,7 @@ class _AddMealDialogState extends State<AddMealDialog> {
 
             // Meal type selector
             Text(
-              'Tip masă',
+              'Meal type',
               style: theme.textTheme.titleMedium,
             ),
             SizedBox(height: 1.h),
@@ -158,9 +158,9 @@ class _AddMealDialogState extends State<AddMealDialog> {
                 ),
               ),
               items: const [
-                DropdownMenuItem(value: 'mic_dejun', child: Text('Mic dejun')),
-                DropdownMenuItem(value: 'pranz', child: Text('Prânz')),
-                DropdownMenuItem(value: 'cina', child: Text('Cină')),
+                DropdownMenuItem(value: 'mic_dejun', child: Text('Breakfast')),
+                DropdownMenuItem(value: 'pranz', child: Text('Lunch')),
+                DropdownMenuItem(value: 'cina', child: Text('Dinner')),
                 DropdownMenuItem(value: 'snack', child: Text('Snack')),
               ],
               onChanged: (value) {
@@ -175,7 +175,7 @@ class _AddMealDialogState extends State<AddMealDialog> {
             ElevatedButton.icon(
               onPressed: _addFood,
               icon: const Icon(Icons.add),
-              label: const Text('Adaugă Aliment'),
+              label: const Text('Add Food'),
               style: ElevatedButton.styleFrom(
                 minimumSize: Size(double.infinity, 6.h),
               ),
@@ -184,7 +184,7 @@ class _AddMealDialogState extends State<AddMealDialog> {
 
             // Selected foods list
             Text(
-              'Alimente adăugate (${_selectedFoods.length})',
+              'Foods added (${_selectedFoods.length})',
               style: theme.textTheme.titleMedium,
             ),
             SizedBox(height: 1.h),
@@ -192,7 +192,7 @@ class _AddMealDialogState extends State<AddMealDialog> {
               child: _selectedFoods.isEmpty
                   ? Center(
                       child: Text(
-                        'Nu ai adăugat alimente încă',
+                        'No foods added yet',
                         style: theme.textTheme.bodyMedium?.copyWith(
                           color: Colors.grey,
                         ),
@@ -217,13 +217,13 @@ class _AddMealDialogState extends State<AddMealDialog> {
               ),
               child: Column(
                 children: [
-                  _buildTotalRow('Total Calorii', '${_totalCalories.toStringAsFixed(0)} kcal', Colors.orange),
+                  _buildTotalRow('Total Calories', '${_totalCalories.toStringAsFixed(0)} kcal', Colors.orange),
                   SizedBox(height: 0.5.h),
-                  _buildTotalRow('Proteine', '${_totalProtein.toStringAsFixed(1)} g', Colors.blue),
+                  _buildTotalRow('Protein', '${_totalProtein.toStringAsFixed(1)} g', Colors.blue),
                   SizedBox(height: 0.5.h),
-                  _buildTotalRow('Carbohidrați', '${_totalCarbs.toStringAsFixed(1)} g', Colors.green),
+                  _buildTotalRow('Carbs', '${_totalCarbs.toStringAsFixed(1)} g', Colors.green),
                   SizedBox(height: 0.5.h),
-                  _buildTotalRow('Grăsimi', '${_totalFat.toStringAsFixed(1)} g', Colors.red),
+                  _buildTotalRow('Fat', '${_totalFat.toStringAsFixed(1)} g', Colors.red),
                 ],
               ),
             ),
@@ -237,7 +237,7 @@ class _AddMealDialogState extends State<AddMealDialog> {
               ),
               child: _isSaving
                   ? const CircularProgressIndicator(color: Colors.white)
-                  : const Text('Salvează Masa'),
+                  : const Text('Save Meal'),
             ),
           ],
         ),

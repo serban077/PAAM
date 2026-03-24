@@ -51,7 +51,7 @@ class NutritionSummaryWidget extends StatelessWidget {
             Divider(),
             SizedBox(height: 1.h),
             Text(
-              'Distribuție Macronutrienți',
+              'Macro Distribution',
               style: theme.textTheme.titleSmall?.copyWith(
                 fontWeight: FontWeight.bold,
               ),
@@ -59,19 +59,19 @@ class NutritionSummaryWidget extends StatelessWidget {
             SizedBox(height: 1.h),
             _buildMacroRow(
               theme,
-              'Proteine',
+              'Protein',
               macros['protein'] ?? '',
               theme.colorScheme.error,
             ),
             _buildMacroRow(
               theme,
-              'Carbohidrați',
+              'Carbohydrates',
               macros['carbs'] ?? '',
               theme.colorScheme.primary,
             ),
             _buildMacroRow(
               theme,
-              'Grăsimi',
+              'Fats',
               macros['fats'] ?? '',
               theme.colorScheme.secondary,
             ),

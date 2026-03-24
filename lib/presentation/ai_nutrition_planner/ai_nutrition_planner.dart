@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:sizer/sizer.dart';
 import 'package:dio/dio.dart';
 
@@ -33,6 +34,7 @@ class _AINutritionPlannerState extends State<AINutritionPlanner> {
   }
 
   Future<void> _generateNutritionPlan() async {
+    HapticFeedback.lightImpact();
     setState(() {
       _isGenerating = true;
       _hasError = false;
