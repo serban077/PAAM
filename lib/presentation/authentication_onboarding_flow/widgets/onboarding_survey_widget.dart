@@ -54,7 +54,10 @@ class _OnboardingSurveyWidgetState extends State<OnboardingSurveyWidget> {
       _equipment = data['equipment_available'];
       _dietaryPreference = data['dietary_preference'];
       _age = data['age'];
-      _gender = data['gender'];
+      // Normalize legacy Romanian gender values to English
+      const genderMap = {'barbat': 'male', 'femeie': 'female', 'altul': 'other'};
+      final rawGender = data['gender']?.toString();
+      _gender = genderMap[rawGender] ?? rawGender;
       _height = (data['height_cm'] as num?)?.toDouble();
       _currentWeight = (data['current_weight_kg'] as num?)?.toDouble();
       _targetWeight = (data['target_weight_kg'] as num?)?.toDouble();
@@ -65,24 +68,26 @@ class _OnboardingSurveyWidgetState extends State<OnboardingSurveyWidget> {
   }
 
   final List<String> _fitnessGoals = [
-    'pierdere_greutate',
-    'crestere_masa_musculara',
-    'mentinere',
-    'tonifiere',
+    'weight_loss',
+    'muscle_gain',
+    'maintenance',
+    'toning',
+    'endurance',
+    'body_recomposition',
   ];
 
   final List<String> _activityLevels = [
-    'sedentar',
-    'usor_activ',
-    'moderat_activ',
-    'foarte_activ',
-    'extrem_activ',
+    'sedentary',
+    'lightly_active',
+    'moderately_active',
+    'very_active',
+    'extremely_active',
   ];
 
   final List<String> _equipmentTypes = [
-    'acasa_fara_echipament',
-    'acasa_cu_echipament_basic',
-    'sala_fitness',
+    'home_no_equipment',
+    'home_basic_equipment',
+    'gym',
     'mix',
   ];
 
@@ -90,36 +95,38 @@ class _OnboardingSurveyWidgetState extends State<OnboardingSurveyWidget> {
     'normal',
     'vegetarian',
     'vegan',
-    'fara_gluten',
-    'fara_lactate',
+    'gluten_free',
+    'dairy_free',
   ];
 
   String _getLabelForGoal(String goal) {
     const labels = {
-      'pierdere_greutate': 'Weight Loss',
-      'crestere_masa_musculara': 'Muscle Gain',
-      'mentinere': 'Maintenance',
-      'tonifiere': 'Toning',
+      'weight_loss': 'Weight Loss',
+      'muscle_gain': 'Muscle Gain',
+      'maintenance': 'Maintenance',
+      'toning': 'Toning',
+      'endurance': 'Endurance',
+      'body_recomposition': 'Body Recomposition',
     };
     return labels[goal] ?? goal;
   }
 
   String _getLabelForActivity(String activity) {
     const labels = {
-      'sedentar': 'Sedentary',
-      'usor_activ': 'Lightly Active',
-      'moderat_activ': 'Moderately Active',
-      'foarte_activ': 'Very Active',
-      'extrem_activ': 'Extremely Active',
+      'sedentary': 'Sedentary',
+      'lightly_active': 'Lightly Active',
+      'moderately_active': 'Moderately Active',
+      'very_active': 'Very Active',
+      'extremely_active': 'Extremely Active',
     };
     return labels[activity] ?? activity;
   }
 
   String _getLabelForEquipment(String equipment) {
     const labels = {
-      'acasa_fara_echipament': 'Home (No Equipment)',
-      'acasa_cu_echipament_basic': 'Home (Basic Equipment)',
-      'sala_fitness': 'Gym',
+      'home_no_equipment': 'Home (No Equipment)',
+      'home_basic_equipment': 'Home (Basic Equipment)',
+      'gym': 'Gym',
       'mix': 'Mix',
     };
     return labels[equipment] ?? equipment;
@@ -130,17 +137,18 @@ class _OnboardingSurveyWidgetState extends State<OnboardingSurveyWidget> {
       'normal': 'Standard',
       'vegetarian': 'Vegetarian',
       'vegan': 'Vegan',
-      'fara_gluten': 'Gluten-Free',
-      'fara_lactate': 'Dairy-Free',
+      'gluten_free': 'Gluten-Free',
+      'dairy_free': 'Dairy-Free',
     };
     return labels[diet] ?? diet;
   }
 
   String _getLabelForGender(String gender) {
     const labels = {
-      'barbat': 'Male',
-      'femeie': 'Female',
-      'altul': 'Other',
+      'male': 'Male',
+      'female': 'Female',
+      'other': 'Other',
+      'prefer_not_to_say': 'Prefer Not to Say',
     };
     return labels[gender] ?? gender;
   }
@@ -172,6 +180,18 @@ class _OnboardingSurveyWidgetState extends State<OnboardingSurveyWidget> {
             'updated_at': DateTime.now().toIso8601String(),
           })
           .eq('id', userId);
+
+      // Log current weight to body_measurements for history tracking
+      if (_currentWeight != null) {
+        await SupabaseService.instance.client
+            .from('body_measurements')
+            .insert({
+              'user_id': userId,
+              'measurement_type': 'weight',
+              'value': _currentWeight,
+              'measured_at': DateTime.now().toIso8601String(),
+            });
+      }
 
       // Save onboarding responses
       final responses = [
@@ -413,6 +433,7 @@ class _OnboardingSurveyWidgetState extends State<OnboardingSurveyWidget> {
         ),
         SizedBox(height: 3.h),
         TextFormField(
+          initialValue: _age?.toString() ?? '',
           decoration: const InputDecoration(labelText: 'Age'),
           keyboardType: TextInputType.number,
           onChanged: (value) => _age = int.tryParse(value),
@@ -422,9 +443,10 @@ class _OnboardingSurveyWidgetState extends State<OnboardingSurveyWidget> {
           value: _gender,
           decoration: const InputDecoration(labelText: 'Gender'),
           items: [
-            'barbat',
-            'femeie',
-            'altul',
+            'male',
+            'female',
+            'other',
+            'prefer_not_to_say',
           ]
               .map((g) => DropdownMenuItem(
                     value: g,
@@ -435,18 +457,21 @@ class _OnboardingSurveyWidgetState extends State<OnboardingSurveyWidget> {
         ),
         SizedBox(height: 2.h),
         TextFormField(
+          initialValue: _height != null ? _height!.toStringAsFixed(0) : '',
           decoration: const InputDecoration(labelText: 'Height (cm)'),
           keyboardType: TextInputType.number,
           onChanged: (value) => _height = double.tryParse(value),
         ),
         SizedBox(height: 2.h),
         TextFormField(
+          initialValue: _currentWeight != null ? _currentWeight!.toStringAsFixed(1) : '',
           decoration: const InputDecoration(labelText: 'Current Weight (kg)'),
           keyboardType: TextInputType.number,
           onChanged: (value) => _currentWeight = double.tryParse(value),
         ),
         SizedBox(height: 2.h),
         TextFormField(
+          initialValue: _targetWeight != null ? _targetWeight!.toStringAsFixed(1) : '',
           decoration: const InputDecoration(labelText: 'Target Weight (kg)'),
           keyboardType: TextInputType.number,
           onChanged: (value) => _targetWeight = double.tryParse(value),
