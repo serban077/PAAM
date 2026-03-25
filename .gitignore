@@ -1,3 +1,6 @@
+# MCP config (may contain auth tokens)
+.mcp.json
+
 # Miscellaneous
 *.class
 *.log
