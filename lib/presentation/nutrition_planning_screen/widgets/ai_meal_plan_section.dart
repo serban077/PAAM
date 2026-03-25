@@ -249,6 +249,63 @@ class _AIMealPlanSectionState extends State<AIMealPlanSection> {
     );
   }
 
+  Future<String?> _showMealTypePicker(BuildContext context) {
+    return showModalBottomSheet<String>(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        final theme = Theme.of(ctx);
+        const mealTypes = [
+          {'label': 'Breakfast', 'key': 'mic_dejun'},
+          {'label': 'Lunch', 'key': 'pranz'},
+          {'label': 'Dinner', 'key': 'cina'},
+          {'label': 'Snack', 'key': 'gustare_dimineata'},
+        ];
+        return Padding(
+          padding: EdgeInsets.fromLTRB(4.w, 1.5.h, 4.w, 4.h),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 10.w,
+                height: 0.5.h,
+                decoration: BoxDecoration(
+                  color: Colors.grey[300],
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              SizedBox(height: 2.h),
+              Text(
+                'Add to which meal?',
+                style: theme.textTheme.titleMedium
+                    ?.copyWith(fontWeight: FontWeight.bold),
+              ),
+              SizedBox(height: 2.h),
+              Wrap(
+                spacing: 3.w,
+                runSpacing: 1.h,
+                alignment: WrapAlignment.center,
+                children: mealTypes.map((mt) {
+                  return ActionChip(
+                    label: Text(mt['label']!),
+                    onPressed: () => Navigator.pop(ctx, mt['key']),
+                  );
+                }).toList(),
+              ),
+              SizedBox(height: 0.5.h),
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('Cancel'),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   Widget _buildMealOption(Map<String, dynamic> option, String mealName) {
     final theme = Theme.of(context);
     final optionId = option['option_id'] as int? ?? 1;
@@ -321,22 +378,8 @@ class _AIMealPlanSectionState extends State<AIMealPlanSection> {
         throw Exception('User not logged in');
       }
 
-      // Map meal names to meal types (must match Supabase enum exactly)
-      // Supabase enum values: mic_dejun, gustare_dimineata, pranz, gustare_dupa_amiaza, cina, gustare_seara
-      final mealTypeMap = {
-        'Mic dejun': 'mic_dejun',
-        'Mic Dejun': 'mic_dejun',
-        'Prânz': 'pranz',
-        'Pranz': 'pranz',
-        'Cină': 'cina',
-        'Cina': 'cina',
-        'Gustare': 'gustare_dimineata', // Default to morning snack
-        'Gustare dimineață': 'gustare_dimineata',
-        'Gustare după-amiază': 'gustare_dupa_amiaza',
-        'Gustare seară': 'gustare_seara',
-      };
-
-      final mealType = mealTypeMap[mealName] ?? 'gustare_dimineata';
+      final mealType = await _showMealTypePicker(context);
+      if (mealType == null || !mounted) return;
       final description = option['description'] as String? ?? '';
       final calories = (option['calories'] as num?)?.toInt() ?? 0;
       final protein = (option['protein_g'] as num?)?.toDouble() ?? 0;
