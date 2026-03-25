@@ -6,7 +6,6 @@ import 'package:sizer/sizer.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../core/app_export.dart';
-import '../../routes/app_routes.dart';
 import '../../services/supabase_service.dart';
 import './widgets/login_form_widget.dart';
 import './widgets/onboarding_survey_widget.dart';
@@ -36,24 +35,23 @@ class _AuthenticationOnboardingFlowState
   }
 
   void _setupAuthListener() {
-    _authSubscription = SupabaseService.instance.client.auth.onAuthStateChange.listen((data) {
+    _authSubscription =
+        SupabaseService.instance.client.auth.onAuthStateChange.listen((data) {
       final user = data.session?.user;
-      
+
       if (user != null) {
-        // User logged in - check onboarding
         if (mounted) {
           setState(() {
             _currentUser = user;
-            _isCheckingAuth = true; // Start checking onboarding status
+            _isCheckingAuth = true;
           });
         }
         _checkOnboardingStatus();
       } else {
-        // User logged out - reset state immediately
         if (mounted) {
           setState(() {
             _currentUser = null;
-            _isCheckingAuth = false; // Don't check, just show login
+            _isCheckingAuth = false;
             _isOnboardingComplete = false;
           });
         }
@@ -69,9 +67,7 @@ class _AuthenticationOnboardingFlowState
 
   Future<void> _checkOnboardingStatus() async {
     if (_currentUser == null) {
-      if (mounted) {
-        setState(() => _isCheckingAuth = false);
-      }
+      if (mounted) setState(() => _isCheckingAuth = false);
       return;
     }
 
@@ -80,7 +76,8 @@ class _AuthenticationOnboardingFlowState
           .from('onboarding_responses')
           .select('id')
           .eq('user_id', _currentUser!.id)
-          .limit(1);
+          .limit(1)
+          .timeout(const Duration(seconds: 15));
 
       final isComplete = response.isNotEmpty;
       if (mounted) {
@@ -95,9 +92,7 @@ class _AuthenticationOnboardingFlowState
       }
     } catch (e) {
       debugPrint('Error checking onboarding status: $e');
-      if (mounted) {
-        setState(() => _isCheckingAuth = false);
-      }
+      if (mounted) setState(() => _isCheckingAuth = false);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -112,12 +107,17 @@ class _AuthenticationOnboardingFlowState
     setState(() => _isLoading = true);
     try {
       await SupabaseService.instance.client.auth
-          .signInWithPassword(email: email, password: password);
-      // Auth state listener will handle the rest
+          .signInWithPassword(email: email, password: password)
+          .timeout(const Duration(seconds: 15));
     } on AuthException catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context)
             .showSnackBar(SnackBar(content: Text(e.message)));
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Login failed: $e')));
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -128,93 +128,205 @@ class _AuthenticationOnboardingFlowState
       String email, String password, String fullName) async {
     setState(() => _isLoading = true);
     try {
-      await SupabaseService.instance.client.auth.signUp(
-        email: email,
-        password: password,
-        data: {'full_name': fullName},
-      );
-      // Auth state listener will handle the rest
+      await SupabaseService.instance.client.auth
+          .signUp(
+            email: email,
+            password: password,
+            data: {'full_name': fullName},
+          )
+          .timeout(const Duration(seconds: 15));
     } on AuthException catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context)
             .showSnackBar(SnackBar(content: Text(e.message)));
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Registration failed: $e')));
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
   }
 
+  // ── Build ─────────────────────────────────────────────────────────
+
   @override
   Widget build(BuildContext context) {
-    if (_isCheckingAuth) {
-      return Scaffold(
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              SvgPicture.asset(
-                'assets/images/img_app_logo.svg',
-                width: 30.w,
-                height: 30.w,
-              ),
-              SizedBox(height: 4.h),
-              Text(
-                'SmartFitAI',
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: Theme.of(context).colorScheme.primary,
-                ),
-              ),
-              SizedBox(height: 1.h),
-              Text(
-                'Your AI-powered fitness companion',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-              ),
-              SizedBox(height: 6.h),
-              SizedBox(
-                width: 6.w,
-                height: 6.w,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: Theme.of(context).colorScheme.primary,
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    if (_isCheckingAuth) return _buildSplashScreen(isDark);
 
     if (_currentUser != null && !_isOnboardingComplete) {
       return const OnboardingSurveyWidget();
     }
 
-    if (_currentUser == null) {
-      return Scaffold(
-        body: SafeArea(
-          child: SingleChildScrollView(
-            padding: EdgeInsets.all(5.w),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                SizedBox(height: 5.h),
-                Text(
-                  'SmartFit AI',
-                  style: TextStyle(
-                    fontSize: 24.sp,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.blue,
+    if (_currentUser == null) return _buildAuthScreen(isDark);
+
+    return const Scaffold(body: Center(child: CircularProgressIndicator()));
+  }
+
+  // ── Splash ────────────────────────────────────────────────────────
+
+  Widget _buildSplashScreen(bool isDark) {
+    return Scaffold(
+      backgroundColor:
+          isDark ? AppTheme.backgroundDark : AppTheme.backgroundLight,
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            SvgPicture.asset(
+              'assets/images/img_app_logo.svg',
+              width: 28.w,
+              height: 28.w,
+            ),
+            SizedBox(height: 4.h),
+            Text(
+              'SmartFitAI',
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.w800,
+                    color: Theme.of(context).colorScheme.primary,
                   ),
+            ),
+            SizedBox(height: 6.h),
+            SizedBox(
+              width: 6.w,
+              height: 6.w,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ── Auth Screen ───────────────────────────────────────────────────
+
+  Widget _buildAuthScreen(bool isDark) {
+    final gradientColors = isDark
+        ? [AppTheme.backgroundDark, AppTheme.primaryVariantDark]
+        : [AppTheme.primaryVariantLight, AppTheme.primaryLight];
+
+    final cardColor = isDark ? AppTheme.surfaceDark : AppTheme.surfaceLight;
+
+    return Scaffold(
+      body: Stack(
+        children: [
+          Positioned.fill(
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: gradientColors,
                 ),
-                SizedBox(height: 2.h),
-                Text(
-                  _isLogin ? 'Sign In' : 'Create Account',
-                  style: TextStyle(fontSize: 20.sp, fontWeight: FontWeight.w600),
+              ),
+            ),
+          ),
+          SafeArea(
+            child: Column(
+              children: [
+                SizedBox(height: 28.h, child: _buildHeroSection()),
+                Expanded(child: _buildFormCard(isDark, cardColor)),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Hero ───────────────────────────────────────────────────────────
+
+  Widget _buildHeroSection() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          SvgPicture.asset(
+            'assets/images/img_app_logo.svg',
+            width: 18.w,
+            height: 18.w,
+            colorFilter: const ColorFilter.mode(
+              Colors.white,
+              BlendMode.srcIn,
+            ),
+          ),
+          SizedBox(height: 2.h),
+          Text(
+            'SmartFitAI',
+            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                  fontWeight: FontWeight.w800,
+                  color: Colors.white,
+                  letterSpacing: -0.5,
                 ),
-                SizedBox(height: 4.h),
-                _isLogin
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Form Card ──────────────────────────────────────────────────────
+
+  Widget _buildFormCard(bool isDark, Color cardColor) {
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: cardColor,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+        border: isDark
+            ? Border(
+                top: BorderSide(
+                  color: AppTheme.primaryDark.withValues(alpha: 0.25),
+                  width: 1,
+                ),
+              )
+            : null,
+        boxShadow: [
+          BoxShadow(
+            color: isDark
+                ? Colors.black.withValues(alpha: 0.35)
+                : AppTheme.shadowLight,
+            blurRadius: 24,
+            offset: const Offset(0, -6),
+          ),
+        ],
+      ),
+      child: SingleChildScrollView(
+        padding: EdgeInsets.fromLTRB(6.w, 2.5.h, 6.w, 4.h),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Drag handle
+            Center(
+              child: Container(
+                width: 10.w,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: isDark ? AppTheme.borderDark : AppTheme.borderLight,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            SizedBox(height: 2.5.h),
+
+            // Tab switcher
+            _buildTabSwitcher(isDark),
+            SizedBox(height: 3.h),
+
+            // Animated form
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 250),
+              transitionBuilder: (child, animation) =>
+                  FadeTransition(opacity: animation, child: child),
+              child: KeyedSubtree(
+                key: ValueKey(_isLogin),
+                child: _isLogin
                     ? LoginFormWidget(
                         onLogin: _handleLogin,
                         isLoading: _isLoading,
@@ -223,25 +335,96 @@ class _AuthenticationOnboardingFlowState
                         onRegister: _handleRegister,
                         isLoading: _isLoading,
                       ),
-                SizedBox(height: 3.h),
-                TextButton(
-                  onPressed: () => setState(() => _isLogin = !_isLogin),
-                  child: Text(
-                    _isLogin
-                        ? 'Don\'t have an account? Sign up'
-                        : 'Already have an account? Sign in',
-                    style: TextStyle(fontSize: 14.sp),
+              ),
+            ),
+            SizedBox(height: 1.5.h),
+
+            // Toggle link
+            Center(
+              child: GestureDetector(
+                onTap: () => setState(() => _isLogin = !_isLogin),
+                child: Padding(
+                  padding: EdgeInsets.symmetric(vertical: 1.h),
+                  child: RichText(
+                    text: TextSpan(
+                      style: Theme.of(context).textTheme.bodyMedium,
+                      children: [
+                        TextSpan(
+                          text: _isLogin
+                              ? "Don't have an account?  "
+                              : 'Already have an account?  ',
+                          style: TextStyle(
+                            color: isDark
+                                ? AppTheme.textSecondaryDark
+                                : AppTheme.textSecondaryLight,
+                          ),
+                        ),
+                        TextSpan(
+                          text: _isLogin ? 'Sign Up' : 'Sign In',
+                          style: TextStyle(
+                            color: isDark
+                                ? AppTheme.primaryDark
+                                : AppTheme.primaryLight,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-              ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ── Tabs ───────────────────────────────────────────────────────────
+
+  Widget _buildTabSwitcher(bool isDark) {
+    final activeColor = isDark ? AppTheme.primaryDark : AppTheme.primaryLight;
+    final inactiveColor =
+        isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight;
+
+    return Row(
+      children: [
+        _buildTabItem('Sign In', _isLogin, activeColor, inactiveColor,
+            () => setState(() => _isLogin = true)),
+        SizedBox(width: 8.w),
+        _buildTabItem('Sign Up', !_isLogin, activeColor, inactiveColor,
+            () => setState(() => _isLogin = false)),
+      ],
+    );
+  }
+
+  Widget _buildTabItem(String label, bool isActive, Color activeColor,
+      Color inactiveColor, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  fontWeight: isActive ? FontWeight.w700 : FontWeight.w400,
+                  color: isActive ? activeColor : inactiveColor,
+                ),
+          ),
+          SizedBox(height: 0.5.h),
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeOut,
+            height: 3,
+            width: isActive ? 12.w : 0,
+            decoration: BoxDecoration(
+              color: activeColor,
+              borderRadius: BorderRadius.circular(2),
             ),
           ),
-        ),
-      );
-    }
-
-    // This case should ideally not be reached if navigation works correctly
-    // but as a fallback, show a loading screen or an error.
-    return const Scaffold(body: Center(child: CircularProgressIndicator()));
+        ],
+      ),
+    );
   }
 }

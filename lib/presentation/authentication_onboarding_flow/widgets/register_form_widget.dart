@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:sizer/sizer.dart';
 
+import '../../../core/app_export.dart';
 
 class RegisterFormWidget extends StatefulWidget {
   final Function(String email, String password, String fullName) onRegister;
@@ -18,20 +19,20 @@ class RegisterFormWidget extends StatefulWidget {
 
 class _RegisterFormWidgetState extends State<RegisterFormWidget> {
   final _formKey = GlobalKey<FormState>();
+  final _fullNameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
-  final _fullNameController = TextEditingController();
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
   bool _acceptedTerms = false;
 
   @override
   void dispose() {
+    _fullNameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
-    _fullNameController.dispose();
     super.dispose();
   }
 
@@ -39,156 +40,199 @@ class _RegisterFormWidgetState extends State<RegisterFormWidget> {
     if (_formKey.currentState?.validate() ?? false) {
       if (!_acceptedTerms) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Please accept the terms and conditions')),
+          const SnackBar(
+              content: Text('Please accept the terms and conditions')),
         );
         return;
       }
       widget.onRegister(
-        _emailController.text,
+        _emailController.text.trim(),
         _passwordController.text,
-        _fullNameController.text,
+        _fullNameController.text.trim(),
       );
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final iconColor = Theme.of(context).colorScheme.onSurfaceVariant;
+
     return Form(
       key: _formKey,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          // Full Name
           TextFormField(
             controller: _fullNameController,
+            textCapitalization: TextCapitalization.words,
             decoration: InputDecoration(
               labelText: 'Full Name',
-              prefixIcon: const Icon(Icons.person_outlined),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8.0),
+              prefixIcon: CustomIconWidget(
+                iconName: 'person_outlined',
+                size: 22,
+                color: iconColor,
               ),
             ),
             validator: (value) {
-              if (value == null || value.isEmpty) {
-                return 'Enter your full name';
-              }
+              if (value == null || value.isEmpty) return 'Enter your full name';
               return null;
             },
           ),
           SizedBox(height: 2.h),
+
+          // Email
           TextFormField(
             controller: _emailController,
             keyboardType: TextInputType.emailAddress,
+            autocorrect: false,
             decoration: InputDecoration(
               labelText: 'Email',
-              prefixIcon: const Icon(Icons.email_outlined),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8.0),
+              prefixIcon: CustomIconWidget(
+                iconName: 'email_outlined',
+                size: 22,
+                color: iconColor,
               ),
             ),
             validator: (value) {
-              if (value == null || value.isEmpty) {
-                return 'Enter your email address';
-              }
-              if (!value.contains('@')) {
-                return 'Invalid email';
-              }
+              if (value == null || value.isEmpty) return 'Enter your email';
+              if (!value.contains('@')) return 'Invalid email';
               return null;
             },
           ),
           SizedBox(height: 2.h),
+
+          // Password
           TextFormField(
             controller: _passwordController,
             obscureText: _obscurePassword,
             decoration: InputDecoration(
               labelText: 'Password',
-              prefixIcon: const Icon(Icons.lock_outlined),
+              prefixIcon: CustomIconWidget(
+                iconName: 'lock_outlined',
+                size: 22,
+                color: iconColor,
+              ),
               suffixIcon: IconButton(
-                icon: Icon(
-                  _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                icon: CustomIconWidget(
+                  iconName: _obscurePassword
+                      ? 'visibility_off_outlined'
+                      : 'visibility_outlined',
+                  size: 22,
+                  color: iconColor,
                 ),
                 onPressed: () =>
                     setState(() => _obscurePassword = !_obscurePassword),
               ),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8.0),
-              ),
             ),
             validator: (value) {
-              if (value == null || value.isEmpty) {
-                return 'Enter your password';
-              }
-              if (value.length < 6) {
-                return 'Password must be at least 6 characters';
-              }
+              if (value == null || value.isEmpty) return 'Enter a password';
+              if (value.length < 6) return 'At least 6 characters';
               return null;
             },
           ),
           SizedBox(height: 2.h),
+
+          // Confirm Password
           TextFormField(
             controller: _confirmPasswordController,
             obscureText: _obscureConfirmPassword,
             decoration: InputDecoration(
               labelText: 'Confirm Password',
-              prefixIcon: const Icon(Icons.lock_outlined),
+              prefixIcon: CustomIconWidget(
+                iconName: 'lock_outlined',
+                size: 22,
+                color: iconColor,
+              ),
               suffixIcon: IconButton(
-                icon: Icon(
-                  _obscureConfirmPassword
-                      ? Icons.visibility_off
-                      : Icons.visibility,
+                icon: CustomIconWidget(
+                  iconName: _obscureConfirmPassword
+                      ? 'visibility_off_outlined'
+                      : 'visibility_outlined',
+                  size: 22,
+                  color: iconColor,
                 ),
                 onPressed: () => setState(
-                  () => _obscureConfirmPassword = !_obscureConfirmPassword,
-                ),
-              ),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8.0),
+                    () => _obscureConfirmPassword = !_obscureConfirmPassword),
               ),
             ),
             validator: (value) {
-              if (value == null || value.isEmpty) {
-                return 'Confirm your password';
-              }
+              if (value == null || value.isEmpty) return 'Confirm your password';
               if (value != _passwordController.text) {
                 return "Passwords don't match";
               }
               return null;
             },
           ),
-          SizedBox(height: 2.h),
-          Row(
-            children: [
-              Checkbox(
-                value: _acceptedTerms,
-                onChanged: (value) =>
-                    setState(() => _acceptedTerms = value ?? false),
-              ),
-              Expanded(
-                child: GestureDetector(
-                  onTap: () => setState(() => _acceptedTerms = !_acceptedTerms),
-                  child: Text(
-                    'I accept the terms and conditions',
-                    style: TextStyle(fontSize: 13.sp),
+          SizedBox(height: 1.5.h),
+
+          // Terms
+          InkWell(
+            onTap: () => setState(() => _acceptedTerms = !_acceptedTerms),
+            borderRadius: BorderRadius.circular(8),
+            child: Padding(
+              padding: EdgeInsets.symmetric(vertical: 0.5.h),
+              child: Row(
+                children: [
+                  SizedBox(
+                    width: 6.w,
+                    height: 6.w,
+                    child: Checkbox(
+                      value: _acceptedTerms,
+                      onChanged: (value) =>
+                          setState(() => _acceptedTerms = value ?? false),
+                    ),
                   ),
-                ),
-              ),
-            ],
-          ),
-          SizedBox(height: 2.h),
-          ElevatedButton(
-            onPressed: widget.isLoading ? null : _handleSubmit,
-            style: ElevatedButton.styleFrom(
-              padding: EdgeInsets.symmetric(vertical: 1.5.h),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8.0),
+                  SizedBox(width: 2.w),
+                  Expanded(
+                    child: Text(
+                      'I accept the terms and conditions',
+                      style: TextStyle(
+                        fontSize: 13.sp,
+                        color: isDark
+                            ? AppTheme.textSecondaryDark
+                            : AppTheme.textSecondaryLight,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
-            child: widget.isLoading
-                ? const SizedBox(
-                    height: 20,
-                    width: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : Text('Create Account', style: TextStyle(fontSize: 16.sp)),
+          ),
+          SizedBox(height: 2.h),
+
+          // Create Account button
+          SizedBox(
+            height: 6.5.h,
+            child: ElevatedButton(
+              onPressed: widget.isLoading ? null : _handleSubmit,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Theme.of(context).colorScheme.tertiary,
+                foregroundColor: Theme.of(context).colorScheme.onTertiary,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                elevation: 0,
+              ),
+              child: widget.isLoading
+                  ? SizedBox(
+                      height: 22,
+                      width: 22,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.5,
+                        color: Theme.of(context).colorScheme.onTertiary,
+                      ),
+                    )
+                  : Text(
+                      'Create Account',
+                      style: TextStyle(
+                        fontSize: 16.sp,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.3,
+                      ),
+                    ),
+            ),
           ),
         ],
       ),
