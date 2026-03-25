@@ -126,20 +126,26 @@ class _NutritionPlanningScreenState extends State<NutritionPlanningScreen> {
 
   Future<void> _openBarcodeScanner() async {
     HapticFeedback.lightImpact();
-    final food = await Navigator.push<Map<String, dynamic>>(
+    final result = await Navigator.push<String?>(
       context,
-      MaterialPageRoute(builder: (context) => const BarcodeScannerPage()),
+      MaterialPageRoute(
+        builder: (context) => BarcodeScannerPage(
+          onFoodAdded: _loadNutritionData,
+        ),
+      ),
     );
-
-    if (food != null && mounted) {
+    if (!mounted) return;
+    if (result == BarcodeScannerPage.kNotFound) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Found: ${food['name']}'),
-          backgroundColor: Colors.green,
+        const SnackBar(
+          content: Text(
+              'Product not found. Try adding it manually by name.'),
+          backgroundColor: Colors.orange,
+          duration: Duration(seconds: 4),
         ),
       );
-      _loadNutritionData();
     }
+    _loadNutritionData();
   }
 
   @override
