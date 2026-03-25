@@ -7,7 +7,6 @@ import '../../core/app_export.dart';
 import '../../services/supabase_service.dart';
 import './widgets/metric_card_widget.dart';
 import './widgets/today_workout_card_widget.dart';
-import './widgets/nutrition_summary_widget.dart';
 import './widgets/weekly_progress_widget.dart';
 
 class MainDashboardInitialPage extends StatefulWidget {
@@ -22,7 +21,7 @@ class _MainDashboardInitialPageState extends State<MainDashboardInitialPage> {
   bool _isLoading = true;
   Map<String, dynamic>? _userProfile;
   Map<String, dynamic>? _todayWorkout;
-  Map<String, dynamic>? _nutritionData;
+  int _workoutStreak = 0;
 
   @override
   void initState() {
@@ -88,53 +87,34 @@ class _MainDashboardInitialPageState extends State<MainDashboardInitialPage> {
         }
       }
 
-      final today = DateTime.now();
-      final todayStart =
-          DateTime(today.year, today.month, today.day).toIso8601String();
+      // Calculate workout streak from workout_logs
+      int workoutStreak = 0;
+      try {
+        final logs = await SupabaseService.instance.client
+            .from('workout_logs')
+            .select('completed_at')
+            .eq('user_id', userId)
+            .order('completed_at', ascending: false)
+            .timeout(const Duration(seconds: 15));
 
-      final nutritionResponse = await SupabaseService.instance.client
-          .from('user_meals')
-          .select('*, food_database(*)')
-          .eq('user_id', userId)
-          .gte('consumed_at', todayStart);
+        final logDays = (logs as List).map((l) {
+          final dt = DateTime.parse(l['completed_at'] as String);
+          return DateTime(dt.year, dt.month, dt.day);
+        }).toSet();
 
-      double totalCalories = 0;
-      double totalProtein = 0;
-      double totalCarbs = 0;
-      double totalFat = 0;
-
-      for (var meal in nutritionResponse) {
-        final food = meal['food_database'] as Map<String, dynamic>?;
-        if (food != null) {
-          final quantity = (meal['serving_quantity'] as num?)?.toDouble() ?? 1;
-          final servingSize =
-              (food['serving_size'] as num?)?.toDouble() ?? 100;
-          final multiplier = quantity / servingSize;
-
-          totalCalories +=
-              ((food['calories'] as num?)?.toDouble() ?? 0) * multiplier;
-          totalProtein +=
-              ((food['protein_g'] as num?)?.toDouble() ?? 0) * multiplier;
-          totalCarbs +=
-              ((food['carbs_g'] as num?)?.toDouble() ?? 0) * multiplier;
-          totalFat +=
-              ((food['fat_g'] as num?)?.toDouble() ?? 0) * multiplier;
+        final today = DateTime.now();
+        var checkDay = DateTime(today.year, today.month, today.day);
+        while (logDays.contains(checkDay)) {
+          workoutStreak++;
+          checkDay = checkDay.subtract(const Duration(days: 1));
         }
-      }
-
-      final nutritionData = {
-        'consumed_calories': totalCalories.toInt(),
-        'consumed_protein': totalProtein.toInt(),
-        'consumed_carbs': totalCarbs.toInt(),
-        'consumed_fat': totalFat.toInt(),
-        'goal_calories': profileResponse?['daily_calorie_goal'] ?? 2000,
-      };
+      } catch (_) {}
 
       if (!mounted) return;
       setState(() {
         _userProfile = profileResponse;
         _todayWorkout = todaysSession;
-        _nutritionData = nutritionData;
+        _workoutStreak = workoutStreak;
         _isLoading = false;
       });
     } catch (e) {
@@ -371,18 +351,22 @@ class _MainDashboardInitialPageState extends State<MainDashboardInitialPage> {
                   _buildNoWorkoutCard(theme),
                 SizedBox(height: 2.5.h),
 
-                // Nutrition
-                _buildSectionTitle('Nutrition', theme),
+                // Workout Streak
+                _buildSectionTitle('Workout Streak', theme),
                 SizedBox(height: 1.5.h),
-                NutritionSummaryWidget(
-                  consumedCalories:
-                      _nutritionData?['consumed_calories'] ?? 0,
-                  targetCalories:
-                      _nutritionData?['goal_calories'] ?? 2000,
-                  proteinG: _nutritionData?['consumed_protein'] ?? 0,
-                  carbsG: _nutritionData?['consumed_carbs'] ?? 0,
-                  fatsG: _nutritionData?['consumed_fat'] ?? 0,
-                ),
+                _buildWorkoutStreakCard(theme),
+                SizedBox(height: 2.5.h),
+
+                // Daily Tip
+                _buildSectionTitle("Today's Tip", theme),
+                SizedBox(height: 1.5.h),
+                _buildDailyTipCard(theme),
+                SizedBox(height: 2.5.h),
+
+                // Calorie Target
+                _buildSectionTitle('Calorie Target', theme),
+                SizedBox(height: 1.5.h),
+                _buildTdeeCard(theme),
                 SizedBox(height: 2.5.h),
 
                 // Weekly Progress
@@ -447,6 +431,222 @@ class _MainDashboardInitialPageState extends State<MainDashboardInitialPage> {
             'Rest day or generate an AI plan',
             style: theme.textTheme.bodySmall?.copyWith(
               color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Workout Streak Card ────────────────────────────────────────────
+
+  Widget _buildWorkoutStreakCard(ThemeData theme) {
+    final isDark = theme.brightness == Brightness.dark;
+    final hasStreak = _workoutStreak > 0;
+
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.symmetric(vertical: 2.5.h, horizontal: 4.w),
+      decoration: BoxDecoration(
+        color: isDark
+            ? AppTheme.primaryDark.withValues(alpha: 0.08)
+            : AppTheme.primaryLight.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isDark
+              ? AppTheme.primaryDark.withValues(alpha: 0.15)
+              : AppTheme.primaryLight.withValues(alpha: 0.12),
+        ),
+      ),
+      child: Row(
+        children: [
+          CustomIconWidget(
+            iconName: 'local_fire_department',
+            size: 36,
+            color: hasStreak
+                ? const Color(0xFFFF6F00)
+                : theme.colorScheme.onSurfaceVariant,
+          ),
+          SizedBox(width: 3.w),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                hasStreak ? '$_workoutStreak-day streak' : 'No streak yet',
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: hasStreak
+                      ? const Color(0xFFFF6F00)
+                      : theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+              SizedBox(height: 0.4.h),
+              Text(
+                hasStreak
+                    ? 'Keep it up!'
+                    : 'Log a workout to start your streak',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Daily Tip Card ─────────────────────────────────────────────────
+
+  static const List<String> _fitnessTips = [
+    'Drink at least 8 glasses of water today to support performance and recovery.',
+    'Aim for 7–9 hours of sleep — that\'s when muscles grow and energy is restored.',
+    'Progressive overload is the key: add a little more weight or reps each week.',
+    'Compound lifts (squat, deadlift, bench press) build the most muscle per minute.',
+    'Rest days are not lazy days — they are when your body actually gets stronger.',
+    'Eat protein within 60 minutes after training to maximize muscle recovery.',
+    'Consistency beats perfection — an average workout today beats a skipped one.',
+    'Track your workouts in the app. What gets measured gets improved.',
+    'Always warm up for 5–10 minutes to reduce injury risk and improve performance.',
+    'Focus on mind-muscle connection — feel the muscle working, not just moving weight.',
+    'A caloric deficit of 300–500 kcal/day is ideal for fat loss without muscle loss.',
+    'Stretch after workouts, not before — static stretching before can reduce strength.',
+    'Creatine monohydrate is the most well-studied supplement for strength gains.',
+    'Try supersets (two exercises back-to-back) to cut rest time and increase intensity.',
+    'Squat to depth — thighs parallel to the floor for full leg muscle activation.',
+    'Eat fiber-rich vegetables at every meal to stay full and support gut health.',
+    'Don\'t skip leg day — leg training triggers the most anabolic hormone release.',
+    'Deload every 4–6 weeks: reduce volume by 40% to let joints and tendons recover.',
+    'Breathe correctly: exhale on exertion, inhale on the return phase.',
+    'Body composition matters more than scale weight — track measurements too.',
+    'Core training goes beyond crunches — planks and farmer carries build real strength.',
+    'Meal prepping on Sunday prevents poor food choices during a busy week.',
+    'Pre-workout meal: complex carbs + protein about 60–90 minutes before training.',
+    'Do cardio after weights, not before — save your glycogen for the heavy lifts.',
+    'Foam roll your hips and thoracic spine daily to maintain mobility.',
+    'HIIT cardio 2–3x per week is more time-efficient for fat loss than steady-state.',
+    'Eating slowly (20+ minutes per meal) improves satiety and prevents overeating.',
+    'Grip strength predicts overall health — try pull-ups or a hand gripper daily.',
+    'Review your past sessions regularly — it\'s the fastest way to spot plateaus.',
+    'Enjoy the process. Long-term consistency starts with workouts you actually enjoy.',
+  ];
+
+  Widget _buildDailyTipCard(ThemeData theme) {
+    final isDark = theme.brightness == Brightness.dark;
+    final now = DateTime.now();
+    final dayOfYear = now.difference(DateTime(now.year, 1, 1)).inDays;
+    final tip = _fitnessTips[dayOfYear % _fitnessTips.length];
+
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.symmetric(vertical: 2.h, horizontal: 4.w),
+      decoration: BoxDecoration(
+        color: isDark
+            ? theme.colorScheme.secondary.withValues(alpha: 0.08)
+            : theme.colorScheme.secondary.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: theme.colorScheme.secondary.withValues(alpha: 0.15),
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          CustomIconWidget(
+            iconName: 'lightbulb_outline',
+            size: 22,
+            color: theme.colorScheme.secondary,
+          ),
+          SizedBox(width: 3.w),
+          Expanded(
+            child: Text(
+              tip,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurface,
+                height: 1.4,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── TDEE Snapshot Card ─────────────────────────────────────────────
+
+  String _activityLevelLabel(String? level) {
+    switch (level) {
+      case 'sedentary':
+        return 'Sedentary';
+      case 'lightly_active':
+        return 'Lightly Active';
+      case 'moderately_active':
+        return 'Moderately Active';
+      case 'very_active':
+        return 'Very Active';
+      case 'extremely_active':
+        return 'Extremely Active';
+      default:
+        return 'Active';
+    }
+  }
+
+  Widget _buildTdeeCard(ThemeData theme) {
+    final isDark = theme.brightness == Brightness.dark;
+    final calories = _userProfile?['daily_calorie_goal'] as int? ?? 2000;
+    final activityLabel = _activityLevelLabel(
+      _userProfile?['activity_level'] as String?,
+    );
+
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.symmetric(vertical: 2.h, horizontal: 4.w),
+      decoration: BoxDecoration(
+        color: isDark
+            ? AppTheme.primaryDark.withValues(alpha: 0.08)
+            : AppTheme.primaryLight.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isDark
+              ? AppTheme.primaryDark.withValues(alpha: 0.15)
+              : AppTheme.primaryLight.withValues(alpha: 0.12),
+        ),
+      ),
+      child: Row(
+        children: [
+          CustomIconWidget(
+            iconName: 'bolt',
+            size: 32,
+            color: theme.colorScheme.primary,
+          ),
+          SizedBox(width: 3.w),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Daily target: $calories kcal',
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                SizedBox(height: 0.5.h),
+                Container(
+                  padding:
+                      EdgeInsets.symmetric(horizontal: 2.w, vertical: 0.3.h),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.primary.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    activityLabel,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.primary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         ],
