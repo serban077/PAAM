@@ -8,7 +8,7 @@ Update `## Current Status` in `CLAUDE.md` at the end of every session.
 ## Current Status
 
 **Last updated:** 2026-03-25
-**Last session completed:** Hotfix — Romanian→English DB enum migration (fitness_goal, activity_level, equipment_type, dietary_preference, gender), Supabase MCP setup, recalibrate auto-populate, weight tracking
+**Last session completed:** UI — Exercise Library (Workouts tab) redesigned: horizontal list cards + category chip bar
 **Next session starts with:** M10 — Workout Session Live Tracking (set-by-set logging with rest timer)
 **Active branches:** main
 **Blockers / notes:** `pubspec.lock` gitignored — run `flutter pub get` at session start. PAAM/ folder untracked (check if needed for university submission). DB enum values are now fully English — do NOT reintroduce Romanian strings.

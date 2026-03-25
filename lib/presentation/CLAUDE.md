@@ -156,6 +156,29 @@ fontSize: 14.sp // responsive font size
 
 ---
 
+## Exercise Library — Card & Category Chip Pattern
+
+**Horizontal list card** (`ExerciseCardWidget`):
+```dart
+// Structure: image | strip | info | chevron
+Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
+  ClipRRect(borderRadius: only left sides, child: SizedBox(width: 24.w, height: 22.w, child: CustomImageWidget(...))),
+  Container(width: 3, height: 22.w, color: diffColor),  // difficulty accent strip
+  Expanded(child: Padding(...)),                          // name + muscles + _InfoChip row
+  Padding(right: 3.w, child: CustomIconWidget('chevron_right')),
+])
+```
+Difficulty colors: Beginner → `tertiary`, Intermediate → `Color(0xFFFF6F00)`, Advanced → `error`.
+
+**Horizontal category chip bar**:
+- State: `String _selectedCategory = 'All'`
+- `_onCategoryTap(category)` updates `_selectedCategory` and calls `_applyFilters()`
+- Category filter is **independent** from `_activeFilters['bodyPart']` — they stack
+- Use `AnimatedContainer(duration: 200ms, curve: Curves.easeOut)` for chip fill animation
+- `HapticFeedback.selectionClick()` on tap
+
+---
+
 ## Patterns Added This Session
 
 **Bottom-sheet detail panel** (`ExerciseDetailSheet`):
