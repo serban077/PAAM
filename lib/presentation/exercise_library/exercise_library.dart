@@ -28,11 +28,22 @@ class _ExerciseLibraryState extends State<ExerciseLibrary> {
     'difficulty': [],
     'restrictions': [],
   };
+  String _selectedCategory = 'All';
 
   bool _isLoading = false;
   bool _isLoadingMore = false;
   int _currentPage = 0;
   final int _itemsPerPage = 20;
+
+  static const List<Map<String, String>> _categories = [
+    {'label': 'All', 'icon': 'apps'},
+    {'label': 'Chest', 'icon': 'fitness_center'},
+    {'label': 'Back', 'icon': 'accessibility_new'},
+    {'label': 'Legs', 'icon': 'directions_run'},
+    {'label': 'Shoulders', 'icon': 'sports'},
+    {'label': 'Arms', 'icon': 'pan_tool'},
+    {'label': 'Core', 'icon': 'adjust'},
+  ];
 
   @override
   void initState() {
@@ -58,9 +69,7 @@ class _ExerciseLibraryState extends State<ExerciseLibrary> {
 
   Future<void> _loadExercises() async {
     setState(() => _isLoading = true);
-
     await Future.delayed(const Duration(milliseconds: 500));
-
     final exercises = _generateMockExercises();
     setState(() {
       _exercises = exercises;
@@ -74,14 +83,10 @@ class _ExerciseLibraryState extends State<ExerciseLibrary> {
     if (_isLoadingMore || _filteredExercises.length >= _exercises.length) {
       return;
     }
-
     setState(() => _isLoadingMore = true);
-
     await Future.delayed(const Duration(milliseconds: 300));
-
     final startIndex = _currentPage * _itemsPerPage;
     final endIndex = (startIndex + _itemsPerPage).clamp(0, _exercises.length);
-
     setState(() {
       _filteredExercises.addAll(_exercises.sublist(startIndex, endIndex));
       _currentPage++;
@@ -97,6 +102,11 @@ class _ExerciseLibraryState extends State<ExerciseLibrary> {
   void _applyFilters() {
     setState(() {
       _filteredExercises = _exercises.where((exercise) {
+        // Category chip filter (independent from modal bodyPart filter)
+        if (_selectedCategory != 'All' &&
+            exercise['bodyPart'] != _selectedCategory) {
+          return false;
+        }
         if (_activeFilters['bodyPart']!.isNotEmpty &&
             !_activeFilters['bodyPart']!.contains(exercise['bodyPart'])) {
           return false;
@@ -116,23 +126,31 @@ class _ExerciseLibraryState extends State<ExerciseLibrary> {
             }
           }
         }
-
         final searchQuery = _searchController.text.toLowerCase();
         if (searchQuery.isNotEmpty) {
-          return exercise['name'].toString().toLowerCase().contains(
-                searchQuery,
-              ) ||
-              exercise['targetMuscles'].toString().toLowerCase().contains(
-                searchQuery,
-              );
+          return exercise['name']
+                  .toString()
+                  .toLowerCase()
+                  .contains(searchQuery) ||
+              exercise['targetMuscles']
+                  .toString()
+                  .toLowerCase()
+                  .contains(searchQuery);
         }
-
         return true;
       }).toList();
 
       _currentPage = 0;
       _filteredExercises = _filteredExercises.take(_itemsPerPage).toList();
       _currentPage = 1;
+    });
+  }
+
+  void _onCategoryTap(String category) {
+    HapticFeedback.selectionClick();
+    setState(() {
+      _selectedCategory = category;
+      _applyFilters();
     });
   }
 
@@ -151,6 +169,7 @@ class _ExerciseLibraryState extends State<ExerciseLibrary> {
         'difficulty': [],
         'restrictions': [],
       };
+      _selectedCategory = 'All';
       _searchController.clear();
       _applyFilters();
     });
@@ -192,7 +211,6 @@ class _ExerciseLibraryState extends State<ExerciseLibrary> {
 
   Widget _buildQuickActionsSheet(Map<String, dynamic> exercise) {
     final theme = Theme.of(context);
-
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 2.h),
       child: Column(
@@ -235,10 +253,8 @@ class _ExerciseLibraryState extends State<ExerciseLibrary> {
               color: theme.colorScheme.primary,
               size: 24,
             ),
-            title: Text(
-              'Add to Workout',
-              style: theme.textTheme.bodyLarge,
-            ),
+            title:
+                Text('Add to Workout', style: theme.textTheme.bodyLarge),
             onTap: () {
               Navigator.pop(context);
               ScaffoldMessenger.of(context).showSnackBar(
@@ -254,10 +270,8 @@ class _ExerciseLibraryState extends State<ExerciseLibrary> {
               color: theme.colorScheme.primary,
               size: 24,
             ),
-            title: Text(
-              'Share Exercise',
-              style: theme.textTheme.bodyLarge,
-            ),
+            title:
+                Text('Share Exercise', style: theme.textTheme.bodyLarge),
             onTap: () {
               Navigator.pop(context);
               ScaffoldMessenger.of(context).showSnackBar(
@@ -283,6 +297,7 @@ class _ExerciseLibraryState extends State<ExerciseLibrary> {
 
     return Column(
       children: [
+        // ── Search + Filter bar ──
         Container(
           padding: EdgeInsets.fromLTRB(4.w, 1.h, 4.w, 1.h),
           decoration: BoxDecoration(
@@ -317,7 +332,8 @@ class _ExerciseLibraryState extends State<ExerciseLibrary> {
                       decoration: InputDecoration(
                         hintText: 'Search exercises...',
                         hintStyle: theme.textTheme.bodyLarge?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant.withAlpha(153),
+                          color: theme.colorScheme.onSurfaceVariant
+                              .withAlpha(153),
                         ),
                         prefixIcon: Padding(
                           padding: EdgeInsets.all(1.5.w),
@@ -331,7 +347,8 @@ class _ExerciseLibraryState extends State<ExerciseLibrary> {
                             ? IconButton(
                                 icon: CustomIconWidget(
                                   iconName: 'clear',
-                                  color: theme.colorScheme.onSurfaceVariant,
+                                  color:
+                                      theme.colorScheme.onSurfaceVariant,
                                   size: 20,
                                 ),
                                 onPressed: () {
@@ -377,33 +394,32 @@ class _ExerciseLibraryState extends State<ExerciseLibrary> {
                         ),
                         onPressed: _showFilterBottomSheet,
                       ),
-                      _getTotalActiveFilters() > 0
-                          ? Positioned(
-                              right: 1.w,
-                              top: 1.w,
-                              child: Container(
-                                padding: EdgeInsets.all(0.5.w),
-                                decoration: BoxDecoration(
-                                  color: theme.colorScheme.error,
-                                  shape: BoxShape.circle,
-                                ),
-                                constraints: BoxConstraints(
-                                  minWidth: 4.w,
-                                  minHeight: 4.w,
-                                ),
-                                child: Center(
-                                  child: Text(
-                                    _getTotalActiveFilters().toString(),
-                                    style: theme.textTheme.labelSmall?.copyWith(
-                                      color: theme.colorScheme.onError,
-                                      fontSize: 8.sp,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
+                      if (_getTotalActiveFilters() > 0)
+                        Positioned(
+                          right: 1.w,
+                          top: 1.w,
+                          child: Container(
+                            padding: EdgeInsets.all(0.5.w),
+                            decoration: BoxDecoration(
+                              color: theme.colorScheme.error,
+                              shape: BoxShape.circle,
+                            ),
+                            constraints: BoxConstraints(
+                              minWidth: 4.w,
+                              minHeight: 4.w,
+                            ),
+                            child: Center(
+                              child: Text(
+                                _getTotalActiveFilters().toString(),
+                                style: theme.textTheme.labelSmall?.copyWith(
+                                  color: theme.colorScheme.onError,
+                                  fontSize: 8.sp,
+                                  fontWeight: FontWeight.bold,
                                 ),
                               ),
-                            )
-                          : const SizedBox.shrink(),
+                            ),
+                          ),
+                        ),
                     ],
                   ),
                 ),
@@ -411,40 +427,61 @@ class _ExerciseLibraryState extends State<ExerciseLibrary> {
             ),
           ),
         ),
-        _getTotalActiveFilters() > 0
-            ? Container(
-                height: 6.h,
-                padding: EdgeInsets.symmetric(horizontal: 4.w),
-                child: ListView(
-                  scrollDirection: Axis.horizontal,
-                  children: [
-                    ..._activeFilters.entries.expand((entry) {
-                      return entry.value.map(
-                        (value) => FilterChipWidget(
-                          label: value,
-                          onDeleted: () => _removeFilter(entry.key, value),
-                        ),
-                      );
-                    }),
-                    if (_getTotalActiveFilters() > 1)
-                      Padding(
-                        padding: EdgeInsets.only(left: 2.w),
-                        child: ActionChip(
-                          label: Text(
-                            'Clear All',
-                            style: theme.textTheme.labelMedium?.copyWith(
-                              color: theme.colorScheme.error,
-                            ),
-                          ),
-                          onPressed: _clearAllFilters,
-                          backgroundColor: theme.colorScheme.errorContainer,
-                          side: BorderSide.none,
+
+        // ── Category chip bar ──
+        _buildCategoryBar(theme),
+
+        // ── Active filter chips (from modal) ──
+        if (_getTotalActiveFilters() > 0)
+          Container(
+            height: 6.h,
+            padding: EdgeInsets.symmetric(horizontal: 4.w),
+            child: ListView(
+              scrollDirection: Axis.horizontal,
+              children: [
+                ..._activeFilters.entries.expand((entry) {
+                  return entry.value.map(
+                    (value) => FilterChipWidget(
+                      label: value,
+                      onDeleted: () => _removeFilter(entry.key, value),
+                    ),
+                  );
+                }),
+                if (_getTotalActiveFilters() > 1)
+                  Padding(
+                    padding: EdgeInsets.only(left: 2.w),
+                    child: ActionChip(
+                      label: Text(
+                        'Clear All',
+                        style: theme.textTheme.labelMedium?.copyWith(
+                          color: theme.colorScheme.error,
                         ),
                       ),
-                  ],
-                ),
-              )
-            : const SizedBox.shrink(),
+                      onPressed: _clearAllFilters,
+                      backgroundColor: theme.colorScheme.errorContainer,
+                      side: BorderSide.none,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+
+        // ── Results count ──
+        Padding(
+          padding: EdgeInsets.fromLTRB(4.w, 1.2.h, 4.w, 0.4.h),
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              '${_filteredExercises.length} exercises',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+        ),
+
+        // ── Exercise list ──
         Expanded(
           child: _isLoading
               ? _buildLoadingState()
@@ -452,26 +489,21 @@ class _ExerciseLibraryState extends State<ExerciseLibrary> {
               ? _buildEmptyState()
               : RefreshIndicator(
                   onRefresh: _refreshExercises,
-                  child: GridView.builder(
+                  child: ListView.builder(
                     controller: _scrollController,
-                    padding: EdgeInsets.all(4.w),
-                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      childAspectRatio: 0.75,
-                      crossAxisSpacing: 3.w,
-                      mainAxisSpacing: 3.w,
-                    ),
-                    itemCount:
-                        _filteredExercises.length + (_isLoadingMore ? 2 : 0),
+                    padding: EdgeInsets.only(top: 0.5.h, bottom: 10.h),
+                    itemCount: _filteredExercises.length +
+                        (_isLoadingMore ? 3 : 0),
                     itemBuilder: (context, index) {
                       if (index >= _filteredExercises.length) {
                         return _buildSkeletonCard();
                       }
                       return ExerciseCardWidget(
                         exercise: _filteredExercises[index],
-                        onTap: () => _onExerciseTap(_filteredExercises[index]),
-                        onLongPress: () =>
-                            _onExerciseLongPress(_filteredExercises[index]),
+                        onTap: () =>
+                            _onExerciseTap(_filteredExercises[index]),
+                        onLongPress: () => _onExerciseLongPress(
+                            _filteredExercises[index]),
                       );
                     },
                   ),
@@ -481,15 +513,73 @@ class _ExerciseLibraryState extends State<ExerciseLibrary> {
     );
   }
 
-  Widget _buildLoadingState() {
-    return GridView.builder(
-      padding: EdgeInsets.all(4.w),
-      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        childAspectRatio: 0.75,
-        crossAxisSpacing: 3.w,
-        mainAxisSpacing: 3.w,
+  Widget _buildCategoryBar(ThemeData theme) {
+    return Container(
+      height: 6.5.h,
+      color: theme.colorScheme.surface,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 0.8.h),
+        itemCount: _categories.length,
+        separatorBuilder: (_, __) => SizedBox(width: 2.w),
+        itemBuilder: (context, index) {
+          final cat = _categories[index];
+          final isSelected = _selectedCategory == cat['label'];
+          return GestureDetector(
+            onTap: () => _onCategoryTap(cat['label']!),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              curve: Curves.easeOut,
+              padding: EdgeInsets.symmetric(
+                horizontal: 3.w,
+                vertical: 0.5.h,
+              ),
+              decoration: BoxDecoration(
+                color: isSelected
+                    ? theme.colorScheme.primary
+                    : theme.colorScheme.surface,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: isSelected
+                      ? theme.colorScheme.primary
+                      : theme.colorScheme.outline,
+                  width: 1,
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  CustomIconWidget(
+                    iconName: cat['icon']!,
+                    color: isSelected
+                        ? theme.colorScheme.onPrimary
+                        : theme.colorScheme.onSurfaceVariant,
+                    size: 14,
+                  ),
+                  SizedBox(width: 1.5.w),
+                  Text(
+                    cat['label']!,
+                    style: theme.textTheme.labelMedium?.copyWith(
+                      color: isSelected
+                          ? theme.colorScheme.onPrimary
+                          : theme.colorScheme.onSurface,
+                      fontWeight: isSelected
+                          ? FontWeight.w600
+                          : FontWeight.w400,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
       ),
+    );
+  }
+
+  Widget _buildLoadingState() {
+    return ListView.builder(
+      padding: EdgeInsets.only(top: 0.5.h, bottom: 4.h),
       itemCount: 6,
       itemBuilder: (context, index) => _buildSkeletonCard(),
     );
@@ -497,53 +587,97 @@ class _ExerciseLibraryState extends State<ExerciseLibrary> {
 
   Widget _buildSkeletonCard() {
     final theme = Theme.of(context);
-
-    return Container(
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: theme.colorScheme.outline.withAlpha(51),
-          width: 1,
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 0.6.h),
+      child: Container(
+        height: 22.w,
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surface,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withAlpha(10),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
-      ),
-      child: SingleChildScrollView(
-        physics: const NeverScrollableScrollPhysics(),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: Row(
           children: [
             Container(
-              height: 20.h,
+              width: 24.w,
               decoration: BoxDecoration(
-                color: theme.colorScheme.surfaceContainerHighest.withAlpha(76),
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(12),
+                color:
+                    theme.colorScheme.surfaceContainerHighest.withAlpha(76),
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(16),
+                  bottomLeft: Radius.circular(16),
                 ),
               ),
             ),
-            Padding(
-              padding: EdgeInsets.all(3.w),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    height: 2.h,
-                    width: 30.w,
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.surfaceContainerHighest.withAlpha(76),
-                      borderRadius: BorderRadius.circular(4),
+            Container(
+              width: 3,
+              color: theme.colorScheme.outline.withAlpha(40),
+            ),
+            Expanded(
+              child: Padding(
+                padding: EdgeInsets.symmetric(
+                  horizontal: 3.w,
+                  vertical: 1.5.h,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          height: 1.8.h,
+                          width: 35.w,
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.surfaceContainerHighest
+                                .withAlpha(76),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                        ),
+                        SizedBox(height: 0.6.h),
+                        Container(
+                          height: 1.4.h,
+                          width: 25.w,
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.surfaceContainerHighest
+                                .withAlpha(50),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
-                  SizedBox(height: 1.h),
-                  Container(
-                    height: 1.5.h,
-                    width: 20.w,
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.surfaceContainerHighest.withAlpha(76),
-                      borderRadius: BorderRadius.circular(4),
+                    Row(
+                      children: [
+                        Container(
+                          height: 3.w,
+                          width: 18.w,
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.surfaceContainerHighest
+                                .withAlpha(60),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                        ),
+                        SizedBox(width: 2.w),
+                        Container(
+                          height: 3.w,
+                          width: 14.w,
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.surfaceContainerHighest
+                                .withAlpha(60),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ],
@@ -554,7 +688,6 @@ class _ExerciseLibraryState extends State<ExerciseLibrary> {
 
   Widget _buildEmptyState() {
     final theme = Theme.of(context);
-
     return Center(
       child: Padding(
         padding: EdgeInsets.all(8.w),
@@ -576,7 +709,7 @@ class _ExerciseLibraryState extends State<ExerciseLibrary> {
             ),
             SizedBox(height: 1.h),
             Text(
-              _getTotalActiveFilters() > 0
+              _getTotalActiveFilters() > 0 || _selectedCategory != 'All'
                   ? 'Try removing some filters to see more results'
                   : 'Try a different search term',
               style: theme.textTheme.bodyMedium?.copyWith(
@@ -585,7 +718,7 @@ class _ExerciseLibraryState extends State<ExerciseLibrary> {
               textAlign: TextAlign.center,
             ),
             SizedBox(height: 3.h),
-            if (_getTotalActiveFilters() > 0)
+            if (_getTotalActiveFilters() > 0 || _selectedCategory != 'All')
               ElevatedButton.icon(
                 onPressed: _clearAllFilters,
                 icon: CustomIconWidget(
@@ -662,7 +795,8 @@ class _ExerciseLibraryState extends State<ExerciseLibrary> {
         "equipment": "Pull-up Bar",
         "difficulty": "Intermediate",
         "videoId": "eGo4IYlbE5g",
-        "image": "https://images.unsplash.com/photo-1646743934945-df7b66e28b7d",
+        "image":
+            "https://images.unsplash.com/photo-1646743934945-df7b66e28b7d",
         "semanticLabel": "Athlete performing pull-ups on bar in park",
         "restrictions": ["Joint Issues"],
       },
@@ -674,7 +808,8 @@ class _ExerciseLibraryState extends State<ExerciseLibrary> {
         "equipment": "Dumbbells",
         "difficulty": "Intermediate",
         "videoId": "qEwKCR5JCog",
-        "image": "https://images.unsplash.com/photo-1639653818637-d061a28959ad",
+        "image":
+            "https://images.unsplash.com/photo-1639653818637-d061a28959ad",
         "semanticLabel": "Athlete pressing dumbbells overhead",
         "restrictions": [],
       },
@@ -686,7 +821,8 @@ class _ExerciseLibraryState extends State<ExerciseLibrary> {
         "equipment": "Bodyweight",
         "difficulty": "Beginner",
         "videoId": "L8fvwPVQovQ",
-        "image": "https://images.unsplash.com/photo-1732127836278-edb32d6e5044",
+        "image":
+            "https://images.unsplash.com/photo-1732127836278-edb32d6e5044",
         "semanticLabel": "Person performing lunges in fitness studio",
         "restrictions": ["Joint Issues"],
       },
@@ -726,7 +862,8 @@ class _ExerciseLibraryState extends State<ExerciseLibrary> {
         "videoId": "2-LAMcpzODU",
         "image":
             "https://img.rocket.new/generatedImages/rocket_gen_img_13f7b5f5c-1767766857617.png",
-        "semanticLabel": "Athlete performing tricep pushdown at cable machine",
+        "semanticLabel":
+            "Athlete performing tricep pushdown at cable machine",
         "restrictions": [],
       },
       {
@@ -804,7 +941,8 @@ class _ExerciseLibraryState extends State<ExerciseLibrary> {
         "videoId": "8iPEnn-ltC8",
         "image":
             "https://img.rocket.new/generatedImages/rocket_gen_img_157fe155b-1767766857700.png",
-        "semanticLabel": "Athlete performing dumbbell chest press on bench",
+        "semanticLabel":
+            "Athlete performing dumbbell chest press on bench",
         "restrictions": [],
       },
       {
@@ -842,7 +980,8 @@ class _ExerciseLibraryState extends State<ExerciseLibrary> {
         "equipment": "Parallel Bars",
         "difficulty": "Intermediate",
         "videoId": "2z8JmcrW-As",
-        "image": "https://images.unsplash.com/photo-1666961184601-9088aab7bd75",
+        "image":
+            "https://images.unsplash.com/photo-1666961184601-9088aab7bd75",
         "semanticLabel": "Athlete performing dips on parallel bars",
         "restrictions": ["Joint Issues"],
       },
