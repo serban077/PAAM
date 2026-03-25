@@ -21,7 +21,7 @@ class AddFoodModalWidget extends StatefulWidget {
 class _AddFoodModalWidgetState extends State<AddFoodModalWidget> {
   final _nutritionService = NutritionService(Supabase.instance.client);
   final _searchController = TextEditingController();
-  final _servingController = TextEditingController(text: '1.0');
+  final _servingController = TextEditingController(text: '100');
 
   List<Map<String, dynamic>> _searchResults = [];
   Map<String, dynamic>? _selectedFood;
@@ -90,14 +90,15 @@ class _AddFoodModalWidgetState extends State<AddFoodModalWidget> {
   }
 
   Widget _buildFoodListItem(Map<String, dynamic> food) {
-    final servingQuantity = double.tryParse(_servingController.text) ?? 1.0;
-    final servingSize = food['serving_size'] ?? 100.0;
-    final multiplier = (servingQuantity * servingSize) / 100.0;
+    final enteredAmount = double.tryParse(_servingController.text) ?? 100.0;
+    final servingSize = (food['serving_size'] as num?)?.toDouble() ?? 100.0;
+    final multiplier = enteredAmount / servingSize;
 
-    final calories = (food['calories'] * multiplier).round();
-    final protein = (food['protein_g'] * multiplier).toStringAsFixed(1);
-    final carbs = (food['carbs_g'] * multiplier).toStringAsFixed(1);
-    final fat = (food['fat_g'] * multiplier).toStringAsFixed(1);
+    final calories = ((food['calories'] as num?)?.toDouble() ?? 0) * multiplier;
+    final protein = ((food['protein_g'] as num?)?.toDouble() ?? 0) * multiplier;
+    final carbs = ((food['carbs_g'] as num?)?.toDouble() ?? 0) * multiplier;
+    final fat = ((food['fat_g'] as num?)?.toDouble() ?? 0) * multiplier;
+    final unit = food['serving_unit'] as String? ?? 'g';
 
     return ListTile(
       title: Text(
@@ -114,11 +115,11 @@ class _AddFoodModalWidgetState extends State<AddFoodModalWidget> {
             ),
           SizedBox(height: 0.5.h),
           Text(
-            '$calories kcal | P: ${protein}g | C: ${carbs}g | F: ${fat}g',
+            '${calories.round()} kcal | P: ${protein.toStringAsFixed(1)}g | C: ${carbs.toStringAsFixed(1)}g | F: ${fat.toStringAsFixed(1)}g',
             style: TextStyle(fontSize: 11.sp, color: Colors.grey.shade700),
           ),
           Text(
-            'Per ${servingQuantity.toStringAsFixed(1)} x ${servingSize.toStringAsFixed(0)}${food['serving_unit']}',
+            'Per ${enteredAmount.toStringAsFixed(0)}$unit',
             style: TextStyle(fontSize: 10.sp, color: Colors.grey.shade500),
           ),
         ],
@@ -126,7 +127,12 @@ class _AddFoodModalWidgetState extends State<AddFoodModalWidget> {
       trailing: _selectedFood?['id'] == food['id']
           ? Icon(Icons.check_circle, color: Colors.green, size: 20.sp)
           : null,
-      onTap: () => setState(() => _selectedFood = food),
+      onTap: () => setState(() {
+        _selectedFood = food;
+        // Pre-fill with the food's reference serving size so user sees a sensible default
+        _servingController.text =
+            (food['serving_size'] as num?)?.toStringAsFixed(0) ?? '100';
+      }),
     );
   }
 
@@ -186,7 +192,7 @@ class _AddFoodModalWidgetState extends State<AddFoodModalWidget> {
             ),
           ),
 
-          // Serving size input
+          // Amount input
           if (_selectedFood != null)
             Padding(
               padding: EdgeInsets.symmetric(horizontal: 4.w),
@@ -195,11 +201,11 @@ class _AddFoodModalWidgetState extends State<AddFoodModalWidget> {
                   Expanded(
                     child: TextField(
                       controller: _servingController,
-                      keyboardType: TextInputType.number,
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
                       decoration: InputDecoration(
-                        labelText: 'Quantity',
+                        labelText: 'Amount',
                         suffix: Text(
-                          'x ${_selectedFood!['serving_size']}${_selectedFood!['serving_unit']}',
+                          _selectedFood!['serving_unit'] as String? ?? 'g',
                           style: TextStyle(fontSize: 12.sp),
                         ),
                       ),
