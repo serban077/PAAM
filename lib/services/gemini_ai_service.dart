@@ -382,7 +382,7 @@ class GeminiAIService {
              'name': name,
              'muscle_group': 'general', // Simplified (legacy column)
              'target_muscle_groups': ['general'], // Required ARRAY field
-             'equipment_required': 'sala_fitness', // Valid enum: sala_fitness, acasa_fara_echipament, etc.
+             'equipment_required': 'gym', // Valid enum: gym, home_no_equipment, home_basic_equipment, mix
              'difficulty_level': 'intermediate', // Valid enum: beginner, intermediate, advanced
              'video_url': exerciseMap['video_url'],
              'description': exerciseMap['coaching_tip'] // Use tip as desc

@@ -191,7 +191,7 @@ class _UserProfileManagementState extends State<UserProfileManagement> {
               height: (_userProfile!['height_cm'] ?? 0.0).toDouble(),
               targetWeight: (_userProfile!['target_weight_kg'] as num?)?.toDouble(),
               targetTimeframeWeeks: _userProfile!['target_timeframe_weeks'] as int?,
-              activityLevel: _userProfile!['activity_level']?.toString() ?? 'moderat_activ',
+              activityLevel: _userProfile!['activity_level']?.toString() ?? 'moderately_active',
               onUpdate: (data) async {
                 try {
                   final userId = SupabaseService.instance.client.auth.currentUser?.id;
@@ -218,7 +218,7 @@ class _UserProfileManagementState extends State<UserProfileManagement> {
                       age: data['age'] as int,
                       gender: _userProfile!['gender'] ?? 'masculin',
                       weeklyTrainingFrequency: _userProfile!['weekly_training_frequency'] ?? 3,
-                      fitnessGoal: _userProfile!['fitness_goal'] ?? 'mentinere',
+                      fitnessGoal: _userProfile!['fitness_goal'] ?? 'maintenance',
                       targetWeightKg: (data['targetWeight'] as num?)?.toDouble(),
                       targetTimeframeWeeks: data['targetTimeframeWeeks'] as int?,
                     );
@@ -270,8 +270,8 @@ class _UserProfileManagementState extends State<UserProfileManagement> {
               sessionDuration: ((_userProfile!['available_training_hours_per_session'] ?? 1.0) * 60).toInt(),
               availableEquipment: _userProfile!['equipment_available'] != null 
                   ? [_userProfile!['equipment_available'].toString()]
-                  : ['sala_fitness'],
-              fitnessGoal: _userProfile!['fitness_goal']?.toString() ?? 'recompunere_corporala',
+                  : ['gym'],
+              fitnessGoal: _userProfile!['fitness_goal']?.toString() ?? 'body_recomposition',
               onUpdate: (data) async {
                 try {
                   final userId = SupabaseService.instance.client.auth.currentUser?.id;
@@ -293,7 +293,7 @@ class _UserProfileManagementState extends State<UserProfileManagement> {
                         'available_training_hours_per_session': newDuration,
                         'equipment_available': data['availableEquipment'].isNotEmpty 
                             ? data['availableEquipment'][0] 
-                            : 'sala_fitness',
+                            : 'gym',
                         'fitness_goal': data['fitnessGoal'],
                       })
                       .eq('id', userId);

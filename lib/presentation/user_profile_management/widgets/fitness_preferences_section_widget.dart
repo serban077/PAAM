@@ -46,26 +46,24 @@ class _FitnessPreferencesSectionWidgetState
   ];
 
   final List<String> _goalOptions = [
-    "Weight Loss",
-    "Muscle Gain",
-    "Endurance",
-    "Body Recomposition",
+    "weight_loss",
+    "muscle_gain",
+    "endurance",
+    "body_recomposition",
+    "maintenance",
+    "toning",
   ];
 
-  // Map DB values to Display values for Goals
+  // Map DB values to Display values for Goals (English → Title Case display)
   final Map<String, String> _dbGoalToDisplay = {
-    'pierdere_greutate': 'Weight Loss',
-    'crestere_masa_musculara': 'Muscle Gain',
-    'mentinere': 'Endurance',
-    'tonifiere': 'Body Recomposition',
-  };
-
-  // Map Display values to DB values for Goals
-  final Map<String, String> _displayGoalToDb = {
-    'Weight Loss': 'pierdere_greutate',
-    'Muscle Gain': 'crestere_masa_musculara',
-    'Endurance': 'mentinere',
-    'Body Recomposition': 'tonifiere',
+    'weight_loss': 'Weight Loss',
+    'muscle_gain': 'Muscle Gain',
+    'endurance': 'Endurance',
+    'body_recomposition': 'Body Recomposition',
+    'maintenance': 'Maintenance',
+    'toning': 'Toning',
+    'flexibility': 'Flexibility',
+    'general_fitness': 'General Fitness',
   };
 
   @override
@@ -75,8 +73,10 @@ class _FitnessPreferencesSectionWidgetState
     _sessionDuration = widget.sessionDuration;
     _selectedEquipment = List.from(widget.availableEquipment);
     
-    // Map goal to display value - try both English and potential fallback
-    _selectedGoal = _dbGoalToDisplay[widget.fitnessGoal] ?? "Body Recomposition";
+    // Use DB value directly; fall back to body_recomposition if unrecognised
+    _selectedGoal = _goalOptions.contains(widget.fitnessGoal)
+        ? widget.fitnessGoal
+        : 'body_recomposition';
   }
 
   void _handleSave() {
@@ -89,7 +89,7 @@ class _FitnessPreferencesSectionWidgetState
       'workoutFrequency': _workoutFrequency,
       'sessionDuration': _sessionDuration,
       'availableEquipment': _selectedEquipment,
-      'fitnessGoal': _displayGoalToDb[_selectedGoal] ?? 'body_recomposition',
+      'fitnessGoal': _selectedGoal,
     });
 
     setState(() {
@@ -320,7 +320,7 @@ class _FitnessPreferencesSectionWidgetState
                             items: _goalOptions.map((goal) {
                               return DropdownMenuItem(
                                 value: goal,
-                                child: Text(goal),
+                                child: Text(_dbGoalToDisplay[goal] ?? goal),
                               );
                             }).toList(),
                             onChanged: (value) {

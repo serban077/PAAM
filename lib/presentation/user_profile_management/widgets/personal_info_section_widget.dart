@@ -51,20 +51,20 @@ class _PersonalInfoSectionWidgetState extends State<PersonalInfoSectionWidget> {
 
   // Map DB values to Display values
   final Map<String, String> _dbToDisplay = {
-    'sedentar': 'Sedentary',
-    'usor_activ': 'Lightly Active',
-    'moderat_activ': 'Moderately Active',
-    'foarte_activ': 'Very Active',
-    'extrem_activ': 'Extremely Active',
+    'sedentary': 'Sedentary',
+    'lightly_active': 'Lightly Active',
+    'moderately_active': 'Moderately Active',
+    'very_active': 'Very Active',
+    'extremely_active': 'Extremely Active',
   };
 
   // Map Display values to DB values
   final Map<String, String> _displayToDb = {
-    'Sedentary': 'sedentar',
-    'Lightly Active': 'usor_activ',
-    'Moderately Active': 'moderat_activ',
-    'Very Active': 'foarte_activ',
-    'Extremely Active': 'extrem_activ',
+    'Sedentary': 'sedentary',
+    'Lightly Active': 'lightly_active',
+    'Moderately Active': 'moderately_active',
+    'Very Active': 'very_active',
+    'Extremely Active': 'extremely_active',
   };
 
   @override
@@ -172,7 +172,7 @@ class _PersonalInfoSectionWidgetState extends State<PersonalInfoSectionWidget> {
       'height': height,
       'targetWeight': targetWeight,
       'targetTimeframeWeeks': targetTimeframe,
-      'activityLevel': _displayToDb[_selectedActivityLevel] ?? 'moderat_activ',
+      'activityLevel': _displayToDb[_selectedActivityLevel] ?? 'moderately_active',
     });
 
     setState(() {
