@@ -152,6 +152,7 @@ fontSize: 14.sp // responsive font size
 | Workout Detail | `workout_detail_screen/` | ✅ |
 | User Profile | `user_profile_management/` | ✅ |
 | Barcode Scanner | `nutrition_planning_screen/widgets/barcode_scanner_page.dart` | ✅ |
+| Product Found Screen | `nutrition_planning_screen/widgets/product_found_screen.dart` | ✅ |
 | Exercise Detail Sheet | `exercise_library/widgets/exercise_detail_sheet.dart` | ✅ |
 
 ---
@@ -268,6 +269,12 @@ Future<String?> _showMealTypePicker(BuildContext context) {
 // Usage: final mealType = await _showMealTypePicker(context);
 // if (mealType == null || !mounted) return;  // abort on cancel
 ```
+
+**Barcode scan → ProductFoundScreen pattern** (M15):
+After a successful barcode scan, `BarcodeScannerPage` uses `Navigator.pushReplacement` to go to `ProductFoundScreen` — scanner is replaced in the stack, so pressing back from `ProductFoundScreen` returns directly to `NutritionPlanningScreen`.
+- Not-found: `Navigator.pop(context, BarcodeScannerPage.kNotFound)` — caller shows SnackBar
+- `ProductFoundScreen` calls `onFoodAdded()` callback before `Navigator.pop()` to trigger parent refresh
+- `MobileScannerController.stop()` called immediately on first detection — camera never scans in a loop
 
 ---
 

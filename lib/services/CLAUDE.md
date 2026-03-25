@@ -174,3 +174,4 @@ This formula is used in three places that must stay in sync:
 | `nutrition_service.dart` | Food log CRUD |
 | `workout_service.dart` | Workout session CRUD |
 | `theme_service.dart` | Dark/light mode toggle — `ValueNotifier<ThemeMode>` + SharedPreferences |
+| `open_food_facts_service.dart` | Barcode lookup via Open Food Facts API (no key); returns `food_database`-shaped Map or null |

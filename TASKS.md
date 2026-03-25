@@ -8,10 +8,10 @@ Update `## Current Status` in `CLAUDE.md` at the end of every session.
 ## Current Status
 
 **Last updated:** 2026-03-26
-**Last session completed:** M14 complete + hotfix — calorie RPC formula corrected, AddFoodModal now accepts grams directly
+**Last session completed:** M15 complete — Open Food Facts barcode integration; ProductFoundScreen full-page flow; scanner stops on first detection
 **Next session starts with:** M10 — Workout Session Live Tracking (set-by-set logging with rest timer)
 **Active branches:** main
-**Blockers / notes:** `pubspec.lock` gitignored — run `flutter pub get` at session start. PAAM/ folder untracked (check if needed for university submission). DB enum values are now fully English — do NOT reintroduce Romanian strings.
+**Blockers / notes:** `pubspec.lock` gitignored — run `flutter pub get` at session start. PAAM/ folder untracked (check if needed for university submission). DB enum values are now fully English — do NOT reintroduce Romanian strings. `product_found_sheet.dart` is an unused untracked file — safe to delete.
 
 ---
 
@@ -242,7 +242,7 @@ Update `## Current Status` in `CLAUDE.md` at the end of every session.
 > Replace the Supabase-only barcode lookup with the free Open Food Facts API (3 M+ products), add a scan cooldown, and create a polished product-found flow identical to apps like Eat & Track.
 
 ### 15.1 — OpenFoodFactsService
-- [ ] Create `lib/services/open_food_facts_service.dart`
+- [x] Create `lib/services/open_food_facts_service.dart`
   - Method `Future<Map<String, dynamic>?> lookupBarcode(String barcode)`
   - URL: `https://world.openfoodfacts.org/api/v0/product/{barcode}.json` (no API key required)
   - Parse response: extract `product_name`, `nutriments.energy-kcal_100g`, `nutriments.proteins_100g`, `nutriments.carbohydrates_100g`, `nutriments.fat_100g`, `serving_size` (default to 100g if absent), `image_front_url`
@@ -250,35 +250,68 @@ Update `## Current Status` in `CLAUDE.md` at the end of every session.
   - Return `null` if status != 1 or product not found
 
 ### 15.2 — Barcode Lookup Flow (Supabase → OFF → Not Found)
-- [ ] Update `BarcodeScannerPage._onBarcodeDetected()` lookup order:
+- [x] Update `BarcodeScannerPage._onBarcodeDetected()` lookup order:
   1. Query local `food_database` (Supabase) by `barcode` column — instant hit for cached items
   2. If not found, call `OpenFoodFactsService.lookupBarcode(barcode)`
   3. If found via OFF: insert product into Supabase `food_database` (`is_verified = false`, `barcode` = scanned value) and return the new row — **cache for next time**
-  4. If still not found: show "Product not found. Try searching by name." snackbar; reset scan state
-- [ ] Add `barcode` column to `food_database` if not already present (Supabase migration)
+  4. If still not found: pop scanner and show "Product not found" SnackBar on NutritionPlanningScreen
+- [x] `barcode` column already present in `food_database` — no migration needed
 
 ### 15.3 — Scan Cooldown & Camera Control
-- [ ] Add `_scanCooldown` flag: after a successful scan, set to `true` for **1.5 seconds** before accepting the next barcode (`Future.delayed(const Duration(milliseconds: 1500), () => setState(() => _scanCooldown = false))`)
-- [ ] Pause the `MobileScanner` camera while the product sheet is open; resume on sheet close
-  - Use `MobileScannerController` and call `controller.stop()` / `controller.start()`
-- [ ] Prevent scanning the same barcode twice in a row without a deliberate re-scan (existing `_lastBarcode` guard is good — ensure it resets on sheet dismiss, not on sheet open)
+- [x] Camera stops immediately (`_controller.stop()`) on first barcode detection — no infinite scan loop
+- [x] On error: camera resumes and state resets so user can retry
+- [x] `_lastBarcode` guard prevents duplicate detections
 
-### 15.4 — ProductFoundSheet (bottom sheet)
-- [ ] Create `lib/presentation/nutrition_planning_screen/widgets/product_found_sheet.dart`
-- [ ] Content:
-  - Product image (`CustomImageWidget`) if `image_front_url` is available, else placeholder icon
-  - Product name (bold, large)
-  - Macro chips row: kcal / Protein / Carbs / Fat (per 100g from OFF)
-  - **Quantity input** — `TextFormField` (numeric, default 100, unit label: g / ml / portion)
-  - Live calorie preview: recalculate as user types quantity (`quantity / 100 * kcal_per_100g`)
-  - **Meal type selector** — 4 segmented buttons: Breakfast / Lunch / Dinner / Snack
-  - "Add to Meal" CTA button (orange, full width) — inserts to `user_meals` and pops sheet
-- [ ] On "Add to Meal": call `NutritionService.addMeal(...)` with selected `meal_type`, `food_id`, and `serving_quantity`; call `_loadNutritionData()` to refresh daily totals
+### 15.4 — ProductFoundScreen (full page — changed from bottom sheet per UX feedback)
+- [x] Create `lib/presentation/nutrition_planning_screen/widgets/product_found_screen.dart`
+  - Full Scaffold page (not bottom sheet) — pushed via `Navigator.pushReplacement` from scanner
+  - Product image (`CustomImageWidget`), name, brand
+  - Macro chips row: kcal / Protein / Carbs / Fat (per 100g)
+  - Quantity `TextFormField` with live calorie + macro preview
+  - Meal type `ChoiceChip` selector (Breakfast / Lunch / Dinner / Snack)
+  - Fixed "Add to Meal" CTA at bottom — calls `NutritionService.logMeal()`, refreshes parent
 
 ### 15.5 — Scanner UX Polish
-- [ ] Update barcode scanner overlay: add animated scan-line animation inside the guide rectangle
-- [ ] Show product name in the bottom instruction chip immediately after scan (before sheet opens): "Found: Monster Energy — loading..."
-- [ ] If camera permission is denied, show actionable empty state: icon + "Camera permission required" + "Open Settings" button
+- [x] Animated scan-line inside guide rectangle (`AnimationController`, 2 s repeat-reverse)
+- [x] Status chip shows lookup progress ("Looking up barcode…" / "Searching Open Food Facts…")
+- [x] Permission-denied empty state: icon + "Camera permission required" + "Open Settings" button
+
+---
+
+## Milestone 16 — Food Database: External API Search Integration
+
+> Extend the food search bar (currently queries only the 363-row local Supabase table) to fetch results from Open Food Facts (text search) and USDA FoodData Central, giving users access to millions of real foods with accurate macronutrients.
+
+### 16.1 — Open Food Facts Text Search
+- [ ] Add text search method to `OpenFoodFactsService` (created in M15):
+  - Method `Future<List<Map<String, dynamic>>> searchFoods(String query, {int page = 1})`
+  - URL: `https://world.openfoodfacts.org/cgi/search.pl?search_terms={query}&json=1&page_size=20&page={page}`
+  - Parse each product: `product_name`, `nutriments.energy-kcal_100g`, `nutriments.proteins_100g`, `nutriments.carbohydrates_100g`, `nutriments.fat_100g`, `serving_size` (default 100g if absent), `image_front_url`
+  - Filter out results with missing `energy-kcal_100g` (unusable)
+  - Wrap in `try/catch` + `.timeout(const Duration(seconds: 15))`
+
+### 16.2 — USDA FoodData Central Integration
+- [ ] Create `lib/services/usda_food_service.dart`
+  - API key obtained free from `https://fdc.nal.usda.gov/api-guide.html` — store in `env.json` as `USDA_API_KEY`
+  - Method `Future<List<Map<String, dynamic>>> searchFoods(String query)`
+  - URL: `https://api.nal.usda.gov/fdc/v1/foods/search?query={query}&api_key={key}&pageSize=20`
+  - Parse `foods[].description`, `foods[].foodNutrients` (nutrient IDs: 1008=kcal, 1003=protein, 1005=carbs, 1004=fat)
+  - Use for base/generic foods (chicken breast, rice, eggs) where OFF has weak coverage
+  - Wrap in `try/catch` + `.timeout(const Duration(seconds: 15))`
+
+### 16.3 — Unified Food Search in NutritionPlanningScreen
+- [ ] Update `FoodSearchDialog` (or equivalent search widget) to use a **3-tier lookup**:
+  1. Query local Supabase `food_database` (instant, shown first)
+  2. If local results < 5, call `OpenFoodFactsService.searchFoods(query)` — append to results with "From Open Food Facts" badge
+  3. If query looks like a generic food (no brand), also call `UsdaFoodService.searchFoods(query)` — append with "USDA" badge
+- [ ] Deduplicate results by normalized name (avoid showing same food twice)
+- [ ] Show source badge chip on each result card: "Local" / "Open Food Facts" / "USDA"
+- [ ] Cache any externally-fetched food into Supabase `food_database` (`is_verified = false`) on first use — so repeated searches are instant
+
+### 16.4 — Pagination & UX
+- [ ] Add "Load more results" button at bottom of search list (triggers next page from OFF API)
+- [ ] Show loading shimmer while external APIs are fetching (local results visible immediately)
+- [ ] If all 3 sources return 0 results: show empty state with "Try a different spelling or scan the barcode"
 
 ---
 
@@ -305,3 +338,4 @@ Update `## Current Status` in `CLAUDE.md` at the end of every session.
 | 2026-03-25 | Exercise Library UI | Horizontal list cards + category chip bar redesign | Auth + Dashboard UI redesign |
 | 2026-03-25 | Auth + Dashboard UI | Gradient hero + floating card on login/signup/onboarding + home page redesign, AI tagline removed | M10 — Workout Session Live Tracking |
 | 2026-03-26 | Planning | Added M14 (Nutrition Overhaul) + M15 (Barcode/OFF Integration) to TASKS.md based on user requirements | M14 — Nutrition Screen Overhaul |
+| 2026-03-26 | Planning | Added M16 (External Food Database: OFF text search + USDA FoodData Central) for full food search expansion | M10 → M15 → M16 |

@@ -13,7 +13,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Current Status
 
 **Last updated:** 2026-03-26
-**Last session:** M14 complete + hotfix — 363 foods seeded; AI meal-type picker; Home page new cards (Streak/Tip/TDEE); calorie RPC formula fixed; AddFoodModal now uses grams directly
+**Last session:** M15 complete — OpenFoodFactsService barcode lookup; ProductFoundScreen full-page flow; scanner stops immediately on detection
 **Next session starts with:** M10 — Workout Session Live Tracking (set-by-set logging with rest timer)
 **Active branches:** main
 **Blockers:** `pubspec.lock` is gitignored — run `flutter pub get` at every session start. DB enum values are now fully English — NEVER reintroduce Romanian strings in any enum column.
