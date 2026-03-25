@@ -179,7 +179,43 @@ Difficulty colors: Beginner → `tertiary`, Intermediate → `Color(0xFFFF6F00)`
 
 ---
 
-## Patterns Added This Session
+## Patterns Added Recently
+
+**Gradient Hero + Floating Card** (auth screens + dashboard):
+```dart
+// Standard layout used by login, signup, onboarding, and home page
+Scaffold(
+  body: Stack(children: [
+    Positioned.fill(child: Container(decoration: BoxDecoration(
+      gradient: LinearGradient(
+        begin: Alignment.topCenter, end: Alignment.bottomCenter,
+        colors: isDark
+          ? [AppTheme.backgroundDark, AppTheme.primaryVariantDark]
+          : [AppTheme.primaryVariantLight, AppTheme.primaryLight],
+      ),
+    ))),
+    SafeArea(child: Column(children: [
+      _buildHeader(),         // hero/greeting inside gradient
+      Expanded(child: Container(
+        decoration: BoxDecoration(
+          color: isDark ? AppTheme.surfaceDark : AppTheme.surfaceLight,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+          border: isDark ? Border(top: BorderSide(
+            color: AppTheme.primaryDark.withValues(alpha: 0.25), width: 1,
+          )) : null,
+          boxShadow: [BoxShadow(
+            color: isDark ? Colors.black.withValues(alpha: 0.35) : AppTheme.shadowLight,
+            blurRadius: 24, offset: Offset(0, -6),
+          )],
+        ),
+        child: /* scrollable content */,
+      )),
+    ])),
+  ]),
+)
+```
+When adding new screens, follow this pattern for visual consistency.
+CTA buttons use `colorScheme.tertiary` (orange) with `colorScheme.onTertiary` foreground.
 
 **Bottom-sheet detail panel** (`ExerciseDetailSheet`):
 ```dart

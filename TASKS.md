@@ -8,7 +8,7 @@ Update `## Current Status` in `CLAUDE.md` at the end of every session.
 ## Current Status
 
 **Last updated:** 2026-03-25
-**Last session completed:** UI — Exercise Library (Workouts tab) redesigned: horizontal list cards + category chip bar
+**Last session completed:** UI — Auth screens redesigned (gradient hero + floating card) + Home page redesigned to match
 **Next session starts with:** M10 — Workout Session Live Tracking (set-by-set logging with rest timer)
 **Active branches:** main
 **Blockers / notes:** `pubspec.lock` gitignored — run `flutter pub get` at session start. PAAM/ folder untracked (check if needed for university submission). DB enum values are now fully English — do NOT reintroduce Romanian strings.
@@ -149,6 +149,11 @@ Update `## Current Status` in `CLAUDE.md` at the end of every session.
 - [x] Review and fix any remaining layout overflow issues on small screens (375px width)
 - [x] Add haptic feedback (`HapticFeedback.lightImpact()`) to primary actions (already on bottom nav)
 - [x] Implement app splash screen / icon assets in `assets/`
+- [x] Redesign login & signup screens with gradient hero + floating card pattern
+- [x] Redesign AuthenticationOnboardingFlow with matching gradient + tab switcher
+- [x] Remove AI tagline from auth hero sections and splash screen
+- [x] Redesign home page (MainDashboardInitialPage) with gradient header + floating card matching auth
+- [x] Fix raw `Colors.blue`/`Colors.green` in dashboard metric cards → theme colors
 
 ---
 
@@ -227,3 +232,5 @@ Update `## Current Status` in `CLAUDE.md` at the end of every session.
 | 2026-03-24 | Docs setup | CLAUDE.md hierarchy, TASKS.md, SESSION_WORKFLOW.md, docs/ reference files | M9 — Romanian → English UI strings |
 | 2026-03-24 | M1–M8 sub-tasks | Retry logic, shimmer skeletons, real nutrition data, YouTube player, meal eaten toggle, barcode scan, measurements LineChart, PR badges, dark mode toggle | M9 remaining polish tasks |
 | 2026-03-24 | M9 complete | Shimmer skeletons, pull-to-refresh, haptic feedback, empty states, tap targets, overflow fixes, splash screen, flutter analyze clean, full Romanian→English localization (50 files) | M10 — Workout Session Live Tracking |
+| 2026-03-25 | Exercise Library UI | Horizontal list cards + category chip bar redesign | Auth + Dashboard UI redesign |
+| 2026-03-25 | Auth + Dashboard UI | Gradient hero + floating card on login/signup/onboarding + home page redesign, AI tagline removed | M10 — Workout Session Live Tracking |

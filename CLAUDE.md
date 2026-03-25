@@ -13,7 +13,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Current Status
 
 **Last updated:** 2026-03-25
-**Last session:** UI — Exercise Library (Workouts tab) redesigned with Option A: horizontal list cards (image + difficulty strip + chips), horizontal scrollable category chip bar (All/Chest/Back/Legs/Shoulders/Arms/Core), results count label, updated skeleton loader
+**Last session:** UI — Auth screens (login/signup/onboarding) redesigned with gradient hero + floating card; Home page redesigned to match; AI tagline removed
 **Next session starts with:** M10 — Workout Session Live Tracking (set-by-set logging with rest timer)
 **Active branches:** main
 **Blockers:** `pubspec.lock` is gitignored — run `flutter pub get` at every session start. DB enum values are now fully English — NEVER reintroduce Romanian strings in any enum column.
