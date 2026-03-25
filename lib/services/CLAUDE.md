@@ -44,7 +44,7 @@ Rules:
 | `workout_exercises` | Exercises within a workout session |
 | `user_meals` | Daily food entries per user; `meal_type` uses Romanian keys: `mic_dejun`, `pranz`, `cina`, `gustare_dimineata` |
 | `food_database` | Global food lookup — `name`, `calories`, `protein_g`, `carbs_g`, `fat_g`, `barcode`, `is_verified` |
-| `body_measurements` | Body measurements — `measurement_type` (head/neck/shoulders/chest/waist/hips/arm/forearm/thigh/calf), `value` cm, `measured_at` |
+| `body_measurements` | Body measurements — `measurement_type` (head/neck/shoulders/chest/waist/hips/arm/forearm/thigh/calf/**weight**), `value` cm or kg, `measured_at`. Weight is logged here on every profile save (type=`weight`, value=kg). |
 | `user_profiles` | Extended user info beyond Supabase auth; notification flags, nutrition goals |
 | `strength_progress` | PR entries — `user_id`, `exercise_id`, `session_id`, `weight_kg`, `reps` |
 | `user_workout_schedules` | Links user to active plan (`plan_id`, `is_active`) |
@@ -52,6 +52,15 @@ Rules:
 | `session_exercises` | Exercises within a session — `sets`, `reps_min`, `reps_max`, `order_in_session` |
 
 Get current user ID: `SupabaseService.instance.client.auth.currentUser!.id`
+
+**Enum values are fully English** (migrated 2026-03-25). Never use Romanian strings for enum columns:
+- `fitness_goal`: `weight_loss`, `muscle_gain`, `maintenance`, `toning`, `endurance`, `body_recomposition`, `flexibility`, `general_fitness`
+- `activity_level`: `sedentary`, `lightly_active`, `moderately_active`, `very_active`, `extremely_active`
+- `equipment_type`: `gym`, `home_no_equipment`, `home_basic_equipment`, `mix`
+- `dietary_preference`: `normal`, `vegetarian`, `vegan`, `gluten_free`, `dairy_free`
+- `gender`: `male`, `female`, `other`, `prefer_not_to_say`
+
+**Stored procedure `generate_workout_plan(user_profile_id)`** — RPC that creates a `workout_plans` row + sessions. Called from `OnboardingSurveyWidget._saveOnboardingData`. Its CASE statement uses English enum values — do not revert to Romanian.
 
 ---
 

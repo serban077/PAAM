@@ -13,10 +13,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Current Status
 
 **Last updated:** 2026-03-25
-**Last session:** M9 complete — shimmer skeletons (StrengthProgress, ProgressTracking, Dashboard, Nutrition), pull-to-refresh on all data screens, haptic feedback on primary actions, empty states audit, tap target fixes, overflow fixes on 375px, branded splash screen, flutter analyze clean (0 warnings), full Romanian→English UI localization across 50 files (exercise data, filter chips, all widgets/screens)
+**Last session:** Hotfix — migrated all DB enum types from Romanian to English (fitness_goal, activity_level, equipment_type, dietary_preference, gender via DB migrations + updated all Dart code); fixed `generate_workout_plan` stored procedure; recalibrate step 5 now auto-populates from profile; weight saves to body_measurements; Supabase MCP connected
 **Next session starts with:** M10 — Workout Session Live Tracking (set-by-set logging with rest timer)
 **Active branches:** main
-**Blockers:** `pubspec.lock` is gitignored — run `flutter pub get` at every session start. PAAM/ folder not yet committed (check if needed).
+**Blockers:** `pubspec.lock` is gitignored — run `flutter pub get` at every session start. DB enum values are now fully English — NEVER reintroduce Romanian strings in any enum column.
 
 ---
 
@@ -44,6 +44,7 @@ flutter build ios --release                       # iOS build
 - **NEVER** access Supabase directly — always `SupabaseService.instance.client`
 - **NEVER** commit `env.json` — it is gitignored and contains live secrets
 - **NEVER** introduce Provider / Riverpod / Bloc — app uses vanilla `setState` intentionally
+- **NEVER** use Romanian strings for DB enum columns — all enum values are English: `weight_loss`, `muscle_gain`, `sedentary`, `lightly_active`, `moderately_active`, `very_active`, `extremely_active`, `gym`, `home_no_equipment`, `home_basic_equipment`, `mix`, `gluten_free`, `dairy_free`, `male`, `female`, `other`, `prefer_not_to_say`
 
 ### ALWAYS
 - **ALWAYS** run with `--dart-define-from-file=env.json`

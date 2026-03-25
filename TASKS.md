@@ -8,10 +8,10 @@ Update `## Current Status` in `CLAUDE.md` at the end of every session.
 ## Current Status
 
 **Last updated:** 2026-03-25
-**Last session completed:** M9 — Full Romanian→English UI localization (50 files), shimmer skeletons, pull-to-refresh, haptic feedback, empty states, tap target fixes, overflow fixes, splash screen, flutter analyze clean
+**Last session completed:** Hotfix — Romanian→English DB enum migration (fitness_goal, activity_level, equipment_type, dietary_preference, gender), Supabase MCP setup, recalibrate auto-populate, weight tracking
 **Next session starts with:** M10 — Workout Session Live Tracking (set-by-set logging with rest timer)
 **Active branches:** main
-**Blockers / notes:** `pubspec.lock` gitignored — run `flutter pub get` at session start. PAAM/ folder untracked (check if needed for university submission).
+**Blockers / notes:** `pubspec.lock` gitignored — run `flutter pub get` at session start. PAAM/ folder untracked (check if needed for university submission). DB enum values are now fully English — do NOT reintroduce Romanian strings.
 
 ---
 
@@ -51,7 +51,11 @@ Update `## Current Status` in `CLAUDE.md` at the end of every session.
   - Listens to Supabase auth state changes
   - Checks `onboarding_responses` table for completion
   - Routes to dashboard if complete, onboarding if not, login if unauthenticated
-- [~] Commit uncommitted changes to `onboarding_survey_screen.dart` and `auth_service.dart`
+- [x] Commit uncommitted changes to `onboarding_survey_screen.dart` and `auth_service.dart`
+- [x] Fix all DB enum values Romanian→English (fitness_goal, activity_level, equipment_type, dietary_preference, gender)
+- [x] Fix `generate_workout_plan` stored procedure CASE statement (Romanian enum refs crashed after migration)
+- [x] Fix Recalibrate Plan: Step 5 auto-populate from profile data, add weight log to body_measurements
+- [x] Set up Supabase MCP server (project-scoped, PAT auth)
 
 ---
 
