@@ -12,8 +12,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Current Status
 
-**Last updated:** 2026-03-25
-**Last session:** UI — Auth screens (login/signup/onboarding) redesigned with gradient hero + floating card; Home page redesigned to match; AI tagline removed
+**Last updated:** 2026-03-26
+**Last session:** M14 — food_database seeded with 363 verified foods; AI meal-type picker bottom sheet (replaced mealTypeMap); Home page Nutrition section replaced with Workout Streak + Daily Tip + TDEE Snapshot cards
 **Next session starts with:** M10 — Workout Session Live Tracking (set-by-set logging with rest timer)
 **Active branches:** main
 **Blockers:** `pubspec.lock` is gitignored — run `flutter pub get` at every session start. DB enum values are now fully English — NEVER reintroduce Romanian strings in any enum column.

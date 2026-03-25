@@ -7,8 +7,8 @@ Update `## Current Status` in `CLAUDE.md` at the end of every session.
 
 ## Current Status
 
-**Last updated:** 2026-03-25
-**Last session completed:** UI — Auth screens redesigned (gradient hero + floating card) + Home page redesigned to match
+**Last updated:** 2026-03-26
+**Last session completed:** M14 — Nutrition Screen Overhaul (food DB seeded with 363 verified foods, meal-type bottom sheet picker, home page new cards)
 **Next session starts with:** M10 — Workout Session Live Tracking (set-by-set logging with rest timer)
 **Active branches:** main
 **Blockers / notes:** `pubspec.lock` gitignored — run `flutter pub get` at session start. PAAM/ folder untracked (check if needed for university submission). DB enum values are now fully English — do NOT reintroduce Romanian strings.
@@ -212,6 +212,72 @@ Update `## Current Status` in `CLAUDE.md` at the end of every session.
 
 ---
 
+## Milestone 14 — Nutrition Screen Overhaul
+
+> Deep improvements to the Nutrition tab: richer food database, correct calorie math, smarter AI-plan integration, and a cleaner Home page.
+
+### 14.1 — Food Database Expansion ✅
+- [x] Write Supabase migration to pre-populate `food_database` with 200+ common foods — 363 verified rows inserted across breakfast, proteins, carbs, vegetables, fruits, dairy, nuts/seeds, Romanian dishes, fast food, snacks, beverages, condiments
+- [x] Calorie multiplier formula verified: `calories * (serving_quantity / serving_size)` is correct and consistent with how `AddFoodModalWidget` saves quantities
+
+### 14.2 — AI Plan → Meal Type Picker ✅
+- [x] Replace the hard-coded `mealTypeMap` lookup in `ai_meal_plan_section.dart` `_addOptionToDay()`
+- [x] When user taps "Add to Today" on an AI meal option, show a `showModalBottomSheet` with 4 meal type chips: Breakfast / Lunch / Dinner / Snack (mapped to DB enums)
+- [x] If user cancels, abort the insert (null check + mounted guard)
+
+### 14.3 — Home Page Unique Content ✅
+- [x] **Remove** the "Nutrition" section from `main_dashboard_initial_page.dart` (NutritionSummaryWidget + import)
+- [x] **Add: Workout Streak card** — queries `workout_logs` for consecutive days; flame icon; "No streak yet" state
+- [x] **Add: Daily Fitness Tip** — static list of 30 tips; rotated by `dayOfYear % 30`; lightbulb icon
+- [x] **Add: TDEE Snapshot card** — `daily_calorie_goal` + `activity_level` from already-loaded `_userProfile`; activity level pill
+
+---
+
+## Milestone 15 — Barcode Scanner: Open Food Facts Integration
+
+> Replace the Supabase-only barcode lookup with the free Open Food Facts API (3 M+ products), add a scan cooldown, and create a polished product-found flow identical to apps like Eat & Track.
+
+### 15.1 — OpenFoodFactsService
+- [ ] Create `lib/services/open_food_facts_service.dart`
+  - Method `Future<Map<String, dynamic>?> lookupBarcode(String barcode)`
+  - URL: `https://world.openfoodfacts.org/api/v0/product/{barcode}.json` (no API key required)
+  - Parse response: extract `product_name`, `nutriments.energy-kcal_100g`, `nutriments.proteins_100g`, `nutriments.carbohydrates_100g`, `nutriments.fat_100g`, `serving_size` (default to 100g if absent), `image_front_url`
+  - Wrap in `try/catch` + `.timeout(const Duration(seconds: 15))`
+  - Return `null` if status != 1 or product not found
+
+### 15.2 — Barcode Lookup Flow (Supabase → OFF → Not Found)
+- [ ] Update `BarcodeScannerPage._onBarcodeDetected()` lookup order:
+  1. Query local `food_database` (Supabase) by `barcode` column — instant hit for cached items
+  2. If not found, call `OpenFoodFactsService.lookupBarcode(barcode)`
+  3. If found via OFF: insert product into Supabase `food_database` (`is_verified = false`, `barcode` = scanned value) and return the new row — **cache for next time**
+  4. If still not found: show "Product not found. Try searching by name." snackbar; reset scan state
+- [ ] Add `barcode` column to `food_database` if not already present (Supabase migration)
+
+### 15.3 — Scan Cooldown & Camera Control
+- [ ] Add `_scanCooldown` flag: after a successful scan, set to `true` for **1.5 seconds** before accepting the next barcode (`Future.delayed(const Duration(milliseconds: 1500), () => setState(() => _scanCooldown = false))`)
+- [ ] Pause the `MobileScanner` camera while the product sheet is open; resume on sheet close
+  - Use `MobileScannerController` and call `controller.stop()` / `controller.start()`
+- [ ] Prevent scanning the same barcode twice in a row without a deliberate re-scan (existing `_lastBarcode` guard is good — ensure it resets on sheet dismiss, not on sheet open)
+
+### 15.4 — ProductFoundSheet (bottom sheet)
+- [ ] Create `lib/presentation/nutrition_planning_screen/widgets/product_found_sheet.dart`
+- [ ] Content:
+  - Product image (`CustomImageWidget`) if `image_front_url` is available, else placeholder icon
+  - Product name (bold, large)
+  - Macro chips row: kcal / Protein / Carbs / Fat (per 100g from OFF)
+  - **Quantity input** — `TextFormField` (numeric, default 100, unit label: g / ml / portion)
+  - Live calorie preview: recalculate as user types quantity (`quantity / 100 * kcal_per_100g`)
+  - **Meal type selector** — 4 segmented buttons: Breakfast / Lunch / Dinner / Snack
+  - "Add to Meal" CTA button (orange, full width) — inserts to `user_meals` and pops sheet
+- [ ] On "Add to Meal": call `NutritionService.addMeal(...)` with selected `meal_type`, `food_id`, and `serving_quantity`; call `_loadNutritionData()` to refresh daily totals
+
+### 15.5 — Scanner UX Polish
+- [ ] Update barcode scanner overlay: add animated scan-line animation inside the guide rectangle
+- [ ] Show product name in the bottom instruction chip immediately after scan (before sheet opens): "Found: Monster Energy — loading..."
+- [ ] If camera permission is denied, show actionable empty state: icon + "Camera permission required" + "Open Settings" button
+
+---
+
 ## Backlog (Nice to Have)
 
 - [ ] Push notifications for workout reminders (daily reminder at user-set time)
@@ -234,3 +300,4 @@ Update `## Current Status` in `CLAUDE.md` at the end of every session.
 | 2026-03-24 | M9 complete | Shimmer skeletons, pull-to-refresh, haptic feedback, empty states, tap targets, overflow fixes, splash screen, flutter analyze clean, full Romanian→English localization (50 files) | M10 — Workout Session Live Tracking |
 | 2026-03-25 | Exercise Library UI | Horizontal list cards + category chip bar redesign | Auth + Dashboard UI redesign |
 | 2026-03-25 | Auth + Dashboard UI | Gradient hero + floating card on login/signup/onboarding + home page redesign, AI tagline removed | M10 — Workout Session Live Tracking |
+| 2026-03-26 | Planning | Added M14 (Nutrition Overhaul) + M15 (Barcode/OFF Integration) to TASKS.md based on user requirements | M14 — Nutrition Screen Overhaul |
