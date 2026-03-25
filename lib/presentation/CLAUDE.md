@@ -248,6 +248,27 @@ Do NOT use `setState` to update the toggle — `ValueListenableBuilder` handles 
 | `cina` | Dinner |
 | `gustare_dimineata` | Snack |
 
+**Meal type picker bottom sheet** (M14.2 — `ai_meal_plan_section.dart`):
+When user action needs a meal type choice, use `showModalBottomSheet<String>` returning the DB key:
+```dart
+Future<String?> _showMealTypePicker(BuildContext context) {
+  return showModalBottomSheet<String>(
+    context: context,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+    ),
+    builder: (ctx) => Padding(
+      padding: EdgeInsets.fromLTRB(4.w, 1.5.h, 4.w, 4.h),
+      child: Column(mainAxisSize: MainAxisSize.min, children: [
+        // drag handle + title + Wrap of 4 ActionChips + Cancel TextButton
+      ]),
+    ),
+  );
+}
+// Usage: final mealType = await _showMealTypePicker(context);
+// if (mealType == null || !mounted) return;  // abort on cancel
+```
+
 ---
 
 ## Localization — M9 Complete (2026-03-25)
@@ -256,7 +277,7 @@ All user-visible Romanian strings have been translated to English across all 50 
 
 ### Intentionally remaining Romanian (do NOT translate):
 - `lib/services/gemini_ai_service.dart` — AI prompt text instructs Gemini to generate Romanian content (meal plans, coaching tips). Changing these would break AI output.
-- `ai_meal_plan_section.dart` mealTypeMap keys (`'Prânz'`, `'Cină'`, etc.) — matched against Gemini-generated meal names which come back in Romanian per the prompt.
+- `ai_meal_plan_section.dart` — `mealTypeMap` removed (M14.2); meal type is now selected via bottom sheet so no string matching is needed.
 - `exercise_detail_sheet.dart` switch cases `'începător'`/`'intermediar'`/`'avansat'` — backward-compat fallbacks alongside the English cases.
 
 ### Critical sync: exercise data ↔ filter chips

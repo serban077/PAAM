@@ -8,7 +8,7 @@ Update `## Current Status` in `CLAUDE.md` at the end of every session.
 ## Current Status
 
 **Last updated:** 2026-03-26
-**Last session completed:** M14 — Nutrition Screen Overhaul (food DB seeded with 363 verified foods, meal-type bottom sheet picker, home page new cards)
+**Last session completed:** M14 complete + hotfix — calorie RPC formula corrected, AddFoodModal now accepts grams directly
 **Next session starts with:** M10 — Workout Session Live Tracking (set-by-set logging with rest timer)
 **Active branches:** main
 **Blockers / notes:** `pubspec.lock` gitignored — run `flutter pub get` at session start. PAAM/ folder untracked (check if needed for university submission). DB enum values are now fully English — do NOT reintroduce Romanian strings.
@@ -230,6 +230,10 @@ Update `## Current Status` in `CLAUDE.md` at the end of every session.
 - [x] **Add: Workout Streak card** — queries `workout_logs` for consecutive days; flame icon; "No streak yet" state
 - [x] **Add: Daily Fitness Tip** — static list of 30 tips; rotated by `dayOfYear % 30`; lightbulb icon
 - [x] **Add: TDEE Snapshot card** — `daily_calorie_goal` + `activity_level` from already-loaded `_userProfile`; activity level pill
+
+### 14.4 — Calorie Formula Hotfix ✅
+- [x] Fix RPC `calculate_daily_nutrition_totals`: formula was `calories * serving_quantity * serving_size / 100` (wrong — multiplied instead of divided). Fixed to `calories * serving_quantity / serving_size`
+- [x] Fix `AddFoodModalWidget`: now accepts grams directly (default = food's serving_size, e.g. 100 for 100g foods). `serving_quantity` stored in DB is now raw grams, not a multiplier. Formula in preview and RPC are now consistent.
 
 ---
 

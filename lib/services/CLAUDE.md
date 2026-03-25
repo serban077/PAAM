@@ -42,8 +42,8 @@ Rules:
 | `onboarding_responses` | User fitness profile from onboarding survey (checked for completion at login) |
 | `workouts` | Saved workout sessions |
 | `workout_exercises` | Exercises within a workout session |
-| `user_meals` | Daily food entries per user; `meal_type` uses Romanian keys: `mic_dejun`, `pranz`, `cina`, `gustare_dimineata` |
-| `food_database` | Global food lookup — `name`, `calories`, `protein_g`, `carbs_g`, `fat_g`, `barcode`, `is_verified` |
+| `user_meals` | Daily food entries per user; `meal_type` uses Romanian keys: `mic_dejun`, `pranz`, `cina`, `gustare_dimineata`; `serving_quantity` stores **actual grams/ml** (not a multiplier) |
+| `food_database` | Global food lookup — `name`, `calories`, `protein_g`, `carbs_g`, `fat_g`, `serving_size`, `serving_unit`, `barcode`, `is_verified`; 363 verified rows seeded (M14) |
 | `body_measurements` | Body measurements — `measurement_type` (head/neck/shoulders/chest/waist/hips/arm/forearm/thigh/calf/**weight**), `value` cm or kg, `measured_at`. Weight is logged here on every profile save (type=`weight`, value=kg). |
 | `user_profiles` | Extended user info beyond Supabase auth; notification flags, nutrition goals |
 | `strength_progress` | PR entries — `user_id`, `exercise_id`, `session_id`, `weight_kg`, `reps` |
@@ -144,6 +144,20 @@ Used in `AuthenticationOnboardingFlow` to react to login/logout events.
 
 Standard CRUD services for workout sessions and nutrition logs.
 Both follow the same pattern: scope all queries by `user_id`, add `.timeout(15s)`, wrap in try/catch.
+
+**Calorie formula (critical — do not change):**
+```
+kcal = food.calories * user_meals.serving_quantity / food.serving_size
+```
+- `serving_quantity` = actual amount in grams (or ml, or portions)
+- `serving_size` = the reference amount the `calories` value is based on (e.g. 100 for 100g foods)
+- Example: potato (87 kcal / 100g) logged at 150g → `87 * 150 / 100 = 130.5 kcal`
+- AI meals use `serving_size = 1` (1 portion) and `serving_quantity = 1` → formula gives full calories
+
+This formula is used in three places that must stay in sync:
+1. Supabase RPC `calculate_daily_nutrition_totals` — fixed M14 (was multiplying instead of dividing)
+2. `SimpleMealCard.totalCalories` getter (inline Dart)
+3. `main_dashboard_initial_page.dart` `_loadDashboardData` inline loop
 
 ---
 
