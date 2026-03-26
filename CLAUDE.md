@@ -13,10 +13,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Current Status
 
 **Last updated:** 2026-03-26
-**Last session:** M16 complete — 3-tier food search (Supabase + Open Food Facts text + USDA FoodData Central); external foods auto-cached on first use; DB fixes (calories int cast, image_front_url column, unique constraint on name+brand)
+**Last session:** M17 complete — Community Food Database: user contributions via barcode + Gemini Vision nutritional label OCR; ProductNotFoundScreen, UserFoodSubmissionScreen (3-step wizard), MyContributionsScreen, GeminiNutritionLabelService; food_database extended with contributed_by/is_user_contributed/detailed_macros + RLS
 **Next session starts with:** M10 — Workout Session Live Tracking (set-by-set logging with rest timer)
 **Active branches:** main
-**Blockers:** `pubspec.lock` is gitignored — run `flutter pub get` at every session start. DB enum values are now fully English — NEVER reintroduce Romanian strings in any enum column. USDA_API_KEY lives in env.json only (not committed).
+**Blockers:** `pubspec.lock` is gitignored — run `flutter pub get` at every session start. DB enum values are now fully English — NEVER reintroduce Romanian strings in any enum column. USDA_API_KEY lives in env.json only (not committed). `product_found_sheet.dart` is an unused untracked file — safe to delete.
 
 ---
 

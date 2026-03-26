@@ -153,6 +153,9 @@ fontSize: 14.sp // responsive font size
 | User Profile | `user_profile_management/` | ✅ |
 | Barcode Scanner | `nutrition_planning_screen/widgets/barcode_scanner_page.dart` | ✅ |
 | Product Found Screen | `nutrition_planning_screen/widgets/product_found_screen.dart` | ✅ |
+| Product Not Found Screen | `nutrition_planning_screen/widgets/product_not_found_screen.dart` | ✅ |
+| User Food Submission (3-step wizard) | `user_food_submission_screen/user_food_submission_screen.dart` | ✅ |
+| My Contributions | `user_food_submission_screen/my_contributions_screen.dart` | ✅ |
 | Exercise Detail Sheet | `exercise_library/widgets/exercise_detail_sheet.dart` | ✅ |
 
 ---
@@ -270,11 +273,16 @@ Future<String?> _showMealTypePicker(BuildContext context) {
 // if (mealType == null || !mounted) return;  // abort on cancel
 ```
 
-**Barcode scan → ProductFoundScreen pattern** (M15):
-After a successful barcode scan, `BarcodeScannerPage` uses `Navigator.pushReplacement` to go to `ProductFoundScreen` — scanner is replaced in the stack, so pressing back from `ProductFoundScreen` returns directly to `NutritionPlanningScreen`.
-- Not-found: `Navigator.pop(context, BarcodeScannerPage.kNotFound)` — caller shows SnackBar
+**Barcode scan flow** (M15 + M17):
+- Found → `Navigator.pushReplacement` to `ProductFoundScreen` (scanner replaced in stack)
+- Not found → `Navigator.pushReplacement` to `ProductNotFoundScreen(barcode: ...)` (M17)
 - `ProductFoundScreen` calls `onFoodAdded()` callback before `Navigator.pop()` to trigger parent refresh
 - `MobileScannerController.stop()` called immediately on first detection — camera never scans in a loop
+
+**User food contribution flow** (M17):
+`ProductNotFoundScreen` → "Add This Product" → `UserFoodSubmissionScreen` (3 steps: Info → Label Photo + Gemini OCR → Review) → on submit → `ProductFoundScreen` with newly inserted row.
+`GeminiNutritionLabelService.extractNutritionLabel()` uses Gemini 1.5-flash Vision; 30 s timeout; returns null on failure so user can enter macros manually.
+`detailed_macros` JSONB field stored in `food_database` and displayed as an `ExpansionTile` in `ProductFoundScreen` (hidden when null).
 
 ---
 

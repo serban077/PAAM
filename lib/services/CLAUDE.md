@@ -145,6 +145,17 @@ Used in `AuthenticationOnboardingFlow` to react to login/logout events.
 Standard CRUD services for workout sessions and nutrition logs.
 Both follow the same pattern: scope all queries by `user_id`, add `.timeout(15s)`, wrap in try/catch.
 
+**`NutritionService.submitUserFood(Map food)`** (added M17):
+- Inserts with `is_user_contributed = true`, `contributed_by = currentUser.id`, `is_verified = false`
+- Stores `detailed_macros` JSONB if present — shape: `{ sugar_g, saturated_fat_g, unsaturated_fat_g, fiber_g, sodium_mg }` all per 100g
+- Returns full inserted row; `calories` must be `.round()` before insert
+
+**`NutritionService.getMyContributions()`** (added M17):
+- Selects from `food_database` where `contributed_by = currentUser.id`, ordered by `created_at DESC`
+
+**`NutritionService.deleteContribution(String foodId)`** (added M17):
+- Deletes a contributed food by id; RLS enforces own-rows-only
+
 **`NutritionService.cacheExternalFood(Map externalFood)`** (added M16):
 - Strips the `_source` UI key before writing to DB
 - Upserts on `(name, brand)` unique constraint — returns existing row if already cached
@@ -187,3 +198,4 @@ This formula is used in three places that must stay in sync:
 | `theme_service.dart` | Dark/light mode toggle — `ValueNotifier<ThemeMode>` + SharedPreferences |
 | `open_food_facts_service.dart` | Barcode lookup (`lookupBarcode`) + text search (`searchFoods`) via Open Food Facts API (no key required) |
 | `usda_food_service.dart` | Text search via USDA FoodData Central (`USDA_API_KEY` in env.json); returns `[]` gracefully if key absent |
+| `gemini_nutrition_label_service.dart` | Vision OCR: `extractNutritionLabel(Uint8List)` sends label photo to Gemini 1.5-flash; returns strict JSON macros (per 100g) or null if extraction fails |

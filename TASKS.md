@@ -8,7 +8,7 @@ Update `## Current Status` in `CLAUDE.md` at the end of every session.
 ## Current Status
 
 **Last updated:** 2026-03-26
-**Last session completed:** M16 complete — 3-tier food search (Supabase + Open Food Facts text search + USDA FoodData Central); external foods auto-cached on first use
+**Last session completed:** M17 complete — Community Food Database: user contributions via barcode + Gemini Vision OCR; ProductNotFoundScreen, UserFoodSubmissionScreen (3-step wizard), MyContributionsScreen, GeminiNutritionLabelService; food_database extended with contributed_by/is_user_contributed/detailed_macros + RLS
 **Next session starts with:** M10 — Workout Session Live Tracking (set-by-set logging with rest timer)
 **Active branches:** main
 **Blockers / notes:** `pubspec.lock` gitignored — run `flutter pub get` at session start. PAAM/ folder untracked (check if needed for university submission). DB enum values are now fully English — do NOT reintroduce Romanian strings. `product_found_sheet.dart` is an unused untracked file — safe to delete. USDA_API_KEY is in env.json (not committed).
@@ -315,6 +315,58 @@ Update `## Current Status` in `CLAUDE.md` at the end of every session.
 
 ---
 
+## Milestone 17 — Community Food Database: User Contributions + Nutritional Label OCR
+
+> Allow users to add missing products to the shared food database by scanning the barcode and photographing the nutritional label. Gemini Vision extracts macros automatically. Products added by any user become available to all users on next barcode scan — the database grows with every contribution.
+
+### 17.1 — DB Schema: Extended Food Contributions ✅
+- [x] Supabase migration: add `contributed_by UUID REFERENCES auth.users(id) NULL` to `food_database`
+- [x] Supabase migration: add `is_user_contributed BOOLEAN NOT NULL DEFAULT false` to `food_database`
+- [x] Supabase migration: add `detailed_macros JSONB NULL` — stores extended nutrition per 100g: `{ sugar, saturated_fat, unsaturated_fat, fiber, sodium }` (values that are not in the main columns)
+- [x] Add RLS policy: authenticated users can INSERT rows with `contributed_by = auth.uid()`; can UPDATE/DELETE only rows where `contributed_by = auth.uid()`
+
+### 17.2 — GeminiNutritionLabelService (Vision OCR) ✅
+- [x] `image_picker: ^1.0.4` already in `pubspec.yaml` — no change needed
+- [x] Create `lib/services/gemini_nutrition_label_service.dart`
+  - Method `Future<Map<String, dynamic>?> extractNutritionLabel(Uint8List imageBytes)`
+  - Encodes image to base64, calls Gemini multimodal API (`gemini-1.5-flash`) with inline image part
+  - System prompt: instructs the model to return STRICT JSON with keys `calories`, `protein_g`, `carbs_g`, `sugar_g`, `fat_g`, `saturated_fat_g`, `unsaturated_fat_g`, `fiber_g`, `sodium_mg`, `serving_size_g` — all values per 100g, null if not found on label
+  - Validates JSON shape before returning; returns `null` on parse failure or missing critical fields (`calories`, `protein_g`, `carbs_g`, `fat_g`)
+  - Wrap in `try/catch` + `.timeout(const Duration(seconds: 30))` (Vision calls are slower than text)
+
+### 17.3 — ProductNotFoundScreen ✅
+- [x] Create `lib/presentation/nutrition_planning_screen/widgets/product_not_found_screen.dart`
+  - Full Scaffold page (pushed via `Navigator.pushReplacement` from scanner when all lookup tiers fail)
+  - Shows scanned barcode value, "No product found for this barcode" heading
+  - Two CTAs: "Scan Again" (pops back to scanner) and "Add This Product" (pushes `UserFoodSubmissionScreen` with `barcode` argument)
+
+### 17.4 — UserFoodSubmissionScreen (3-step wizard) ✅
+- [x] Create `lib/presentation/user_food_submission_screen/user_food_submission_screen.dart`
+- [x] Step 1 — Product Info: name + brand TextFormFields; barcode pre-filled read-only; "Next" validates
+- [x] Step 2 — Label Photo: camera/gallery pick; Gemini Vision extraction with shimmer loading; "Enter Manually" skip
+- [x] Step 3 — Review & Submit: required macro fields + optional detailed nutrition ExpansionTile; "Submit Product" validates and calls submitUserFood()
+- [x] On submit: navigates to ProductFoundScreen with newly inserted row
+- [x] Route `AppRoutes.userFoodSubmission` registered in `app_routes.dart` via `onGenerateRoute`
+
+### 17.5 — Barcode Flow Update: "Not Found → Contribute" ✅
+- [x] Update `BarcodeScannerPage._onBarcodeDetected()`: when all lookup tiers return null, push `ProductNotFoundScreen` (replaces pop with kNotFound sentinel)
+
+### 17.6 — NutritionService: submitUserFood() & getMyContributions() ✅
+- [x] `submitUserFood()` — inserts with is_user_contributed=true, contributed_by, is_verified=false; stores detailed_macros JSONB; returns inserted row
+- [x] `getMyContributions()` — selects where contributed_by = current uid, ordered by created_at DESC
+- [x] `deleteContribution()` — deletes by id (RLS enforces own-rows-only)
+
+### 17.7 — Detailed Macros Display in ProductFoundScreen ✅
+- [x] `_DetailedMacrosExpansion` widget: ExpansionTile hidden when detailed_macros is null; shows sugar, saturated fat, unsaturated fat, fiber, sodium — per 100g and scaled to entered quantity
+- [x] "User Added" Chip badge when `is_user_contributed = true`
+
+### 17.8 — "My Contributions" in User Profile ✅
+- [x] "My Food Contributions" ListTile with count badge in UserProfileManagement; count refreshes on return
+- [x] Create `lib/presentation/user_food_submission_screen/my_contributions_screen.dart` — shimmer skeleton, swipe-to-delete with confirm dialog, empty state, pull-to-refresh
+- [x] Route `AppRoutes.myFoodContributions` registered in `app_routes.dart`
+
+---
+
 ## Backlog (Nice to Have)
 
 - [ ] Push notifications for workout reminders (daily reminder at user-set time)
@@ -340,3 +392,4 @@ Update `## Current Status` in `CLAUDE.md` at the end of every session.
 | 2026-03-26 | Planning | Added M14 (Nutrition Overhaul) + M15 (Barcode/OFF Integration) to TASKS.md based on user requirements | M14 — Nutrition Screen Overhaul |
 | 2026-03-26 | Planning | Added M16 (External Food Database: OFF text search + USDA FoodData Central) for full food search expansion | M10 → M15 → M16 |
 | 2026-03-26 | M16 complete | OFF searchFoods() + UsdaFoodService + 3-tier AddFoodModalWidget + cacheExternalFood() + DB schema fixes | M10 — Workout Session Live Tracking |
+| 2026-03-26 | Planning | Added M17 (Community Food Database: user contributions via barcode + Gemini Vision nutritional label OCR) | M10 — Workout Session Live Tracking |
