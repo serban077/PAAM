@@ -280,9 +280,14 @@ Future<String?> _showMealTypePicker(BuildContext context) {
 - `MobileScannerController.stop()` called immediately on first detection — camera never scans in a loop
 
 **User food contribution flow** (M17):
-`ProductNotFoundScreen` → "Add This Product" → `UserFoodSubmissionScreen` (3 steps: Info → Label Photo + Gemini OCR → Review) → on submit → `ProductFoundScreen` with newly inserted row.
-`GeminiNutritionLabelService.extractNutritionLabel()` uses Gemini 1.5-flash Vision; 30 s timeout; returns null on failure so user can enter macros manually.
-`detailed_macros` JSONB field stored in `food_database` and displayed as an `ExpansionTile` in `ProductFoundScreen` (hidden when null).
+`ProductNotFoundScreen` → "Add This Product" → `UserFoodSubmissionScreen` (3 steps: Info → Label Photo + OCR → Review) → on submit → `ProductFoundScreen` with newly inserted row.
+`GeminiNutritionLabelService.extractNutritionLabel(Uint8List, {String? imagePath})`: ML Kit OCR → Gemini 2.5 Flash text parsing (falls back to Gemini Vision if ML Kit fails). Returns null on failure → user enters macros manually.
+`detailed_macros` JSONB (22-field schema) stored in `food_database`, displayed as `ExpansionTile` in `ProductFoundScreen` (hidden when null).
+
+**Food correction flow** (M17 OCR upgrade):
+`ProductFoundScreen` shows ✏️ icon next to macro chips → navigates to `UserFoodSubmissionScreen(existingFood: food)`.
+Edit mode: starts at Step 2, pre-fills all fields from existing row, "Update Product" submits `NutritionService.updateFoodNutrition()` (UPDATE, not INSERT).
+Any authenticated user can correct any food (RLS policy `authenticated_can_update_food`).
 
 ---
 

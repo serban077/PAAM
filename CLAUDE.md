@@ -12,8 +12,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Current Status
 
-**Last updated:** 2026-03-26
-**Last session:** M17 complete — Community Food Database: user contributions via barcode + Gemini Vision nutritional label OCR; ProductNotFoundScreen, UserFoodSubmissionScreen (3-step wizard), MyContributionsScreen, GeminiNutritionLabelService; food_database extended with contributed_by/is_user_contributed/detailed_macros + RLS
+**Last updated:** 2026-03-27
+**Last session:** M17 OCR upgrade — ML Kit + Gemini 2.5 Flash 2-step pipeline; 22-field nutrition schema; EU label calibration; food correction feature (edit mode in UserFoodSubmissionScreen, updateFoodNutrition, RLS UPDATE policy)
 **Next session starts with:** M10 — Workout Session Live Tracking (set-by-set logging with rest timer)
 **Active branches:** main
 **Blockers:** `pubspec.lock` is gitignored — run `flutter pub get` at every session start. DB enum values are now fully English — NEVER reintroduce Romanian strings in any enum column. USDA_API_KEY lives in env.json only (not committed). `product_found_sheet.dart` is an unused untracked file — safe to delete.

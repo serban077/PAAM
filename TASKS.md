@@ -7,8 +7,8 @@ Update `## Current Status` in `CLAUDE.md` at the end of every session.
 
 ## Current Status
 
-**Last updated:** 2026-03-26
-**Last session completed:** M17 complete — Community Food Database: user contributions via barcode + Gemini Vision OCR; ProductNotFoundScreen, UserFoodSubmissionScreen (3-step wizard), MyContributionsScreen, GeminiNutritionLabelService; food_database extended with contributed_by/is_user_contributed/detailed_macros + RLS
+**Last updated:** 2026-03-27
+**Last session completed:** M17 OCR upgrade — ML Kit + Gemini 2.5 Flash 2-step pipeline; 22-field schema; EU label calibration (comma decimals, per 100ml, kJ, multi-language); food correction feature (edit mode wizard + DB UPDATE + RLS policy)
 **Next session starts with:** M10 — Workout Session Live Tracking (set-by-set logging with rest timer)
 **Active branches:** main
 **Blockers / notes:** `pubspec.lock` gitignored — run `flutter pub get` at session start. PAAM/ folder untracked (check if needed for university submission). DB enum values are now fully English — do NOT reintroduce Romanian strings. `product_found_sheet.dart` is an unused untracked file — safe to delete. USDA_API_KEY is in env.json (not committed).

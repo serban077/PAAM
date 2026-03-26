@@ -147,8 +147,13 @@ Both follow the same pattern: scope all queries by `user_id`, add `.timeout(15s)
 
 **`NutritionService.submitUserFood(Map food)`** (added M17):
 - Inserts with `is_user_contributed = true`, `contributed_by = currentUser.id`, `is_verified = false`
-- Stores `detailed_macros` JSONB if present — shape: `{ sugar_g, saturated_fat_g, unsaturated_fat_g, fiber_g, sodium_mg }` all per 100g
-- Returns full inserted row; `calories` must be `.round()` before insert
+- Stores `detailed_macros` JSONB if present — 22-field shape (see OCR schema below); `calories` must be `.round()` before insert
+- Returns full inserted row
+
+**`NutritionService.updateFoodNutrition(String foodId, Map updates)`** (added M17 OCR upgrade):
+- UPDATE any food_database row (RLS: any authenticated user — policy `authenticated_can_update_food`)
+- Sets `updated_at` automatically; rounds `calories` to integer
+- Returns full updated row
 
 **`NutritionService.getMyContributions()`** (added M17):
 - Selects from `food_database` where `contributed_by = currentUser.id`, ordered by `created_at DESC`
@@ -161,6 +166,14 @@ Both follow the same pattern: scope all queries by `user_id`, add `.timeout(15s)
 - Upserts on `(name, brand)` unique constraint — returns existing row if already cached
 - Always returns the full DB row including `id` — use this id for `logMeal()`
 - Called from `AddFoodModalWidget._addFood()` when `_source != 'Local'`
+
+**`detailed_macros` JSONB schema (M17 OCR upgrade — 22 fields):**
+All values per 100g/100ml. Any key can be null (omitted means not on label).
+`sugar_g`, `starch_g`, `polyols_g`, `fiber_g` — carb breakdown
+`saturated_fat_g`, `monounsaturated_fat_g`, `polyunsaturated_fat_g`, `trans_fat_g` — fat breakdown
+`cholesterol_mg`, `sodium_mg`, `salt_g`, `potassium_mg` — minerals
+`calcium_mg`, `iron_mg`, `vitamin_a_ug`, `vitamin_c_mg`, `vitamin_d_ug` — vitamins
+Old records may have `unsaturated_fat_g` — display handles both old and new shape.
 
 **`food_database` column types (critical — do not get wrong):**
 - `calories` → `integer` — always call `.round()` before inserting, never pass a double
@@ -198,4 +211,4 @@ This formula is used in three places that must stay in sync:
 | `theme_service.dart` | Dark/light mode toggle — `ValueNotifier<ThemeMode>` + SharedPreferences |
 | `open_food_facts_service.dart` | Barcode lookup (`lookupBarcode`) + text search (`searchFoods`) via Open Food Facts API (no key required) |
 | `usda_food_service.dart` | Text search via USDA FoodData Central (`USDA_API_KEY` in env.json); returns `[]` gracefully if key absent |
-| `gemini_nutrition_label_service.dart` | Vision OCR: `extractNutritionLabel(Uint8List)` sends label photo to Gemini 1.5-flash; returns strict JSON macros (per 100g) or null if extraction fails |
+| `gemini_nutrition_label_service.dart` | 2-step OCR pipeline: ML Kit on-device text recognition → Gemini 2.5 Flash text parsing; falls back to Gemini Vision if ML Kit fails; 22-field schema; `extractNutritionLabel(Uint8List, {String? imagePath})` |
