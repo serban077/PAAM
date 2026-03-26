@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:typed_data';
+import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
 import 'gemini_ai_service.dart';
 
 class GeminiNutritionLabelService {
@@ -10,38 +11,165 @@ class GeminiNutritionLabelService {
 
   GeminiNutritionLabelService._internal();
 
-  static const String _prompt = '''
-You are a nutritional label reader. Extract all macronutrient values from the food label in the image.
+  // ── Prompt for text-based parsing (Step 2 — after ML Kit OCR) ────────────
 
-Return ONLY a valid JSON object with these exact keys (all values per 100g, use null if not found on label):
+  static const String _textPrompt = '''
+You are a nutritional label parser. You receive RAW TEXT extracted via OCR from a food product's nutritional label.
+
+Your job: identify and extract ALL nutritional values from the per-100g or per-100ml column.
+
+Return ONLY a valid JSON object with these exact keys (use null if the value is not found in the text):
 {
   "calories": <number or null>,
   "protein_g": <number or null>,
   "carbs_g": <number or null>,
   "sugar_g": <number or null>,
+  "starch_g": <number or null>,
+  "polyols_g": <number or null>,
   "fat_g": <number or null>,
   "saturated_fat_g": <number or null>,
-  "unsaturated_fat_g": <number or null>,
+  "monounsaturated_fat_g": <number or null>,
+  "polyunsaturated_fat_g": <number or null>,
+  "trans_fat_g": <number or null>,
   "fiber_g": <number or null>,
+  "salt_g": <number or null>,
   "sodium_mg": <number or null>,
+  "cholesterol_mg": <number or null>,
+  "potassium_mg": <number or null>,
+  "calcium_mg": <number or null>,
+  "iron_mg": <number or null>,
+  "vitamin_a_ug": <number or null>,
+  "vitamin_c_mg": <number or null>,
+  "vitamin_d_ug": <number or null>,
+  "serving_size_g": <number or null>
+}
+
+CRITICAL RULES:
+- Output ONLY the JSON object. No markdown, no explanation, no code fences.
+- All numeric values must be plain numbers with dots as decimal separator (not strings, not commas). Example: 3,2 → 3.2
+- EUROPEAN LABELS use COMMA as decimal separator (e.g. "3,2 g" means 3.2). Always convert commas to dots in your output.
+- Labels may have TWO columns: per 100g/100ml AND per serving/portion. ALWAYS use the per-100g or per-100ml column (the first/smaller values column). Ignore the per-serving column.
+- Per 100ml and per 100g are treated identically — just extract the values as-is from the per-100 column.
+- If the label ONLY shows per-serving values (no per-100 column), convert to per 100g/ml using the serving size.
+
+ENERGY:
+- European labels list energy as kJ and kcal — use the kcal value for "calories".
+- If only kJ is shown, convert: kcal = kJ / 4.184.
+- "Energiasisaldus" / "Energētiskā vērtība" / "Valoare energetică" / "Énergie" / "Energie" / "Energy" → calories.
+
+MULTI-LANGUAGE VOCABULARY (labels may be in any language):
+- Fat: "Rasvad" / "Tauki" / "Grăsimi" / "Fett" / "Matières grasses" / "Fat"
+- Saturated: "küllastunud" / "piesātinātās" / "saturați" / "gesättigte" / "saturés" / "saturates"
+- Carbs: "Süsivesikud" / "Ogļhidrāti" / "Glucide" / "Kohlenhydrate" / "Glucides" / "Carbohydrate"
+- Sugar: "suhkrud" / "cukuri" / "zaharuri" / "Zucker" / "sucres" / "sugars"
+- Fiber: "Kiudained" / "Šķiedrvielas" / "Fibre" / "Ballaststoffe" / "Fibres"
+- Protein: "Valgud" / "Olbaltumvielas" / "Proteine" / "Eiweiß" / "Protéines" / "Protein"
+- Salt: "Sool" / "Sāls" / "Sare" / "Salz" / "Sel" / "Salt"
+- Calcium: "Kaltsium" / "Kalcijs" / "Calciu" / "Kalzium" / "Calcium"
+- Vitamin D: "Vitamiin D" / "D vitamīns" / "Vitamina D" / "Vitamin D"
+
+SALT / SODIUM:
+- European labels show "salt" (sare/sel/Salz/sool/sāls) — extract as salt_g.
+- If only sodium is listed, calculate: salt_g = sodium_mg * 2.5 / 1000.
+- If only salt is listed, calculate: sodium_mg = salt_g / 2.5 * 1000.
+
+RULES FOR MISSING VALUES:
+- If total carbs and sugar are both present but starch is not listed, leave starch_g as null — do NOT compute it.
+- If total fat and saturated fat are both present but mono/poly are missing, leave them null — do NOT guess.
+- OCR text may contain errors: "O" instead of "0", "l" instead of "1", "g" attached to numbers, "ø" or "Ø" for per-100. Handle these gracefully.
+- If a value is ambiguous or unreadable, use null rather than guessing.
+- Look for vitamins and minerals in SEPARATE TABLES below the main nutrition table — they are often in a second section.
+''';
+
+  // ── Fallback prompt for image-based parsing (when ML Kit fails) ──────────
+
+  static const String _imagePrompt = '''
+You are a nutritional label reader. Extract ALL nutritional values from the food label in the image.
+
+Return ONLY a valid JSON object with these exact keys (all values from the per-100g or per-100ml column, use null if not found):
+{
+  "calories": <number or null>,
+  "protein_g": <number or null>,
+  "carbs_g": <number or null>,
+  "sugar_g": <number or null>,
+  "starch_g": <number or null>,
+  "polyols_g": <number or null>,
+  "fat_g": <number or null>,
+  "saturated_fat_g": <number or null>,
+  "monounsaturated_fat_g": <number or null>,
+  "polyunsaturated_fat_g": <number or null>,
+  "trans_fat_g": <number or null>,
+  "fiber_g": <number or null>,
+  "salt_g": <number or null>,
+  "sodium_mg": <number or null>,
+  "cholesterol_mg": <number or null>,
+  "potassium_mg": <number or null>,
+  "calcium_mg": <number or null>,
+  "iron_mg": <number or null>,
+  "vitamin_a_ug": <number or null>,
+  "vitamin_c_mg": <number or null>,
+  "vitamin_d_ug": <number or null>,
   "serving_size_g": <number or null>
 }
 
 Rules:
-- Output ONLY the JSON object, no markdown, no explanation, no code fences.
-- All numeric values must be plain numbers (not strings).
-- If the label shows values per serving (not per 100g), convert to per 100g using the serving size.
-- If a value is not present on the label, use null.
+- Output ONLY the JSON object. No markdown, no explanation, no code fences.
+- All numeric values must be plain numbers with dots as decimal separator. European labels use commas (3,2 → output 3.2).
+- If the label has TWO columns (per 100g/ml AND per serving), ALWAYS use the per-100g/100ml column.
+- Per 100ml and per 100g are treated identically.
+- If the label ONLY shows per-serving, convert to per 100g/ml using the serving size.
+- European labels show "salt" (sare/sool/sāls/sel/Salz) — extract as salt_g. If only sodium, calculate: salt_g = sodium_mg * 2.5 / 1000.
+- Use kcal for "calories". If only kJ, convert: kcal = kJ / 4.184.
+- Labels may be in any language (Estonian, Latvian, Romanian, German, French, English, etc.) — recognize nutritional terms in all languages.
+- Look for vitamins/minerals in separate tables below the main nutrition facts.
+- If a value is not clearly visible, use null — do NOT guess.
 ''';
 
-  /// Extracts nutritional values from a food label image using Gemini Vision.
-  /// Returns a Map with nutrition data, or null if extraction fails or
-  /// required fields (calories, protein_g, carbs_g, fat_g) are missing.
-  Future<Map<String, dynamic>?> extractNutritionLabel(
+  // ── Step 1: ML Kit on-device OCR ─────────────────────────────────────────
+
+  Future<String?> _extractTextFromImage(String imagePath) async {
+    final textRecognizer = TextRecognizer();
+    try {
+      final inputImage = InputImage.fromFilePath(imagePath);
+      final recognizedText =
+          await textRecognizer.processImage(inputImage);
+      return recognizedText.text;
+    } finally {
+      textRecognizer.close();
+    }
+  }
+
+  // ── Step 2a: Parse OCR text with Gemini ──────────────────────────────────
+
+  Future<Map<String, dynamic>?> _parseNutritionText(String rawText) async {
+    try {
+      final client = GeminiAIService().client;
+
+      final response = await client.createChat(
+        messages: [
+          Message(
+            role: 'user',
+            content:
+                '$_textPrompt\n\n--- RAW OCR TEXT START ---\n$rawText\n--- RAW OCR TEXT END ---',
+          ),
+        ],
+        model: 'gemini-2.5-flash',
+        temperature: 0.0,
+        maxTokens: 1024,
+      ).timeout(const Duration(seconds: 30));
+
+      return _parseJsonResponse(response.text);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  // ── Step 2b: Fallback — send image directly to Gemini Vision ─────────────
+
+  Future<Map<String, dynamic>?> _parseNutritionImage(
       Uint8List imageBytes) async {
     try {
       final base64Image = base64Encode(imageBytes);
-
       final client = GeminiAIService().client;
 
       final response = await client.createChat(
@@ -55,37 +183,75 @@ Rules:
                   'data': base64Image,
                 },
               },
-              {'text': _prompt},
+              {'text': _imagePrompt},
             ],
           ),
         ],
-        model: 'gemini-1.5-flash',
+        model: 'gemini-2.5-flash',
         temperature: 0.0,
-        maxTokens: 512,
+        maxTokens: 1024,
       ).timeout(const Duration(seconds: 30));
 
-      final rawText = response.text.trim();
+      return _parseJsonResponse(response.text);
+    } catch (_) {
+      return null;
+    }
+  }
 
-      // Strip markdown code fences if present
-      String jsonText = rawText;
-      if (jsonText.startsWith('```')) {
-        final start = jsonText.indexOf('{');
-        final end = jsonText.lastIndexOf('}');
-        if (start != -1 && end != -1) {
-          jsonText = jsonText.substring(start, end + 1);
+  // ── JSON parsing + validation ────────────────────────────────────────────
+
+  Map<String, dynamic>? _parseJsonResponse(String rawText) {
+    String jsonText = rawText.trim();
+
+    // Always extract JSON between first { and last } — handles code fences,
+    // leading text, trailing explanation, thinking tags, etc.
+    final start = jsonText.indexOf('{');
+    final end = jsonText.lastIndexOf('}');
+    if (start == -1 || end == -1 || end <= start) return null;
+    jsonText = jsonText.substring(start, end + 1);
+
+    final Map<String, dynamic> data =
+        jsonDecode(jsonText) as Map<String, dynamic>;
+
+    // Validate required fields
+    final requiredKeys = ['calories', 'protein_g', 'carbs_g', 'fat_g'];
+    for (final key in requiredKeys) {
+      if (data[key] == null) return null;
+    }
+
+    return data;
+  }
+
+  // ── Public API ───────────────────────────────────────────────────────────
+
+  /// Extracts nutritional values from a food label using a 2-step pipeline:
+  ///   1. ML Kit on-device OCR → raw text
+  ///   2. Gemini 2.5 Flash → structured JSON
+  /// Falls back to Gemini Vision (image-based) if ML Kit fails.
+  ///
+  /// Returns a Map with nutrition data, or null if extraction fails or
+  /// required fields (calories, protein_g, carbs_g, fat_g) are missing.
+  Future<Map<String, dynamic>?> extractNutritionLabel(
+    Uint8List imageBytes, {
+    String? imagePath,
+  }) async {
+    try {
+      // Step 1: Try ML Kit OCR if we have a file path
+      if (imagePath != null) {
+        try {
+          final rawText = await _extractTextFromImage(imagePath);
+          if (rawText != null && rawText.trim().length > 20) {
+            // Step 2a: ML Kit succeeded — parse text with Gemini
+            final result = await _parseNutritionText(rawText);
+            if (result != null) return result;
+          }
+        } catch (_) {
+          // ML Kit failed — will fall through to image fallback
         }
       }
 
-      final Map<String, dynamic> data =
-          jsonDecode(jsonText) as Map<String, dynamic>;
-
-      // Validate required fields
-      final requiredKeys = ['calories', 'protein_g', 'carbs_g', 'fat_g'];
-      for (final key in requiredKeys) {
-        if (data[key] == null) return null;
-      }
-
-      return data;
+      // Step 2b: Fallback — send image directly to Gemini Vision
+      return await _parseNutritionImage(imageBytes);
     } catch (_) {
       return null;
     }
