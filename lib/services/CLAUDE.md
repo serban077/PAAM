@@ -145,6 +145,17 @@ Used in `AuthenticationOnboardingFlow` to react to login/logout events.
 Standard CRUD services for workout sessions and nutrition logs.
 Both follow the same pattern: scope all queries by `user_id`, add `.timeout(15s)`, wrap in try/catch.
 
+**`NutritionService.cacheExternalFood(Map externalFood)`** (added M16):
+- Strips the `_source` UI key before writing to DB
+- Upserts on `(name, brand)` unique constraint — returns existing row if already cached
+- Always returns the full DB row including `id` — use this id for `logMeal()`
+- Called from `AddFoodModalWidget._addFood()` when `_source != 'Local'`
+
+**`food_database` column types (critical — do not get wrong):**
+- `calories` → `integer` — always call `.round()` before inserting, never pass a double
+- `brand` → `text nullable` — store `null` (not `''`) when brand is empty; affects `UNIQUE(name,brand)` deduplication
+- `image_front_url` → `text nullable` — added M16; stores product image URL from OFF
+
 **Calorie formula (critical — do not change):**
 ```
 kcal = food.calories * user_meals.serving_quantity / food.serving_size
@@ -174,4 +185,5 @@ This formula is used in three places that must stay in sync:
 | `nutrition_service.dart` | Food log CRUD |
 | `workout_service.dart` | Workout session CRUD |
 | `theme_service.dart` | Dark/light mode toggle — `ValueNotifier<ThemeMode>` + SharedPreferences |
-| `open_food_facts_service.dart` | Barcode lookup via Open Food Facts API (no key); returns `food_database`-shaped Map or null |
+| `open_food_facts_service.dart` | Barcode lookup (`lookupBarcode`) + text search (`searchFoods`) via Open Food Facts API (no key required) |
+| `usda_food_service.dart` | Text search via USDA FoodData Central (`USDA_API_KEY` in env.json); returns `[]` gracefully if key absent |

@@ -8,10 +8,10 @@ Update `## Current Status` in `CLAUDE.md` at the end of every session.
 ## Current Status
 
 **Last updated:** 2026-03-26
-**Last session completed:** M15 complete — Open Food Facts barcode integration; ProductFoundScreen full-page flow; scanner stops on first detection
+**Last session completed:** M16 complete — 3-tier food search (Supabase + Open Food Facts text search + USDA FoodData Central); external foods auto-cached on first use
 **Next session starts with:** M10 — Workout Session Live Tracking (set-by-set logging with rest timer)
 **Active branches:** main
-**Blockers / notes:** `pubspec.lock` gitignored — run `flutter pub get` at session start. PAAM/ folder untracked (check if needed for university submission). DB enum values are now fully English — do NOT reintroduce Romanian strings. `product_found_sheet.dart` is an unused untracked file — safe to delete.
+**Blockers / notes:** `pubspec.lock` gitignored — run `flutter pub get` at session start. PAAM/ folder untracked (check if needed for university submission). DB enum values are now fully English — do NOT reintroduce Romanian strings. `product_found_sheet.dart` is an unused untracked file — safe to delete. USDA_API_KEY is in env.json (not committed).
 
 ---
 
@@ -283,7 +283,7 @@ Update `## Current Status` in `CLAUDE.md` at the end of every session.
 > Extend the food search bar (currently queries only the 363-row local Supabase table) to fetch results from Open Food Facts (text search) and USDA FoodData Central, giving users access to millions of real foods with accurate macronutrients.
 
 ### 16.1 — Open Food Facts Text Search
-- [ ] Add text search method to `OpenFoodFactsService` (created in M15):
+- [x] Add text search method to `OpenFoodFactsService` (created in M15):
   - Method `Future<List<Map<String, dynamic>>> searchFoods(String query, {int page = 1})`
   - URL: `https://world.openfoodfacts.org/cgi/search.pl?search_terms={query}&json=1&page_size=20&page={page}`
   - Parse each product: `product_name`, `nutriments.energy-kcal_100g`, `nutriments.proteins_100g`, `nutriments.carbohydrates_100g`, `nutriments.fat_100g`, `serving_size` (default 100g if absent), `image_front_url`
@@ -291,27 +291,27 @@ Update `## Current Status` in `CLAUDE.md` at the end of every session.
   - Wrap in `try/catch` + `.timeout(const Duration(seconds: 15))`
 
 ### 16.2 — USDA FoodData Central Integration
-- [ ] Create `lib/services/usda_food_service.dart`
-  - API key obtained free from `https://fdc.nal.usda.gov/api-guide.html` — store in `env.json` as `USDA_API_KEY`
+- [x] Create `lib/services/usda_food_service.dart`
+  - API key stored in `env.json` as `USDA_API_KEY` (registered and active)
   - Method `Future<List<Map<String, dynamic>>> searchFoods(String query)`
   - URL: `https://api.nal.usda.gov/fdc/v1/foods/search?query={query}&api_key={key}&pageSize=20`
   - Parse `foods[].description`, `foods[].foodNutrients` (nutrient IDs: 1008=kcal, 1003=protein, 1005=carbs, 1004=fat)
-  - Use for base/generic foods (chicken breast, rice, eggs) where OFF has weak coverage
+  - Graceful fallback: returns `[]` immediately if key is absent
   - Wrap in `try/catch` + `.timeout(const Duration(seconds: 15))`
 
 ### 16.3 — Unified Food Search in NutritionPlanningScreen
-- [ ] Update `FoodSearchDialog` (or equivalent search widget) to use a **3-tier lookup**:
+- [x] Updated `AddFoodModalWidget` (the active search widget) with **3-tier lookup**:
   1. Query local Supabase `food_database` (instant, shown first)
-  2. If local results < 5, call `OpenFoodFactsService.searchFoods(query)` — append to results with "From Open Food Facts" badge
-  3. If query looks like a generic food (no brand), also call `UsdaFoodService.searchFoods(query)` — append with "USDA" badge
-- [ ] Deduplicate results by normalized name (avoid showing same food twice)
-- [ ] Show source badge chip on each result card: "Local" / "Open Food Facts" / "USDA"
-- [ ] Cache any externally-fetched food into Supabase `food_database` (`is_verified = false`) on first use — so repeated searches are instant
+  2. OFF + USDA always run in parallel in background (no threshold — always fires)
+  3. Results appended with source badge chips: Local / Open Food Facts / USDA
+- [x] Deduplicate results by normalized `name|brand` key — local takes priority
+- [x] Cache any externally-fetched food into Supabase `food_database` (`is_verified = false`) on first use via `NutritionService.cacheExternalFood()`
+- [x] DB migration: added `UNIQUE(name, brand)` constraint + deduplicated existing rows + added `image_front_url TEXT` column
 
 ### 16.4 — Pagination & UX
-- [ ] Add "Load more results" button at bottom of search list (triggers next page from OFF API)
-- [ ] Show loading shimmer while external APIs are fetching (local results visible immediately)
-- [ ] If all 3 sources return 0 results: show empty state with "Try a different spelling or scan the barcode"
+- [x] "Load more results" button at bottom of search list (triggers next OFF page)
+- [x] Shimmer skeleton (AnimationController) while external APIs are fetching — local results visible immediately
+- [x] Empty state: "No results found. Try a different spelling or scan the barcode." / "Start searching for foods"
 
 ---
 
@@ -339,3 +339,4 @@ Update `## Current Status` in `CLAUDE.md` at the end of every session.
 | 2026-03-25 | Auth + Dashboard UI | Gradient hero + floating card on login/signup/onboarding + home page redesign, AI tagline removed | M10 — Workout Session Live Tracking |
 | 2026-03-26 | Planning | Added M14 (Nutrition Overhaul) + M15 (Barcode/OFF Integration) to TASKS.md based on user requirements | M14 — Nutrition Screen Overhaul |
 | 2026-03-26 | Planning | Added M16 (External Food Database: OFF text search + USDA FoodData Central) for full food search expansion | M10 → M15 → M16 |
+| 2026-03-26 | M16 complete | OFF searchFoods() + UsdaFoodService + 3-tier AddFoodModalWidget + cacheExternalFood() + DB schema fixes | M10 — Workout Session Live Tracking |
