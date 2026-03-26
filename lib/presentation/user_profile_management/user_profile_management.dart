@@ -5,6 +5,7 @@ import '../../services/supabase_service.dart';
 import '../../services/gemini_ai_service.dart';
 import '../../services/calorie_calculator_service.dart';
 import '../../services/theme_service.dart';
+import '../../services/nutrition_service.dart';
 import '../../routes/app_routes.dart';
 import './widgets/personal_info_section_widget.dart';
 import './widgets/fitness_preferences_section_widget.dart';
@@ -24,11 +25,22 @@ class UserProfileManagement extends StatefulWidget {
 class _UserProfileManagementState extends State<UserProfileManagement> {
   bool _isLoading = true;
   Map<String, dynamic>? _userProfile;
+  int _contributionCount = 0;
+
+  final _nutritionService = NutritionService(SupabaseService.instance.client);
 
   @override
   void initState() {
     super.initState();
     _loadUserProfile();
+    _loadContributionCount();
+  }
+
+  Future<void> _loadContributionCount() async {
+    try {
+      final data = await _nutritionService.getMyContributions();
+      if (mounted) setState(() => _contributionCount = data.length);
+    } catch (_) {}
   }
 
   Future<void> _loadUserProfile() async {
@@ -495,6 +507,59 @@ class _UserProfileManagementState extends State<UserProfileManagement> {
                 ),
                 icon: const Icon(Icons.refresh),
                 label: const Text('Recalibrate AI Plan'),
+              ),
+            ),
+            SizedBox(height: 2.h),
+
+            // My Food Contributions
+            Container(
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surface,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: Theme.of(context)
+                      .colorScheme
+                      .outline
+                      .withValues(alpha: 0.2),
+                ),
+              ),
+              child: ListTile(
+                contentPadding:
+                    EdgeInsets.symmetric(horizontal: 4.w, vertical: 0.5.h),
+                leading: Icon(
+                  Icons.restaurant_outlined,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+                title: const Text('My Food Contributions'),
+                subtitle: Text(
+                  _contributionCount == 0
+                      ? 'No contributions yet'
+                      : '$_contributionCount product${_contributionCount == 1 ? '' : 's'} added',
+                ),
+                trailing: _contributionCount > 0
+                    ? Container(
+                        padding: EdgeInsets.symmetric(
+                            horizontal: 2.w, vertical: 0.3.h),
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.tertiary,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Text(
+                          '$_contributionCount',
+                          style: TextStyle(
+                            color:
+                                Theme.of(context).colorScheme.onTertiary,
+                            fontSize: 10.sp,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      )
+                    : const Icon(Icons.chevron_right),
+                onTap: () async {
+                  await Navigator.pushNamed(
+                      context, AppRoutes.myFoodContributions);
+                  _loadContributionCount();
+                },
               ),
             ),
             SizedBox(height: 2.h),

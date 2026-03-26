@@ -6,6 +6,7 @@ import 'package:sizer/sizer.dart';
 import '../../../../services/open_food_facts_service.dart';
 import '../../../../services/supabase_service.dart';
 import 'product_found_screen.dart';
+import 'product_not_found_screen.dart';
 
 /// Barcode Scanner Page
 ///
@@ -120,9 +121,15 @@ class _BarcodeScannerPageState extends State<BarcodeScannerPage>
 
       if (!mounted) return;
 
-      // Step 4 — not found anywhere → go back, let caller show message
+      // Step 4 — not found anywhere → go to ProductNotFoundScreen so user
+      // can contribute the missing product.
       if (food == null) {
-        Navigator.pop(context, BarcodeScannerPage.kNotFound);
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (_) => ProductNotFoundScreen(barcode: barcode),
+          ),
+        );
         return;
       }
 

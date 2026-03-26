@@ -137,6 +137,25 @@ class _ProductFoundScreenState extends State<ProductFoundScreen> {
                       theme, name, brand, imageUrl, unit),
                   SizedBox(height: 2.5.h),
 
+                  // "User Added" badge
+                  if (food['is_user_contributed'] == true) ...[
+                    SizedBox(height: 1.h),
+                    Chip(
+                      label: const Text('User Added'),
+                      labelStyle: TextStyle(
+                        fontSize: 9.sp,
+                        fontWeight: FontWeight.w600,
+                        color: theme.colorScheme.onTertiary,
+                      ),
+                      backgroundColor: theme.colorScheme.tertiary,
+                      padding: EdgeInsets.symmetric(
+                          horizontal: 1.w, vertical: 0),
+                      materialTapTargetSize:
+                          MaterialTapTargetSize.shrinkWrap,
+                    ),
+                    SizedBox(height: 1.h),
+                  ],
+
                   // Macro chips — per 100g reference
                   Text(
                     'Per 100$unit',
@@ -152,6 +171,18 @@ class _ProductFoundScreenState extends State<ProductFoundScreen> {
                     carbs: _carbsPer100,
                     fat: _fatPer100,
                   ),
+
+                  // Detailed macros expandable (only when present)
+                  if (food['detailed_macros'] != null) ...[
+                    SizedBox(height: 1.h),
+                    _DetailedMacrosExpansion(
+                      detailedMacros: food['detailed_macros']
+                          as Map<String, dynamic>,
+                      qty: _qty,
+                      servingSize: _servingSize,
+                    ),
+                  ],
+
                   SizedBox(height: 3.h),
                   Divider(color: theme.dividerColor),
                   SizedBox(height: 2.h),
@@ -426,6 +457,75 @@ class _MiniMacro extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// Expandable tile showing detailed macros from JSONB `detailed_macros`.
+/// Values are shown per 100g and scaled to the current entered quantity.
+class _DetailedMacrosExpansion extends StatelessWidget {
+  final Map<String, dynamic> detailedMacros;
+  final double qty;
+  final double servingSize;
+
+  const _DetailedMacrosExpansion({
+    required this.detailedMacros,
+    required this.qty,
+    required this.servingSize,
+  });
+
+  double _scaled(String key) {
+    final v = (detailedMacros[key] as num?)?.toDouble() ?? 0;
+    return v * qty / servingSize;
+  }
+
+  double _per100(String key) =>
+      (detailedMacros[key] as num?)?.toDouble() ?? 0;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    final rows = <({String label, String key, String unit})>[
+      (label: 'Sugar', key: 'sugar_g', unit: 'g'),
+      (label: 'Saturated Fat', key: 'saturated_fat_g', unit: 'g'),
+      (label: 'Unsaturated Fat', key: 'unsaturated_fat_g', unit: 'g'),
+      (label: 'Fiber', key: 'fiber_g', unit: 'g'),
+      (label: 'Sodium', key: 'sodium_mg', unit: 'mg'),
+    ].where((r) => detailedMacros[r.key] != null).toList();
+
+    if (rows.isEmpty) return const SizedBox.shrink();
+
+    return Theme(
+      data: theme.copyWith(dividerColor: Colors.transparent),
+      child: ExpansionTile(
+        title: Text(
+          'Full Nutrition Info',
+          style: theme.textTheme.labelMedium?.copyWith(
+            color: theme.colorScheme.primary,
+          ),
+        ),
+        tilePadding: EdgeInsets.zero,
+        childrenPadding: EdgeInsets.only(bottom: 0.5.h),
+        children: rows.map((r) {
+          return Padding(
+            padding: EdgeInsets.symmetric(vertical: 0.3.h),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(r.label, style: theme.textTheme.bodySmall),
+                Text(
+                  '${_per100(r.key).toStringAsFixed(1)}${r.unit} '
+                  '(${_scaled(r.key).toStringAsFixed(1)}${r.unit})',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          );
+        }).toList(),
+      ),
     );
   }
 }

@@ -14,6 +14,9 @@ import '../presentation/ai_workout_generator/ai_workout_generator.dart';
 import '../presentation/ai_nutrition_planner/ai_nutrition_planner.dart';
 import '../presentation/strength_progress/strength_progress_screen.dart';
 import '../presentation/strength_progress/exercise_details_screen.dart';
+import '../presentation/nutrition_planning_screen/widgets/product_not_found_screen.dart';
+import '../presentation/user_food_submission_screen/user_food_submission_screen.dart';
+import '../presentation/user_food_submission_screen/my_contributions_screen.dart';
 
 class AppRoutes {
   static const String mainDashboard = '/main-dashboard';
@@ -34,6 +37,9 @@ class AppRoutes {
   static const String aiNutritionPlanner = '/ai-nutrition-planner';
   static const String strengthProgress = '/strength-progress';
   static const String exerciseDetails = '/exercise-details';
+  static const String productNotFound = '/product-not-found';
+  static const String userFoodSubmission = '/user-food-submission';
+  static const String myFoodContributions = '/my-food-contributions';
 
   static Map<String, WidgetBuilder> get routes => {
     mainDashboard: (context) => const MainDashboard(),
@@ -60,6 +66,25 @@ class AppRoutes {
         builder: (context) => ExerciseDetailsScreen(
           sessionId: args?['sessionId'] ?? '',
         ),
+      );
+    }
+    if (settings.name == productNotFound) {
+      final args = settings.arguments as Map<String, dynamic>?;
+      return MaterialPageRoute(
+        builder: (context) =>
+            ProductNotFoundScreen(barcode: args?['barcode'] as String? ?? ''),
+      );
+    }
+    if (settings.name == userFoodSubmission) {
+      final args = settings.arguments as Map<String, dynamic>?;
+      return MaterialPageRoute(
+        builder: (context) => UserFoodSubmissionScreen(
+            barcode: args?['barcode'] as String? ?? ''),
+      );
+    }
+    if (settings.name == myFoodContributions) {
+      return MaterialPageRoute(
+        builder: (context) => const MyContributionsScreen(),
       );
     }
     return null;

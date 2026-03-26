@@ -188,4 +188,66 @@ class NutritionService {
       throw Exception('deleteMeal failed: $e');
     }
   }
+
+  /// Inserts a user-contributed food into `food_database`.
+  /// Sets `is_user_contributed = true`, `contributed_by = current user uid`,
+  /// `is_verified = false`. Stores `detailed_macros` JSONB if provided.
+  /// Returns the full inserted row (use its `id` to immediately log a meal).
+  Future<Map<String, dynamic>> submitUserFood(
+      Map<String, dynamic> food) async {
+    try {
+      final userId = _client.auth.currentUser?.id;
+      if (userId == null) throw Exception('User not authenticated');
+
+      final row = Map<String, dynamic>.from(food);
+      row['is_user_contributed'] = true;
+      row['contributed_by'] = userId;
+      row['is_verified'] = false;
+      // Ensure calories is stored as integer
+      if (row['calories'] != null) {
+        row['calories'] = (row['calories'] as num).round();
+      }
+
+      final result = await _client
+          .from('food_database')
+          .insert(row)
+          .select()
+          .single()
+          .timeout(const Duration(seconds: 15));
+      return result;
+    } catch (e) {
+      throw Exception('submitUserFood failed: $e');
+    }
+  }
+
+  /// Returns all foods contributed by the current user, newest first.
+  Future<List<Map<String, dynamic>>> getMyContributions() async {
+    try {
+      final userId = _client.auth.currentUser?.id;
+      if (userId == null) throw Exception('User not authenticated');
+
+      final response = await _client
+          .from('food_database')
+          .select()
+          .eq('contributed_by', userId)
+          .order('created_at', ascending: false)
+          .timeout(const Duration(seconds: 15));
+      return List<Map<String, dynamic>>.from(response);
+    } catch (e) {
+      throw Exception('getMyContributions failed: $e');
+    }
+  }
+
+  /// Deletes a food the current user contributed (RLS enforces own-rows-only).
+  Future<void> deleteContribution(String foodId) async {
+    try {
+      await _client
+          .from('food_database')
+          .delete()
+          .eq('id', foodId)
+          .timeout(const Duration(seconds: 15));
+    } catch (e) {
+      throw Exception('deleteContribution failed: $e');
+    }
+  }
 }
