@@ -5,6 +5,7 @@ import 'package:sizer/sizer.dart';
 import '../../../../services/nutrition_service.dart';
 import '../../../../services/supabase_service.dart';
 import '../../../../widgets/custom_image_widget.dart';
+import '../../user_food_submission_screen/user_food_submission_screen.dart';
 
 /// Full-screen page shown after a successful barcode scan.
 /// Displays product macros, quantity input, meal type selector and Add button.
@@ -108,6 +109,19 @@ class _ProductFoundScreenState extends State<ProductFoundScreen> {
     }
   }
 
+  // ── Correct nutrition info ────────────────────────────────────────────────
+  void _correctNutritionInfo(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => UserFoodSubmissionScreen(
+          barcode: widget.food['barcode'] as String? ?? '',
+          existingFood: widget.food,
+        ),
+      ),
+    );
+  }
+
   // ── Build ─────────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
@@ -165,11 +179,31 @@ class _ProductFoundScreenState extends State<ProductFoundScreen> {
                     ),
                   ),
                   SizedBox(height: 0.8.h),
-                  _MacroChipsRow(
-                    kcal: _kcalPer100,
-                    protein: _proteinPer100,
-                    carbs: _carbsPer100,
-                    fat: _fatPer100,
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _MacroChipsRow(
+                          kcal: _kcalPer100,
+                          protein: _proteinPer100,
+                          carbs: _carbsPer100,
+                          fat: _fatPer100,
+                        ),
+                      ),
+                      SizedBox(width: 1.w),
+                      InkWell(
+                        onTap: () => _correctNutritionInfo(context),
+                        borderRadius: BorderRadius.circular(8),
+                        child: Padding(
+                          padding: EdgeInsets.all(1.w),
+                          child: Icon(
+                            Icons.edit_outlined,
+                            size: 5.w,
+                            color: theme.colorScheme.primary
+                                .withValues(alpha: 0.6),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
 
                   // Detailed macros expandable (only when present)
@@ -487,11 +521,21 @@ class _DetailedMacrosExpansion extends StatelessWidget {
     final theme = Theme.of(context);
 
     final rows = <({String label, String key, String unit})>[
+      // Carb breakdown
       (label: 'Sugar', key: 'sugar_g', unit: 'g'),
-      (label: 'Saturated Fat', key: 'saturated_fat_g', unit: 'g'),
-      (label: 'Unsaturated Fat', key: 'unsaturated_fat_g', unit: 'g'),
+      (label: 'Starch', key: 'starch_g', unit: 'g'),
+      (label: 'Polyols', key: 'polyols_g', unit: 'g'),
       (label: 'Fiber', key: 'fiber_g', unit: 'g'),
+      // Fat breakdown
+      (label: 'Saturated Fat', key: 'saturated_fat_g', unit: 'g'),
+      (label: 'Monounsaturated Fat', key: 'monounsaturated_fat_g', unit: 'g'),
+      (label: 'Polyunsaturated Fat', key: 'polyunsaturated_fat_g', unit: 'g'),
+      (label: 'Unsaturated Fat', key: 'unsaturated_fat_g', unit: 'g'),
+      (label: 'Trans Fat', key: 'trans_fat_g', unit: 'g'),
+      // Other
+      (label: 'Cholesterol', key: 'cholesterol_mg', unit: 'mg'),
       (label: 'Sodium', key: 'sodium_mg', unit: 'mg'),
+      (label: 'Salt', key: 'salt_g', unit: 'g'),
     ].where((r) => detailedMacros[r.key] != null).toList();
 
     if (rows.isEmpty) return const SizedBox.shrink();
