@@ -79,7 +79,9 @@ class AppRoutes {
       final args = settings.arguments as Map<String, dynamic>?;
       return MaterialPageRoute(
         builder: (context) => UserFoodSubmissionScreen(
-            barcode: args?['barcode'] as String? ?? ''),
+          barcode: args?['barcode'] as String? ?? '',
+          productName: args?['productName'] as String? ?? '',
+        ),
       );
     }
     if (settings.name == myFoodContributions) {

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:sizer/sizer.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../../routes/app_routes.dart';
 import '../../../services/nutrition_service.dart';
 import '../../../services/open_food_facts_service.dart';
 import '../../../services/usda_food_service.dart';
@@ -364,6 +365,7 @@ class _AddFoodModalWidgetState extends State<AddFoodModalWidget>
 
   Widget _buildEmptyState() {
     final hasTyped = _searchController.text.length >= 2;
+    final theme = Theme.of(context);
     return Center(
       child: Padding(
         padding: EdgeInsets.symmetric(horizontal: 8.w),
@@ -373,10 +375,7 @@ class _AddFoodModalWidgetState extends State<AddFoodModalWidget>
             Icon(
               hasTyped ? Icons.search_off : Icons.search,
               size: 12.w,
-              color: Theme.of(context)
-                  .colorScheme
-                  .onSurface
-                  .withValues(alpha: 0.3),
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.3),
             ),
             SizedBox(height: 2.h),
             Text(
@@ -386,12 +385,56 @@ class _AddFoodModalWidgetState extends State<AddFoodModalWidget>
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 13.sp,
-                color: Theme.of(context)
-                    .colorScheme
-                    .onSurface
-                    .withValues(alpha: 0.55),
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.55),
               ),
             ),
+            if (hasTyped) ...[
+              SizedBox(height: 3.h),
+              SizedBox(
+                width: double.infinity,
+                height: 6.h,
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    final query = _searchController.text.trim();
+                    // Close the bottom sheet first, then push the submission screen
+                    final rootNav =
+                        Navigator.of(context, rootNavigator: true);
+                    Navigator.of(context).pop();
+                    rootNav.pushNamed(
+                      AppRoutes.userFoodSubmission,
+                      arguments: {
+                        'barcode': '',
+                        'productName': query,
+                      },
+                    );
+                  },
+                  icon: const Icon(Icons.add_circle_outline),
+                  label: Text(
+                    'Add to Database',
+                    style: TextStyle(
+                      fontSize: 12.sp,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: theme.colorScheme.tertiary,
+                    foregroundColor: theme.colorScheme.onTertiary,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+              ),
+              SizedBox(height: 1.h),
+              Text(
+                'Scan the barcode to add it automatically',
+                style: TextStyle(
+                  fontSize: 10.sp,
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
           ],
         ),
       ),

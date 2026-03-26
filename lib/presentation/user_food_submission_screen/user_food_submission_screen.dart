@@ -16,7 +16,14 @@ import '../nutrition_planning_screen/widgets/product_found_screen.dart';
 class UserFoodSubmissionScreen extends StatefulWidget {
   final String barcode;
 
-  const UserFoodSubmissionScreen({super.key, required this.barcode});
+  /// Optional pre-filled product name (e.g. from a failed search query).
+  final String productName;
+
+  const UserFoodSubmissionScreen({
+    super.key,
+    required this.barcode,
+    this.productName = '',
+  });
 
   @override
   State<UserFoodSubmissionScreen> createState() =>
@@ -54,6 +61,14 @@ class _UserFoodSubmissionScreenState extends State<UserFoodSubmissionScreen> {
   final _step3Key = GlobalKey<FormState>();
 
   bool _isSubmitting = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.productName.isNotEmpty) {
+      _nameController.text = widget.productName;
+    }
+  }
 
   @override
   void dispose() {
