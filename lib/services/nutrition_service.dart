@@ -250,4 +250,31 @@ class NutritionService {
       throw Exception('deleteContribution failed: $e');
     }
   }
+
+  /// Updates nutritional data for an existing food in `food_database`.
+  /// Used when a user corrects macros via label photo OCR.
+  /// Returns the updated row.
+  Future<Map<String, dynamic>> updateFoodNutrition(
+    String foodId,
+    Map<String, dynamic> updates,
+  ) async {
+    try {
+      // Ensure calories is integer if present
+      if (updates['calories'] != null) {
+        updates['calories'] = (updates['calories'] as num).round();
+      }
+      updates['updated_at'] = DateTime.now().toUtc().toIso8601String();
+
+      final result = await _client
+          .from('food_database')
+          .update(updates)
+          .eq('id', foodId)
+          .select()
+          .single()
+          .timeout(const Duration(seconds: 15));
+      return result;
+    } catch (e) {
+      throw Exception('updateFoodNutrition failed: $e');
+    }
+  }
 }
