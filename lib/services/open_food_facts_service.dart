@@ -60,10 +60,12 @@ class OpenFoodFactsService {
           _toDouble(nutriments['fat']) ??
           0.0;
 
+      final rawBrand = (product['brands'] as String? ?? '').trim();
+
       return {
         'name': name,
-        'brand': (product['brands'] as String? ?? '').trim(),
-        'calories': calories,
+        'brand': rawBrand.isEmpty ? null : rawBrand,   // null, not '' — matches DB
+        'calories': calories.round(),                   // integer column in DB
         'protein_g': protein,
         'carbs_g': carbs,
         'fat_g': fat,
@@ -79,6 +81,79 @@ class OpenFoodFactsService {
       return null;
     } catch (_) {
       return null;
+    }
+  }
+
+  /// Searches for products by text query.
+  ///
+  /// Returns up to 20 results per page, filtered to only items with known
+  /// calorie data. Returns `[]` on any error — never throws.
+  Future<List<Map<String, dynamic>>> searchFoods(
+    String query, {
+    int page = 1,
+  }) async {
+    try {
+      final response = await _dio
+          .get(
+            '/cgi/search.pl',
+            queryParameters: {
+              'search_terms': query,
+              'json': '1',
+              'page_size': '20',
+              'page': '$page',
+            },
+          )
+          .timeout(const Duration(seconds: 15));
+
+      final data = response.data as Map<String, dynamic>?;
+      final products = data?['products'] as List<dynamic>? ?? [];
+
+      return products
+          .whereType<Map<String, dynamic>>()
+          .map((p) {
+            final nutriments =
+                p['nutriments'] as Map<String, dynamic>? ?? {};
+            final kcal = _toDouble(nutriments['energy-kcal_100g']) ??
+                _toDouble(nutriments['energy-kcal']);
+            if (kcal == null || kcal == 0) return null;
+
+            final name = (p['product_name'] as String? ?? '').trim();
+            if (name.isEmpty) return null;
+
+            final rawBrand = (p['brands'] as String? ?? '').trim();
+
+            return <String, dynamic>{
+              'name': name,
+              'brand': rawBrand.isEmpty ? null : rawBrand, // null, not ''
+              'calories': kcal.round(),                    // integer column in DB
+              'protein_g':
+                  _toDouble(nutriments['proteins_100g']) ??
+                  _toDouble(nutriments['proteins']) ??
+                  0.0,
+              'carbs_g':
+                  _toDouble(nutriments['carbohydrates_100g']) ??
+                  _toDouble(nutriments['carbohydrates']) ??
+                  0.0,
+              'fat_g':
+                  _toDouble(nutriments['fat_100g']) ??
+                  _toDouble(nutriments['fat']) ??
+                  0.0,
+              'serving_size': 100.0,
+              'serving_unit': 'g',
+              'barcode': null,
+              'is_verified': false,
+              'image_front_url':
+                  p['image_front_url'] as String? ??
+                  p['image_url'] as String?,
+              '_source': 'Open Food Facts',
+            };
+          })
+          .whereType<Map<String, dynamic>>()
+          .toList();
+    } on DioException {
+      return [];
+    } catch (_) {
+      return [];
     }
   }
 

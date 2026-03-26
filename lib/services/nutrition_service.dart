@@ -14,7 +14,30 @@ class NutritionService {
       );
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
-      throw Exception('Eroare la căutarea alimentelor: $e');
+      throw Exception('searchFood failed: $e');
+    }
+  }
+
+  /// Caches an external food (from OFF or USDA) into `food_database`.
+  ///
+  /// Upserts on `(name, brand)` — returns the existing row if already cached,
+  /// or the newly inserted row. The returned map always includes `id`.
+  /// Strips the `_source` UI key before writing to DB.
+  Future<Map<String, dynamic>> cacheExternalFood(
+    Map<String, dynamic> externalFood,
+  ) async {
+    try {
+      final dbRow = Map<String, dynamic>.from(externalFood)
+        ..remove('_source');
+      final result = await _client
+          .from('food_database')
+          .upsert(dbRow, onConflict: 'name,brand')
+          .select()
+          .single()
+          .timeout(const Duration(seconds: 15));
+      return result;
+    } catch (e) {
+      throw Exception('cacheExternalFood failed: $e');
     }
   }
 
@@ -38,7 +61,7 @@ class NutritionService {
         'consumed_at': DateTime.now().toIso8601String(),
       });
     } catch (e) {
-      throw Exception('Eroare la adăugarea alimentului: $e');
+      throw Exception('logMeal failed: $e');
     }
   }
 
@@ -162,7 +185,7 @@ class NutritionService {
     try {
       await _client.from('user_meals').delete().eq('id', mealId);
     } catch (e) {
-      throw Exception('Eroare la ștergerea alimentului: $e');
+      throw Exception('deleteMeal failed: $e');
     }
   }
 }
