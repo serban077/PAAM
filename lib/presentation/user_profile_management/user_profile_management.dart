@@ -556,8 +556,8 @@ class _UserProfileManagementState extends State<UserProfileManagement> {
                       )
                     : const Icon(Icons.chevron_right),
                 onTap: () async {
-                  await Navigator.pushNamed(
-                      context, AppRoutes.myFoodContributions);
+                  await Navigator.of(context, rootNavigator: true)
+                      .pushNamed(AppRoutes.myFoodContributions);
                   _loadContributionCount();
                 },
               ),

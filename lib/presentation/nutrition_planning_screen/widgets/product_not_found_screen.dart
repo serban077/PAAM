@@ -82,8 +82,8 @@ class ProductNotFoundScreen extends StatelessWidget {
                 width: double.infinity,
                 height: 6.5.h,
                 child: ElevatedButton.icon(
-                  onPressed: () => Navigator.pushNamed(
-                    context,
+                  onPressed: () =>
+                      Navigator.of(context, rootNavigator: true).pushNamed(
                     AppRoutes.userFoodSubmission,
                     arguments: {'barcode': barcode},
                   ),

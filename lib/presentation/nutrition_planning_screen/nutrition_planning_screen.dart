@@ -4,6 +4,7 @@ import 'package:sizer/sizer.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:intl/intl.dart';
 
+import '../../routes/app_routes.dart';
 import '../../services/nutrition_service.dart';
 import '../../services/supabase_service.dart';
 import './widgets/calorie_goal_widget.dart';
@@ -155,6 +156,17 @@ class _NutritionPlanningScreenState extends State<NutritionPlanningScreen> {
         title: const Text('Nutrition Planning'),
         centerTitle: true,
         actions: [
+          IconButton(
+            icon: const Icon(Icons.add_circle_outline),
+            tooltip: 'Add food to database',
+            onPressed: () {
+              HapticFeedback.lightImpact();
+              Navigator.of(context, rootNavigator: true).pushNamed(
+                AppRoutes.userFoodSubmission,
+                arguments: {'barcode': '', 'productName': ''},
+              );
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.calendar_today),
             onPressed: () async {
