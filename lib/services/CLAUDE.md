@@ -50,6 +50,7 @@ Rules:
 | `user_workout_schedules` | Links user to active plan (`plan_id`, `is_active`) |
 | `workout_sessions` | Sessions within a plan — `name`, `day_number`, `focus_area`, `estimated_duration_minutes` |
 | `session_exercises` | Exercises within a session — `sets`, `reps_min`, `reps_max`, `order_in_session` |
+| `workout_set_logs` | Per-set data for a live session — `workout_log_id`, `session_exercise_id`, `exercise_id`, `set_number`, `reps`, `weight_kg` (nullable for bodyweight), `is_completed` |
 
 Get current user ID: `SupabaseService.instance.client.auth.currentUser!.id`
 
@@ -146,6 +147,23 @@ Used in `AuthenticationOnboardingFlow` to react to login/logout events.
 
 Standard CRUD services for workout sessions and nutrition logs.
 Both follow the same pattern: scope all queries by `user_id`, add `.timeout(15s)`, wrap in try/catch.
+
+**`WorkoutService.saveCompletedWorkout({sessionId, durationSeconds, setLogs})`** (added M10):
+- Calculates `total_volume_kg` (sum of weight_kg × reps for completed sets)
+- INSERTs `workout_logs` row → gets `workout_log_id`
+- Batch-INSERTs all valid set logs into `workout_set_logs`
+- Calls `_autoDetectPRs()`, returns `{'workoutLog': Map, 'newPRs': List}`
+
+**`WorkoutService._autoDetectPRs(userId, setLogs, sessionId)`** (private, M10):
+- Groups completed set logs by `exercise_id`, finds max `weight_kg` per exercise
+- Compares against existing `strength_progress` max; INSERTs new row if PR beaten
+- Returns list of new PR maps `{exercise_id, weight_kg, reps}`
+
+**`WorkoutService.getWorkoutSetLogs(workoutLogId)`** (added M10):
+- SELECTs from `workout_set_logs` joined with `exercises` ordered by `session_exercise_id, set_number`
+
+**`WorkoutService.getPlanIdForSession(sessionId)`** (added M10):
+- SELECTs `plan_id` from `workout_sessions` WHERE `id = sessionId`
 
 **`NutritionService.submitUserFood(Map food)`** (added M17):
 - Inserts with `is_user_contributed = true`, `contributed_by = currentUser.id`, `is_verified = false`

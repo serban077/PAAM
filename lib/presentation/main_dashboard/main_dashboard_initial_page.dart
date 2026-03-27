@@ -341,7 +341,7 @@ class _MainDashboardInitialPageState extends State<MainDashboardInitialPage> {
                       HapticFeedback.lightImpact();
                       final result = await Navigator.pushNamed(
                         context,
-                        AppRoutes.workoutDetail,
+                        AppRoutes.activeWorkout,
                         arguments: {'sessionId': _todayWorkout!['id']},
                       );
                       if (result == true) _loadDashboardData();

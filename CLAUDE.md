@@ -13,8 +13,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Current Status
 
 **Last updated:** 2026-03-27
-**Last session:** Fix OCR extraction — thinking model token truncation (maxTokens 1024→8192), thinking-aware response parsing, auto-trigger extraction on photo capture, debug logging
-**Next session starts with:** M10 — Workout Session Live Tracking (set-by-set logging with rest timer)
+**Last session:** M10 — Workout Session Live Tracking (ActiveWorkoutSession screen, SetRowWidget, ExerciseTrackerWidget, WorkoutSummaryScreen, workout_set_logs DB table + RLS, auto PR detection, dashboard nav update)
+**Next session starts with:** M11 — Testing & Quality (widget tests + unit tests + flutter analyze clean)
 **Active branches:** main
 **Blockers:** `pubspec.lock` is gitignored — run `flutter pub get` at every session start. DB enum values are now fully English — NEVER reintroduce Romanian strings in any enum column. USDA_API_KEY lives in env.json only (not committed). `product_found_sheet.dart` is an unused untracked file — safe to delete. Gemini 2.5 Flash thinking model needs `maxTokens ≥ 8192` for OCR — thinking tokens consume the output budget.
 

@@ -157,6 +157,8 @@ fontSize: 14.sp // responsive font size
 | User Food Submission (3-step wizard) | `user_food_submission_screen/user_food_submission_screen.dart` | ✅ |
 | My Contributions | `user_food_submission_screen/my_contributions_screen.dart` | ✅ |
 | Exercise Detail Sheet | `exercise_library/widgets/exercise_detail_sheet.dart` | ✅ |
+| Active Workout Session | `active_workout_session/active_workout_session.dart` | ✅ |
+| Workout Summary | `active_workout_session/widgets/workout_summary_screen.dart` | ✅ |
 
 ---
 
@@ -283,6 +285,14 @@ Future<String?> _showMealTypePicker(BuildContext context) {
 `ProductNotFoundScreen` → "Add This Product" → `UserFoodSubmissionScreen` (3 steps: Info → Label Photo + OCR → Review) → on submit → `ProductFoundScreen` with newly inserted row.
 `GeminiNutritionLabelService.extractNutritionLabel(Uint8List, {String? imagePath})`: ML Kit OCR → Gemini 2.5 Flash text parsing (falls back to Gemini Vision if ML Kit fails). Returns null on failure → user enters macros manually.
 `detailed_macros` JSONB (22-field schema) stored in `food_database`, displayed as `ExpansionTile` in `ProductFoundScreen` (hidden when null).
+
+**Active workout session flow** (M10):
+`Dashboard "Start Workout"` → `ActiveWorkoutSession(sessionId)` → per-set logging with `SetRowWidget` + `RestTimerWidget` overlay → `_finishWorkout()` calls `WorkoutService.saveCompletedWorkout()` → `WorkoutSummaryScreen`.
+- `ExerciseTrackerWidget` renders the current exercise card with set rows (reuses existing `VideoPlayerModal` and `RestTimerWidget`).
+- `SetRowWidget`: weight (nullable, "BW" hint for bodyweight) + reps fields; checkmark marks set done.
+- `WorkoutSummaryScreen`: duration / volume / sets stats + new PRs amber card + exercise breakdown `ExpansionTile` list.
+- PRs auto-detected by `WorkoutService._autoDetectPRs()` — inserts into `strength_progress` if new weight > existing max.
+- DB: `workout_set_logs` table stores one row per completed set (FK → `workout_logs`); `workout_logs.total_volume_kg` added M10.
 
 **Food correction flow** (M17 OCR upgrade):
 `ProductFoundScreen` shows ✏️ icon next to macro chips → navigates to `UserFoodSubmissionScreen(existingFood: food)`.

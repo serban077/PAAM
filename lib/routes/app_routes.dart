@@ -17,6 +17,7 @@ import '../presentation/strength_progress/exercise_details_screen.dart';
 import '../presentation/nutrition_planning_screen/widgets/product_not_found_screen.dart';
 import '../presentation/user_food_submission_screen/user_food_submission_screen.dart';
 import '../presentation/user_food_submission_screen/my_contributions_screen.dart';
+import '../presentation/active_workout_session/active_workout_session.dart';
 
 class AppRoutes {
   static const String mainDashboard = '/main-dashboard';
@@ -40,6 +41,7 @@ class AppRoutes {
   static const String productNotFound = '/product-not-found';
   static const String userFoodSubmission = '/user-food-submission';
   static const String myFoodContributions = '/my-food-contributions';
+  static const String activeWorkout = '/active-workout';
 
   static Map<String, WidgetBuilder> get routes => {
     mainDashboard: (context) => const MainDashboard(),
@@ -87,6 +89,14 @@ class AppRoutes {
     if (settings.name == myFoodContributions) {
       return MaterialPageRoute(
         builder: (context) => const MyContributionsScreen(),
+      );
+    }
+    if (settings.name == activeWorkout) {
+      final args = settings.arguments as Map<String, dynamic>?;
+      return MaterialPageRoute(
+        builder: (context) => ActiveWorkoutSession(
+          sessionId: args?['sessionId'] as String? ?? '',
+        ),
       );
     }
     return null;

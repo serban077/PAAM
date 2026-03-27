@@ -8,8 +8,8 @@ Update `## Current Status` in `CLAUDE.md` at the end of every session.
 ## Current Status
 
 **Last updated:** 2026-03-27
-**Last session completed:** Fix OCR extraction — thinking model token truncation fix + auto-trigger extraction + debug logging
-**Next session starts with:** M10 — Workout Session Live Tracking (set-by-set logging with rest timer)
+**Last session completed:** M10 — Workout Session Live Tracking (ActiveWorkoutSession + WorkoutSummaryScreen + workout_set_logs DB + auto PR detection)
+**Next session starts with:** M11 — Testing & Quality (widget tests + unit tests + flutter analyze clean)
 **Active branches:** main
 **Blockers / notes:** `pubspec.lock` gitignored — run `flutter pub get` at session start. PAAM/ folder untracked (check if needed for university submission). DB enum values are now fully English — do NOT reintroduce Romanian strings. `product_found_sheet.dart` is an unused untracked file — safe to delete. USDA_API_KEY is in env.json (not committed). Gemini 2.5 Flash thinking model needs maxTokens ≥ 8192 for OCR calls (thinking tokens consume budget).
 
@@ -157,16 +157,14 @@ Update `## Current Status` in `CLAUDE.md` at the end of every session.
 
 ---
 
-## Milestone 10 — Workout Session Live Tracking
+## Milestone 10 — Workout Session Live Tracking ✅
 
-> Feature not yet started. `WorkoutService` exists but live session tracking is missing.
-
-- [ ] Create `ActiveWorkoutSession` screen — live view of current workout
-- [ ] Show current exercise, next exercise, rest timer countdown
-- [ ] Log completed sets (reps + weight) per exercise
-- [ ] Save completed session to Supabase with exercises and performance data
-- [ ] Navigate to session summary screen after workout completion
-- [ ] Connect completed sessions to `StrengthProgressScreen` to update PRs automatically
+- [x] Create `ActiveWorkoutSession` screen — live view of current workout
+- [x] Show current exercise, next exercise, rest timer countdown
+- [x] Log completed sets (reps + weight) per exercise
+- [x] Save completed session to Supabase with exercises and performance data
+- [x] Navigate to session summary screen after workout completion
+- [x] Connect completed sessions to `StrengthProgressScreen` to update PRs automatically
 
 ---
 
@@ -395,3 +393,4 @@ Update `## Current Status` in `CLAUDE.md` at the end of every session.
 | 2026-03-26 | Planning | Added M17 (Community Food Database: user contributions via barcode + Gemini Vision nutritional label OCR) | M10 — Workout Session Live Tracking |
 | 2026-03-27 | M17 OCR upgrade | ML Kit + Gemini 2.5 Flash 2-step pipeline; 22-field schema; EU label calibration; food correction feature | OCR fix session |
 | 2026-03-27 | OCR fix | Fix thinking model token truncation (maxTokens 1024→8192), thinking-aware response parsing, auto-trigger extraction, debug logging | M10 — Workout Session Live Tracking |
+| 2026-03-27 | M10 complete | ActiveWorkoutSession screen, SetRowWidget, ExerciseTrackerWidget, WorkoutSummaryScreen, workout_set_logs DB table, auto PR detection, dashboard nav update | M11 — Testing & Quality |
