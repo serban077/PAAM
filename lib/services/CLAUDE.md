@@ -84,6 +84,8 @@ final plan = await geminiService.generatePersonalizedPlan(
 Prompt engineering is inside `gemini_ai_service.dart` — do not duplicate prompts elsewhere.
 Gemini API key: `const String.fromEnvironment('GEMINI_API_KEY')`
 
+**Thinking model gotcha:** `gemini-2.5-flash` is a thinking model — thought parts consume `maxOutputTokens` budget. `GeminiClient.createChat` reads the last non-thought part from the response. For structured output (JSON), use `maxTokens: 8192` minimum to avoid truncation.
+
 ---
 
 ## AINutritionService
