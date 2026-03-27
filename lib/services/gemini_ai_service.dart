@@ -872,8 +872,17 @@ class GeminiClient {
         if (response.data['candidates'] != null &&
             response.data['candidates'].isNotEmpty &&
             response.data['candidates'][0]['content'] != null) {
-          final parts = response.data['candidates'][0]['content']['parts'];
-          final text = parts.isNotEmpty ? parts[0]['text'] : '';
+          final parts = response.data['candidates'][0]['content']['parts']
+              as List<dynamic>;
+          // Thinking models (e.g. gemini-2.5-flash) return thought parts
+          // before the actual response. Pick the last non-thought part.
+          String text = '';
+          for (final part in parts.reversed) {
+            if (part['thought'] != true && part['text'] != null) {
+              text = part['text'] as String;
+              break;
+            }
+          }
           return Completion(text: text);
         } else {
           throw GeminiException(

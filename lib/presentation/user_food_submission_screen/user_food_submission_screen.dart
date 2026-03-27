@@ -184,6 +184,8 @@ class _UserFoodSubmissionScreenState extends State<UserFoodSubmissionScreen> {
         _imageBytes = bytes;
         _imagePath = picked.path;
       });
+      // Auto-trigger AI extraction as soon as the photo is captured
+      _extractMacros();
     } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(

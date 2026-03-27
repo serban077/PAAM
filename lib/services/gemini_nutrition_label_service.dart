@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:typed_data';
+import 'package:flutter/foundation.dart';
 import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
 import 'gemini_ai_service.dart';
 
@@ -155,11 +156,12 @@ Rules:
         ],
         model: 'gemini-2.5-flash',
         temperature: 0.0,
-        maxTokens: 1024,
-      ).timeout(const Duration(seconds: 30));
+        maxTokens: 8192,
+      ).timeout(const Duration(seconds: 45));
 
       return _parseJsonResponse(response.text);
-    } catch (_) {
+    } catch (e) {
+      debugPrint('[OCR] Text parsing failed: $e');
       return null;
     }
   }
@@ -189,11 +191,12 @@ Rules:
         ],
         model: 'gemini-2.5-flash',
         temperature: 0.0,
-        maxTokens: 1024,
-      ).timeout(const Duration(seconds: 30));
+        maxTokens: 8192,
+      ).timeout(const Duration(seconds: 45));
 
       return _parseJsonResponse(response.text);
-    } catch (_) {
+    } catch (e) {
+      debugPrint('[OCR] Image parsing failed: $e');
       return null;
     }
   }
@@ -201,25 +204,40 @@ Rules:
   // ── JSON parsing + validation ────────────────────────────────────────────
 
   Map<String, dynamic>? _parseJsonResponse(String rawText) {
+    debugPrint('[OCR] Raw Gemini response (first 500 chars): ${rawText.length > 500 ? rawText.substring(0, 500) : rawText}');
+
     String jsonText = rawText.trim();
 
     // Always extract JSON between first { and last } — handles code fences,
     // leading text, trailing explanation, thinking tags, etc.
     final start = jsonText.indexOf('{');
     final end = jsonText.lastIndexOf('}');
-    if (start == -1 || end == -1 || end <= start) return null;
+    if (start == -1 || end == -1 || end <= start) {
+      debugPrint('[OCR] No JSON object found in response');
+      return null;
+    }
     jsonText = jsonText.substring(start, end + 1);
 
-    final Map<String, dynamic> data =
-        jsonDecode(jsonText) as Map<String, dynamic>;
+    try {
+      final Map<String, dynamic> data =
+          jsonDecode(jsonText) as Map<String, dynamic>;
 
-    // Validate required fields
-    final requiredKeys = ['calories', 'protein_g', 'carbs_g', 'fat_g'];
-    for (final key in requiredKeys) {
-      if (data[key] == null) return null;
+      // Validate required fields
+      final requiredKeys = ['calories', 'protein_g', 'carbs_g', 'fat_g'];
+      for (final key in requiredKeys) {
+        if (data[key] == null) {
+          debugPrint('[OCR] Missing required field: $key');
+          return null;
+        }
+      }
+
+      debugPrint('[OCR] Parsed successfully: cal=${data['calories']} p=${data['protein_g']} c=${data['carbs_g']} f=${data['fat_g']}');
+      return data;
+    } catch (e) {
+      debugPrint('[OCR] JSON decode failed: $e');
+      debugPrint('[OCR] Attempted to parse: ${jsonText.length > 300 ? jsonText.substring(0, 300) : jsonText}');
+      return null;
     }
-
-    return data;
   }
 
   // ── Public API ───────────────────────────────────────────────────────────
@@ -240,19 +258,28 @@ Rules:
       if (imagePath != null) {
         try {
           final rawText = await _extractTextFromImage(imagePath);
+          debugPrint('[OCR] ML Kit text length: ${rawText?.trim().length ?? 0}');
           if (rawText != null && rawText.trim().length > 20) {
             // Step 2a: ML Kit succeeded — parse text with Gemini
             final result = await _parseNutritionText(rawText);
-            if (result != null) return result;
+            if (result != null) {
+              debugPrint('[OCR] Text pipeline succeeded');
+              return result;
+            }
+            debugPrint('[OCR] Text pipeline returned null — falling back to vision');
           }
-        } catch (_) {
-          // ML Kit failed — will fall through to image fallback
+        } catch (e) {
+          debugPrint('[OCR] ML Kit failed: $e — falling back to vision');
         }
       }
 
       // Step 2b: Fallback — send image directly to Gemini Vision
-      return await _parseNutritionImage(imageBytes);
-    } catch (_) {
+      debugPrint('[OCR] Trying Gemini Vision fallback…');
+      final result = await _parseNutritionImage(imageBytes);
+      debugPrint('[OCR] Vision fallback result: ${result != null ? 'success' : 'null'}');
+      return result;
+    } catch (e) {
+      debugPrint('[OCR] Pipeline failed entirely: $e');
       return null;
     }
   }
