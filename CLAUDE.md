@@ -12,11 +12,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Current Status
 
-**Last updated:** 2026-03-27
-**Last session:** M10 — Workout Session Live Tracking (ActiveWorkoutSession screen, SetRowWidget, ExerciseTrackerWidget, WorkoutSummaryScreen, workout_set_logs DB table + RLS, auto PR detection, dashboard nav update)
+**Last updated:** 2026-03-28
+**Last session:** Hotfixes — active workout nav crash (nested navigator) + exercise animation overhaul (free-exercise-db replaces dead MuscleWiki URLs)
 **Next session starts with:** M11 — Testing & Quality (widget tests + unit tests + flutter analyze clean)
 **Active branches:** main
-**Blockers:** `pubspec.lock` is gitignored — run `flutter pub get` at every session start. DB enum values are now fully English — NEVER reintroduce Romanian strings in any enum column. USDA_API_KEY lives in env.json only (not committed). `product_found_sheet.dart` is an unused untracked file — safe to delete. Gemini 2.5 Flash thinking model needs `maxTokens ≥ 8192` for OCR — thinking tokens consume the output budget.
+**Blockers:** `pubspec.lock` is gitignored — run `flutter pub get` at every session start. DB enum values are now fully English — NEVER reintroduce Romanian strings in any enum column. USDA_API_KEY lives in env.json only (not committed). `product_found_sheet.dart` is an unused untracked file — safe to delete. Gemini 2.5 Flash thinking model needs `maxTokens ≥ 8192` for OCR — thinking tokens consume the output budget. MuscleWiki moved media behind paid API — exercise animations now use free-exercise-db GitHub CDN (lib/utils/exercise_gif_utils.dart).
 
 ---
 

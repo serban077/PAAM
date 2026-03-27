@@ -7,11 +7,11 @@ Update `## Current Status` in `CLAUDE.md` at the end of every session.
 
 ## Current Status
 
-**Last updated:** 2026-03-27
-**Last session completed:** M10 — Workout Session Live Tracking (ActiveWorkoutSession + WorkoutSummaryScreen + workout_set_logs DB + auto PR detection)
+**Last updated:** 2026-03-28
+**Last session completed:** Hotfixes — active workout nav crash + exercise animation overhaul
 **Next session starts with:** M11 — Testing & Quality (widget tests + unit tests + flutter analyze clean)
 **Active branches:** main
-**Blockers / notes:** `pubspec.lock` gitignored — run `flutter pub get` at session start. PAAM/ folder untracked (check if needed for university submission). DB enum values are now fully English — do NOT reintroduce Romanian strings. `product_found_sheet.dart` is an unused untracked file — safe to delete. USDA_API_KEY is in env.json (not committed). Gemini 2.5 Flash thinking model needs maxTokens ≥ 8192 for OCR calls (thinking tokens consume budget).
+**Blockers / notes:** `pubspec.lock` gitignored — run `flutter pub get` at session start. PAAM/ folder untracked (check if needed for university submission). DB enum values are now fully English — do NOT reintroduce Romanian strings. `product_found_sheet.dart` is an unused untracked file — safe to delete. USDA_API_KEY is in env.json (not committed). Gemini 2.5 Flash thinking model needs maxTokens ≥ 8192 for OCR calls (thinking tokens consume budget). MuscleWiki GIFs now require paid API — exercise animations use free-exercise-db GitHub CDN instead.
 
 ---
 
@@ -394,3 +394,4 @@ Update `## Current Status` in `CLAUDE.md` at the end of every session.
 | 2026-03-27 | M17 OCR upgrade | ML Kit + Gemini 2.5 Flash 2-step pipeline; 22-field schema; EU label calibration; food correction feature | OCR fix session |
 | 2026-03-27 | OCR fix | Fix thinking model token truncation (maxTokens 1024→8192), thinking-aware response parsing, auto-trigger extraction, debug logging | M10 — Workout Session Live Tracking |
 | 2026-03-27 | M10 complete | ActiveWorkoutSession screen, SetRowWidget, ExerciseTrackerWidget, WorkoutSummaryScreen, workout_set_logs DB table, auto PR detection, dashboard nav update | M11 — Testing & Quality |
+| 2026-03-28 | Hotfixes | fix: active workout route null (rootNavigator: true); fix: exercise image crash (imageUrl??'' asset error) + replaced MuscleWiki dead URLs with free-exercise-db 2-frame animations | M11 — Testing & Quality |

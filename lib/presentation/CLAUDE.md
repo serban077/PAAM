@@ -299,6 +299,12 @@ Future<String?> _showMealTypePicker(BuildContext context) {
 Edit mode: starts at Step 2, pre-fills all fields from existing row, "Update Product" submits `NutritionService.updateFoodNutrition()` (UPDATE, not INSERT).
 Any authenticated user can correct any food (RLS policy `authenticated_can_update_food`).
 
+**Exercise animation in ActiveWorkoutSession** (2026-03-28 hotfix):
+`_ExerciseAnimationWidget` (StatefulWidget in `exercise_tracker_widget.dart`) crossfades between 2-frame JPGs from the free-exercise-db GitHub CDN every 1.1 s using `AnimatedSwitcher` + `CachedNetworkImage`. Frame URLs resolved by `lib/utils/exercise_gif_utils.dart`.
+- **NEVER** use `exercise['image']` — the `exercises` Supabase table has NO `image` column; always resolves to null, which when passed to `CustomImageWidget` as `''` triggers Asset not found crash.
+- **NEVER** hotlink MuscleWiki GIFs directly — their media moved behind `api.musclewiki.com` (paid API, `X-API-Key` required). Old static paths return 404.
+- When navigating to any argument-based route (e.g., `/active-workout`) from inside a `MainDashboard` tab, **always** use `Navigator.of(context, rootNavigator: true).pushNamed(...)` — the inner tab navigator has no `onGenerateRoute` and will throw.
+
 ---
 
 ## Localization — M9 Complete (2026-03-25)
