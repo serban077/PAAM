@@ -1,10 +1,12 @@
+import 'dart:async';
+
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:sizer/sizer.dart';
 
+import '../../../utils/exercise_gif_utils.dart';
 import '../../../widgets/custom_icon_widget.dart';
-import '../../../widgets/custom_image_widget.dart';
-import '../../ai_plan/widgets/video_player_modal.dart';
 import 'set_row_widget.dart';
 
 /// Displays the current exercise with interactive set-logging rows.
@@ -36,9 +38,6 @@ class ExerciseTrackerWidget extends StatelessWidget {
     final repsMin = sessionExercise['reps_min'] as int? ?? 8;
     final repsMax = sessionExercise['reps_max'] as int? ?? 12;
     final restSeconds = sessionExercise['rest_seconds'] as int? ?? 60;
-    final videoUrl = exercise['video_url'] as String?;
-    final imageUrl = exercise['image'] as String?;
-
     final completedCount =
         setLogs.where((s) => s['is_completed'] == true).length;
 
@@ -58,53 +57,13 @@ class ExerciseTrackerWidget extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Thumbnail + play overlay
-                if (videoUrl != null || imageUrl != null)
-                  ClipRRect(
-                    borderRadius:
-                        const BorderRadius.vertical(top: Radius.circular(16)),
-                    child: InkWell(
-                      onTap: videoUrl != null
-                          ? () {
-                              HapticFeedback.lightImpact();
-                              showModalBottomSheet(
-                                context: context,
-                                isScrollControlled: true,
-                                backgroundColor: Colors.transparent,
-                                builder: (_) => VideoPlayerModal(
-                                  videoUrl: videoUrl,
-                                  exerciseName: name,
-                                ),
-                              );
-                            }
-                          : null,
-                      child: Stack(
-                        children: [
-                          SizedBox(
-                            width: double.infinity,
-                            height: 22.h,
-                            child: CustomImageWidget(
-                              imageUrl: imageUrl ?? '',
-                              fit: BoxFit.cover,
-                            ),
-                          ),
-                          if (videoUrl != null)
-                            Positioned.fill(
-                              child: Container(
-                                color: Colors.black26,
-                                child: Center(
-                                  child: CustomIconWidget(
-                                    iconName: 'play_circle_fill',
-                                    color: Colors.white,
-                                    size: 48,
-                                  ),
-                                ),
-                              ),
-                            ),
-                        ],
-                      ),
-                    ),
-                  ),
+                // Exercise animation — alternates between start and end position
+                ClipRRect(
+                  borderRadius:
+                      const BorderRadius.vertical(top: Radius.circular(16)),
+                  child: _ExerciseAnimationWidget(
+                      exerciseName: name, height: 22.h),
+                ),
 
                 Padding(
                   padding: EdgeInsets.all(4.w),
@@ -209,6 +168,95 @@ class ExerciseTrackerWidget extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Animates between the start-position and end-position frames for an exercise.
+/// Uses the free-exercise-db GitHub CDN (real-person technique photos).
+/// Falls back to a placeholder icon when no images are mapped.
+class _ExerciseAnimationWidget extends StatefulWidget {
+  final String exerciseName;
+  final double height;
+
+  const _ExerciseAnimationWidget({
+    required this.exerciseName,
+    required this.height,
+  });
+
+  @override
+  State<_ExerciseAnimationWidget> createState() =>
+      _ExerciseAnimationWidgetState();
+}
+
+class _ExerciseAnimationWidgetState
+    extends State<_ExerciseAnimationWidget> {
+  bool _showFrame1 = false;
+  Timer? _timer;
+
+  String? get _f0 => ExerciseGifUtils.getFrame0Url(widget.exerciseName);
+  String? get _f1 => ExerciseGifUtils.getFrame1Url(widget.exerciseName);
+
+  @override
+  void initState() {
+    super.initState();
+    if (_f0 != null && _f1 != null) {
+      // Flip between frames every 1.1 s (slow enough to see the form)
+      _timer = Timer.periodic(const Duration(milliseconds: 1100), (_) {
+        if (mounted) setState(() => _showFrame1 = !_showFrame1);
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final f0 = _f0;
+    final f1 = _f1;
+    final bg = Theme.of(context).brightness == Brightness.dark
+        ? const Color(0xFF1A1A1A)
+        : const Color(0xFF2A2A2A);
+
+    if (f0 == null) return _placeholder(bg);
+
+    final url = (_showFrame1 && f1 != null) ? f1 : f0;
+
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 400),
+      child: CachedNetworkImage(
+        key: ValueKey(url),
+        imageUrl: url,
+        width: double.infinity,
+        height: widget.height,
+        fit: BoxFit.cover,
+        fadeInDuration: const Duration(milliseconds: 200),
+        placeholder: (_, __) => Container(
+          width: double.infinity,
+          height: widget.height,
+          color: bg,
+          child: const Center(
+            child: CircularProgressIndicator(
+                strokeWidth: 2, color: Colors.white38),
+          ),
+        ),
+        errorWidget: (_, __, ___) => _placeholder(bg),
+      ),
+    );
+  }
+
+  Widget _placeholder(Color bg) {
+    return Container(
+      width: double.infinity,
+      height: widget.height,
+      color: bg,
+      child: const Center(
+        child: Icon(Icons.fitness_center, color: Colors.white24, size: 48),
       ),
     );
   }
