@@ -12,11 +12,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Current Status
 
-**Last updated:** 2026-03-28
-**Last session:** Hotfixes — active workout nav crash (nested navigator) + exercise animation overhaul (free-exercise-db replaces dead MuscleWiki URLs)
+**Last updated:** 2026-03-31
+**Last session:** M19 — Performance Optimization & Client-Side Caching (core items complete: 5-cache AppCacheService expansion, exercise library + contributions wired, 400ms debounce on food search, memCacheWidth guard on images, column projection in WorkoutService, .limit(50) on list queries, daily tip cached in initState, offline connectivity banner, water tracking controller leak fixed)
 **Next session starts with:** M11 — Testing & Quality (widget tests + unit tests + flutter analyze clean)
 **Active branches:** main
-**Blockers:** `pubspec.lock` is gitignored — run `flutter pub get` at every session start. DB enum values are now fully English — NEVER reintroduce Romanian strings in any enum column. USDA_API_KEY lives in env.json only (not committed). `product_found_sheet.dart` is an unused untracked file — safe to delete. Gemini 2.5 Flash thinking model needs `maxTokens ≥ 8192` for OCR — thinking tokens consume the output budget. MuscleWiki moved media behind paid API — exercise animations now use free-exercise-db GitHub CDN (lib/utils/exercise_gif_utils.dart).
+**Blockers:** `pubspec.lock` is gitignored — run `flutter pub get` at every session start. DB enum values are now fully English — NEVER reintroduce Romanian strings in any enum column. USDA_API_KEY lives in env.json only (not committed). `product_found_sheet.dart` is an unused untracked file — safe to delete. Gemini 2.5 Flash thinking model needs `maxTokens ≥ 8192` for OCR — thinking tokens consume the output budget. MuscleWiki moved media behind paid API — exercise animations now use free-exercise-db GitHub CDN (lib/utils/exercise_gif_utils.dart). M19 partial: body measurements + strength PRs cache fields created but not wired to screens yet. `Stack(fit: StackFit.expand)` is required when overlaying widgets on `IndexedStack` in Scaffold.body — `StackFit.loose` passes unbounded height to children. `memCacheWidth` in CachedNetworkImage requires `.isFinite` guard — `double.infinity.toInt()` throws UnsupportedError.
 
 ---
 

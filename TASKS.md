@@ -7,11 +7,11 @@ Update `## Current Status` in `CLAUDE.md` at the end of every session.
 
 ## Current Status
 
-**Last updated:** 2026-03-28
-**Last session completed:** Hotfixes — active workout nav crash + exercise animation overhaul
+**Last updated:** 2026-03-31
+**Last session completed:** M19 — Performance Optimization & Client-Side Caching (partial — core items done)
 **Next session starts with:** M11 — Testing & Quality (widget tests + unit tests + flutter analyze clean)
 **Active branches:** main
-**Blockers / notes:** `pubspec.lock` gitignored — run `flutter pub get` at session start. PAAM/ folder untracked (check if needed for university submission). DB enum values are now fully English — do NOT reintroduce Romanian strings. `product_found_sheet.dart` is an unused untracked file — safe to delete. USDA_API_KEY is in env.json (not committed). Gemini 2.5 Flash thinking model needs maxTokens ≥ 8192 for OCR calls (thinking tokens consume budget). MuscleWiki GIFs now require paid API — exercise animations use free-exercise-db GitHub CDN instead.
+**Blockers / notes:** `pubspec.lock` gitignored — run `flutter pub get` at session start. PAAM/ folder untracked (check if needed for university submission). DB enum values are now fully English — do NOT reintroduce Romanian strings. `product_found_sheet.dart` is an unused untracked file — safe to delete. USDA_API_KEY is in env.json (not committed). Gemini 2.5 Flash thinking model needs maxTokens ≥ 8192 for OCR calls (thinking tokens consume budget). MuscleWiki GIFs now require paid API — exercise animations use free-exercise-db GitHub CDN instead. M19 note: AppCacheService has body measurements + strength PRs cache fields created but not yet wired to their screens — do in M19 continuation or M11.
 
 ---
 
@@ -365,6 +365,173 @@ Update `## Current Status` in `CLAUDE.md` at the end of every session.
 
 ---
 
+## Milestone 18 — Smart Photo-to-Recipe Generator ✅
+
+> Star feature: user photographs food items from fridge/table → Gemini Vision detects ingredients → app generates protein-rich recipes using ONLY those ingredients → user logs a recipe as a meal with full macro breakdown.
+
+### 18.1 — Data Models
+- [x] Create `lib/data/models/smart_recipe_models.dart`
+  - `DetectedIngredient` (name, estimatedQuantityG, category)
+  - `FoodRecognitionResult` (ingredients list, rawResponse)
+  - `RecipeIngredientLine` (ingredientName, quantityG, displayUnit)
+  - `GeneratedRecipe` (name, description, prepTime, cookTime, servings, difficulty, ingredients, steps, macrosPerServing)
+  - `RecipeGenerationResult` (recipes list, rawResponse)
+  - All classes: `fromMap()` + `toMap()` constructors
+
+### 18.2 — FoodRecognitionService (Gemini Vision)
+- [x] Create `lib/services/food_recognition_service.dart`
+  - Method `Future<FoodRecognitionResult> recognizeIngredients(Uint8List imageBytes)`
+  - Base64-encode image → Gemini 2.5 Flash multimodal call (temperature 0.1, maxTokens 8192)
+  - Prompt: identify all food items, return JSON array with name/estimated_quantity_g/category
+  - Parse response → `FoodRecognitionResult`
+  - try/catch + `.timeout(const Duration(seconds: 45))`
+
+### 18.3 — SmartRecipeService (Recipe Generation)
+- [x] Create `lib/services/smart_recipe_service.dart`
+  - Method `Future<RecipeGenerationResult> generateRecipes(List<DetectedIngredient> ingredients)`
+  - Fetches user TDEE/macro goals via `CalorieCalculatorService`
+  - Text-only Gemini call (temperature 0.7, maxTokens 8192)
+  - Prompt: generate 3-5 diverse protein-rich recipes using ONLY the listed ingredients; include gram amounts + macros per serving
+  - Parse response → `RecipeGenerationResult`
+  - try/catch + `.timeout(const Duration(seconds: 45))`
+
+### 18.4 — PhotoRecipeScreen: Wizard Shell
+- [x] Create `lib/presentation/photo_recipe_screen/photo_recipe_screen.dart`
+  - PageView + PageController + NeverScrollableScrollPhysics (same pattern as UserFoodSubmissionScreen)
+  - 4 steps: Capture → Ingredients Review → Recipes → Log Meal
+  - Step indicator widget at top
+  - Back button per step (pops on step 1)
+
+### 18.5 — Step 1: Capture Photo
+- [x] Create `lib/presentation/photo_recipe_screen/widgets/capture_step.dart`
+  - Camera + gallery pick via `image_picker` (imageQuality: 85, maxWidth: 1200)
+  - Image preview with retake button
+  - "Analyze Ingredients" CTA → triggers FoodRecognitionService → advances to step 2
+
+### 18.6 — Step 2: Ingredients Review
+- [x] Create `lib/presentation/photo_recipe_screen/widgets/ingredients_review_step.dart`
+  - Shimmer loading state during Gemini Vision call
+  - Detected ingredients as removable/editable chips (name + quantity)
+  - Category color coding (protein=red, carb=amber, vegetable=green, etc.)
+  - "Generate Recipes" CTA (disabled if 0 ingredients) → triggers SmartRecipeService → advances to step 3
+  - Empty state: "No food items detected" + retake photo button
+
+### 18.7 — Step 3: Browse Recipes
+- [x] Create `lib/presentation/photo_recipe_screen/widgets/recipes_step.dart`
+  - Shimmer loading state during recipe generation
+  - Card list of 3-5 recipes: name, description, prep+cook time, difficulty badge, calorie/protein preview
+  - Tap card → bottom sheet with full recipe detail (ingredients with grams, steps, full macros)
+- [x] Create `lib/presentation/photo_recipe_screen/widgets/recipe_detail_sheet.dart`
+  - Scrollable bottom sheet: recipe name, macros summary row, ingredient list (with gram amounts), numbered steps
+  - "Log This Meal" CTA at bottom → advances to step 4 with selected recipe
+
+### 18.8 — Step 4: Log Recipe as Meal
+- [x] Create `lib/presentation/photo_recipe_screen/widgets/log_recipe_step.dart`
+  - Selected recipe summary (name, macros per serving)
+  - Meal type picker: Breakfast / Lunch / Dinner / Snack (ChoiceChips, same pattern as ProductFoundScreen)
+  - Serving count selector (default 1, range 1–10)
+  - "Log Meal" CTA:
+    1. Create temp `food_database` row (name=recipe name, calories=round(), protein/carbs/fat, serving_size=1, is_verified=false, is_user_contributed=true)
+    2. Call `NutritionService.logMeal(foodId, mealType, servingQuantity)`
+    3. Navigate back to nutrition screen with success feedback
+
+### 18.9 — Route & Entry Point
+- [x] Add `static const String photoRecipe = '/photo-recipe';` to `AppRoutes`
+- [x] Register in `onGenerateRoute` (no arguments needed)
+- [x] Add CTA button on `NutritionPlanningScreen` — between water tracking and AI meal plan section
+  - Camera/recipe icon + "Generate Recipe from Photo" label
+
+### 18.10 — Edge Cases & Polish
+- [x] No food detected → empty state with retry
+- [x] API timeout → error state with retry button
+- [x] <2 ingredients → warning chip "Few ingredients — recipes may be limited"
+- [x] Invalid JSON from Gemini → "Could not process — try again"
+- [x] User removes all ingredients → disable "Generate Recipes" button
+- [x] 0 recipes returned → "Could not generate recipes with these ingredients"
+- [x] No user profile → generate recipes without calorie targeting
+- [x] Camera permission denied → image_picker native dialog + catch with SnackBar
+
+### 18.11 — Documentation
+- [x] Update `lib/services/CLAUDE.md` with FoodRecognitionService + SmartRecipeService docs
+- [x] Update `lib/presentation/CLAUDE.md` with PhotoRecipeScreen docs
+- [x] Update `CLAUDE.md` current status
+
+---
+
+## Milestone 19 — Performance Optimization & Client-Side Caching
+
+> Make the app feel instant: eliminate redundant network calls, cache aggressively, optimize heavy widgets, and reduce memory pressure from images. Target: every screen loads in <300ms on repeat visits.
+
+### 19.1 — AppCacheService Expansion (In-Memory Cache Layer)
+- [x] Extend `AppCacheService` to cache exercise library data (static list — long TTL, 30 min)
+- [ ] Cache user's active workout plan + sessions (TTL 10 min, invalidate on plan change)
+- [x] Cache body measurements history (TTL 5 min, invalidate on new measurement) — cache field created, not yet wired to screen
+- [x] Cache strength progress / PR data (TTL 5 min, invalidate after workout session) — cache field created, not yet wired to screen
+- [x] Cache food search results for repeated queries (LRU map, max 20 queries, TTL 3 min)
+- [x] Cache `getMyContributions()` results (TTL 5 min, invalidate on add/delete)
+- [ ] Add `invalidateAll()` call on sign-out flow to clear stale user data
+
+### 19.2 — Supabase Query Optimization
+- [x] Add `.limit(50)` to `getUserMeals()` and `getMyContributions()` list queries
+- [ ] Add pagination to `getMyContributions()` and `getUserMeals()` — fetch 20 at a time with "load more"
+- [ ] Optimize `_fetchWorkoutStreak()` — replace client-side streak calculation with a Supabase RPC that returns the streak count directly (eliminates fetching up to 365 rows)
+- [x] Add `.select()` column projection to WorkoutService queries (getAllWorkoutPlans, getUserActiveWorkout, getAllCategories, getWorkoutPlanDetails join)
+- [x] `NutritionPlanningScreen` already uses `Future.wait()` for parallel nutrition calls (confirmed pre-M19)
+
+### 19.3 — Image Performance
+- [ ] Add `cacheWidth` / `cacheHeight` to all `CachedNetworkImage` calls — decode at display size, not full resolution (reduces GPU memory)
+- [ ] Add `ResizeImage` wrapper for asset images loaded via `Image.asset()` where display size is known
+- [ ] Compress camera-captured images before sending to Gemini Vision (photo recipe + OCR) — resize to max 1024px wide before base64 encoding (currently sends up to 1200px)
+- [ ] Pre-cache exercise animation frames on `ExerciseLibrary` scroll (prefetch frame 0 + frame 1 for next 3 visible items)
+- [x] Add `fadeInDuration: 200ms` and `memCacheWidth` (with `.isFinite` guard) to `CachedNetworkImage` in `CustomImageWidget`
+
+### 19.4 — Widget Rebuild Optimization
+- [ ] Extract heavy sub-widgets from `NutritionPlanningScreen` into `const` StatelessWidgets where possible to prevent full-tree rebuilds on `setState`
+- [ ] Add `AutomaticKeepAliveClientMixin` — N/A: `IndexedStack` already keeps all tabs alive; mixin only applies to `PageView`/`TabBarView`
+- [ ] Convert `WeeklyProgressWidget` to cache its Supabase query result instead of re-fetching every time the home tab rebuilds
+- [x] Debounce food search in `AddFoodModalWidget` — 400ms Timer, properly disposed
+- [x] Move day-of-year calculation and daily tip selection out of `build()` into `initState()` via `late final String _dailyTip`
+
+### 19.5 — Lazy Loading & Deferred Initialization
+- [ ] Lazy-load `ProgressTrackingScreen` child widgets (charts, photo grid) — show shimmer skeleton and load chart data only when tab is first selected
+- [ ] Defer `google_mlkit_text_recognition` initialization until user actually navigates to barcode/OCR flow (ML Kit loads native libraries on import)
+- [ ] Lazy-load `youtube_player_flutter` — only initialize when user opens exercise detail sheet (not on library screen mount)
+- [ ] Add `ScrollController` listener to exercise library to load next page only when user scrolls near bottom (already has pagination — verify it works correctly)
+
+### 19.6 — Network Request Optimization
+- [x] Add debounce timer (400ms) to food search in `AddFoodModalWidget` — done in 19.4
+- [ ] Add HTTP connection pooling — reuse `Dio` instance across services instead of creating new instances per call
+- [ ] Add retry with exponential backoff for Supabase queries that fail due to network issues (max 2 retries, 1s → 2s delay)
+- [ ] Cancel in-flight API requests when user navigates away from screen (use `CancelToken` with Dio for Gemini/OFF/USDA calls)
+- [ ] Cache Open Food Facts + USDA search results locally for 10 minutes to avoid duplicate API calls for same query
+
+### 19.7 — Local Storage & Offline Resilience
+- [ ] Persist exercise library data to `SharedPreferences` or local JSON file — load from cache on app start, refresh from static data only if version changes
+- [ ] Cache user profile to `SharedPreferences` — show cached data immediately on app start, refresh from Supabase in background
+- [ ] Cache last viewed daily nutrition data to `SharedPreferences` — show stale data with "refreshing…" indicator instead of full loading skeleton
+- [x] Add `connectivity_plus` listener — red offline banner in `MainDashboard` via `Stack(fit: StackFit.expand)` + `Positioned` overlay
+
+### 19.8 — Memory Management
+- [~] Dispose all `ScrollController`, `TextEditingController`, `AnimationController` instances — fixed `water_tracking_card.dart` and `ingredients_review_step.dart`; full audit pending
+- [ ] Clear image cache when app goes to background (use `WidgetsBindingObserver` + `imageCache.clear()`) to free memory on low-RAM devices
+- [ ] Limit photo progress images loaded in memory — use `ListView.builder` with `cacheExtent` instead of loading all photos at once
+- [ ] Compress stored food images URLs — strip unnecessary URL parameters from Open Food Facts image URLs before caching to DB
+
+### 19.9 — Build & Bundle Size
+- [ ] Run `flutter analyze` — fix all warnings and info-level lints
+- [ ] Add `--split-debug-info` and `--obfuscate` to release build command for smaller APK
+- [ ] Audit unused packages in `pubspec.yaml` (e.g., `web`, `universal_html`) — remove if not needed
+- [ ] Enable R8/ProGuard shrinking for release builds — verify no runtime crashes after minification
+- [ ] Tree-shake unused Material icons with `--no-tree-shake-icons` removed (ensure only used icons are bundled)
+
+### 19.10 — Performance Monitoring & Measurement
+- [ ] Add `Stopwatch` timing to all service methods in debug mode — log slow queries (>500ms) to console
+- [ ] Measure and log screen transition times (push → first frame) for the 5 main tabs
+- [ ] Add frame rate monitoring in debug mode — flag jank (frames >16ms) during scroll in exercise library and nutrition meal list
+- [ ] Create a simple performance report at end of session: average load times per screen, cache hit ratio, slowest queries
+
+---
+
 ## Backlog (Nice to Have)
 
 - [ ] Push notifications for workout reminders (daily reminder at user-set time)
@@ -395,3 +562,5 @@ Update `## Current Status` in `CLAUDE.md` at the end of every session.
 | 2026-03-27 | OCR fix | Fix thinking model token truncation (maxTokens 1024→8192), thinking-aware response parsing, auto-trigger extraction, debug logging | M10 — Workout Session Live Tracking |
 | 2026-03-27 | M10 complete | ActiveWorkoutSession screen, SetRowWidget, ExerciseTrackerWidget, WorkoutSummaryScreen, workout_set_logs DB table, auto PR detection, dashboard nav update | M11 — Testing & Quality |
 | 2026-03-28 | Hotfixes | fix: active workout route null (rootNavigator: true); fix: exercise image crash (imageUrl??'' asset error) + replaced MuscleWiki dead URLs with free-exercise-db 2-frame animations | M11 — Testing & Quality |
+| 2026-03-28 | M18 planning | MuscleBodyWidget rewrite (muscle_selector pkg); M18 milestone planned — Photo-to-Recipe Generator (11 new files, 5 modified, 2 services, 4-step wizard) | M18 implementation |
+| 2026-03-28 | M18 complete | RecipeDetailSheet + LogRecipeStep created; route registered; CTA on NutritionPlanningScreen; shimmer dep added; all CLAUDE.md docs updated | M11 — Testing & Quality |

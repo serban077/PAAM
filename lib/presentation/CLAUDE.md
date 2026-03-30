@@ -159,6 +159,7 @@ fontSize: 14.sp // responsive font size
 | Exercise Detail Sheet | `exercise_library/widgets/exercise_detail_sheet.dart` | ✅ |
 | Active Workout Session | `active_workout_session/active_workout_session.dart` | ✅ |
 | Workout Summary | `active_workout_session/widgets/workout_summary_screen.dart` | ✅ |
+| Photo Recipe (4-step wizard) | `photo_recipe_screen/` | ✅ |
 
 ---
 
@@ -304,6 +305,49 @@ Any authenticated user can correct any food (RLS policy `authenticated_can_updat
 - **NEVER** use `exercise['image']` — the `exercises` Supabase table has NO `image` column; always resolves to null, which when passed to `CustomImageWidget` as `''` triggers Asset not found crash.
 - **NEVER** hotlink MuscleWiki GIFs directly — their media moved behind `api.musclewiki.com` (paid API, `X-API-Key` required). Old static paths return 404.
 - When navigating to any argument-based route (e.g., `/active-workout`) from inside a `MainDashboard` tab, **always** use `Navigator.of(context, rootNavigator: true).pushNamed(...)` — the inner tab navigator has no `onGenerateRoute` and will throw.
+
+**Photo-to-Recipe wizard flow** (M18):
+`NutritionPlanningScreen` CTA → `PhotoRecipeScreen` (4-step PageView wizard):
+1. `CaptureStep` — camera/gallery via image_picker → `Uint8List` bytes
+2. `IngredientsReviewStep` — editable ingredient chips (remove/edit quantity) + shimmer loading
+3. `RecipesStep` — recipe cards with macro chips → tap for `RecipeDetailSheet` bottom sheet
+4. `LogRecipeStep` — meal type picker + serving count → `submitUserFood()` + `logMeal()`
+
+Recipe logging creates a temp `food_database` row (`serving_size=1`, `serving_quantity=1`) matching the AI meal pattern.
+Navigation uses `rootNavigator: true` from NutritionPlanningScreen (nested navigator context).
+
+**Offline connectivity banner** (M19):
+`MainDashboard` listens to `Connectivity().onConnectivityChanged` (returns `List<ConnectivityResult>` in v6).
+Layout uses `Stack(fit: StackFit.expand, ...)` — **critical**: `StackFit.expand` gives bounded constraints to `IndexedStack` (matching Scaffold.body behavior). `StackFit.loose` would pass unbounded height, crashing all tab screens. The `Positioned` banner is unaffected by `fit`.
+```dart
+body: Stack(
+  fit: StackFit.expand,  // REQUIRED — do not remove
+  children: [
+    IndexedStack(index: currentIndex, children: _tabs),
+    if (_isOffline) Positioned(top: 0, left: 0, right: 0, child: /* red banner */),
+  ],
+)
+```
+
+**Controller disposal pattern for inline dialogs** (M19):
+```dart
+// Non-async callers: chain .then() on showDialog
+final controller = TextEditingController();
+showDialog(...).then((_) => controller.dispose());
+
+// Async callers: explicit dispose after await
+final result = await showDialog<int>(...);
+controller.dispose();
+```
+
+**AppCacheService in screens** (M19):
+Check cache before network; write cache after network; invalidate before force-refresh:
+```dart
+final cached = AppCacheService.instance.getExerciseLibrary();
+if (cached != null) { setState(() => _exercises = cached); return; }
+// ... fetch ...
+AppCacheService.instance.setExerciseLibrary(exercises);
+```
 
 ---
 

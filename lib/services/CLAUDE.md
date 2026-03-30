@@ -143,10 +143,29 @@ Used in `AuthenticationOnboardingFlow` to react to login/logout events.
 
 ---
 
+## AppCacheService (M19)
+
+Singleton in-memory cache with per-field TTL. Usage pattern:
+```dart
+// Read (returns null on miss or expiry)
+final cached = AppCacheService.instance.getExerciseLibrary();
+if (cached != null) { /* use cache */ return; }
+
+// Write
+AppCacheService.instance.setExerciseLibrary(data);
+
+// Invalidate on mutation
+AppCacheService.instance.invalidateContributions();
+```
+Food search uses LRU via `LinkedHashMap` — evicts oldest when `>= 20` entries. `invalidateAll()` clears everything (call on sign-out). Body measurements and strength PRs cache fields exist but are not yet wired to screens.
+
+---
+
 ## WorkoutService / NutritionService
 
 Standard CRUD services for workout sessions and nutrition logs.
 Both follow the same pattern: scope all queries by `user_id`, add `.timeout(15s)`, wrap in try/catch.
+`WorkoutService` uses explicit column projections (no `select('*')`) on all list queries (M19). `NutritionService` applies `.limit(50)` on `getUserMeals()` and `getMyContributions()` (M19).
 
 **`WorkoutService.saveCompletedWorkout({sessionId, durationSeconds, setLogs})`** (added M10):
 - Calculates `total_volume_kg` (sum of weight_kg × reps for completed sets)
@@ -216,6 +235,40 @@ This formula is used in three places that must stay in sync:
 
 ---
 
+## FoodRecognitionService (M18)
+
+File: `food_recognition_service.dart` — Gemini Vision ingredient detection from food photos.
+
+Singleton. Sends base64-encoded image to Gemini 2.5 Flash (temperature 0.1, maxTokens 8192) with a structured prompt requesting JSON array of `{name, estimated_quantity_g, category}`.
+
+```dart
+final service = FoodRecognitionService();
+final result = await service.recognizeIngredients(imageBytes);
+// result.ingredients → List<DetectedIngredient>
+```
+
+45-second timeout. Strips markdown code fences before JSON parse.
+Categories: `protein`, `carb`, `fat`, `vegetable`, `fruit`, `dairy`, `condiment`.
+
+---
+
+## SmartRecipeService (M18)
+
+File: `smart_recipe_service.dart` — AI recipe generation from detected ingredients.
+
+Singleton. Generates 3–5 diverse protein-rich recipes using ONLY detected ingredients. Fetches user TDEE from `user_profiles.daily_calorie_goal` (best-effort — works without profile).
+
+```dart
+final service = SmartRecipeService();
+final result = await service.generateRecipes(ingredients);
+// result.recipes → List<GeneratedRecipe>
+```
+
+Gemini 2.5 Flash (temperature 0.7, maxTokens 8192). 45-second timeout.
+Water, salt, pepper, cooking oil are assumed available (not required in photo).
+
+---
+
 ## Service Inventory
 
 | File | Responsibility |
@@ -232,3 +285,7 @@ This formula is used in three places that must stay in sync:
 | `open_food_facts_service.dart` | Barcode lookup (`lookupBarcode`) + text search (`searchFoods`) via Open Food Facts API (no key required) |
 | `usda_food_service.dart` | Text search via USDA FoodData Central (`USDA_API_KEY` in env.json); returns `[]` gracefully if key absent |
 | `gemini_nutrition_label_service.dart` | 2-step OCR pipeline: ML Kit on-device text recognition → Gemini 2.5 Flash text parsing; falls back to Gemini Vision if ML Kit fails; 22-field schema; `extractNutritionLabel(Uint8List, {String? imagePath})` |
+| `food_recognition_service.dart` | Gemini 2.5 Flash Vision — detects food ingredients from photos; returns `FoodRecognitionResult` with `List<DetectedIngredient>` |
+| `smart_recipe_service.dart` | Gemini AI recipe generation from detected ingredients; fetches user TDEE for macro targeting; returns `RecipeGenerationResult` with `List<GeneratedRecipe>` |
+| `app_cache_service.dart` | In-memory TTL cache singleton (M19). Caches: profile (10min), streak (5min), nutrition (5min), exercise library (30min), body measurements (5min), strength PRs (5min), food search LRU (3min, max 20 entries via LinkedHashMap), contributions (5min). Call `invalidateAll()` on sign-out. |
+| `exercise_db_service.dart` | Free-exercise-db CDN lookup — resolves exercise name to animation frame URLs |
