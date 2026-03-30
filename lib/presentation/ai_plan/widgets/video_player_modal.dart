@@ -1,113 +1,61 @@
 import 'package:flutter/material.dart';
 import 'package:sizer/sizer.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:youtube_player_flutter/youtube_player_flutter.dart';
-import 'package:url_launcher/url_launcher.dart';
 
-class VideoPlayerModal extends StatefulWidget {
-  final String videoUrl;
+import '../../../widgets/exercise_3d_widget.dart';
+import '../../../widgets/muscle_body_widget.dart';
+
+/// Bottom-sheet modal showing the 3D exercise demonstration and muscle map.
+///
+/// Previously used an embedded YouTube player — now replaced with
+/// [Exercise3DWidget] (ExerciseDB animated GIF / free-exercise-db fallback)
+/// plus [MuscleBodyWidget] for muscle targeting visualisation.
+class VideoPlayerModal extends StatelessWidget {
+  final String videoUrl; // kept for API compat, no longer used for YouTube
   final String exerciseName;
+  final String targetMuscles;
 
   const VideoPlayerModal({
     super.key,
     required this.videoUrl,
     required this.exerciseName,
+    this.targetMuscles = '',
   });
 
   @override
-  State<VideoPlayerModal> createState() => _VideoPlayerModalState();
-}
-
-class _VideoPlayerModalState extends State<VideoPlayerModal> {
-  late YoutubePlayerController _controller;
-  bool _hasError = false;
-
-
-  @override
-  void initState() {
-    super.initState();
-    
-    final videoId = YoutubePlayer.convertUrlToId(widget.videoUrl);
-    
-    if (videoId != null && videoId.isNotEmpty) {
-      _controller = YoutubePlayerController(
-        initialVideoId: videoId,
-        flags: const YoutubePlayerFlags(
-          autoPlay: false,
-          mute: false,
-          enableCaption: true,
-          isLive: false,
-          forceHD: false,
-          hideControls: false,
-        ),
-      );
-    } else {
-      // Fallback for invalid URL
-      _controller = YoutubePlayerController(
-        initialVideoId: 'dQw4w9WgXcQ', // Placeholder video
-        flags: const YoutubePlayerFlags(
-          autoPlay: false,
-          mute: false,
-        ),
-      );
-    }
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  Future<void> _openInYouTube() async {
-    final Uri url = Uri.parse(widget.videoUrl);
-    if (await canLaunchUrl(url)) {
-      await launchUrl(url, mode: LaunchMode.externalApplication);
-    } else {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Cannot open YouTube')),
-        );
-      }
-    }
-  }
-
-  @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Container(
-      height: 70.h,
+      height: 80.h,
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.only(
-          topLeft: Radius.circular(20),
-          topRight: Radius.circular(20),
-        ),
+        color: theme.colorScheme.surface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
       ),
       child: Column(
         children: [
-          // Handle bar
+          // Drag handle
           Container(
             margin: EdgeInsets.only(top: 1.h),
             width: 40,
             height: 4,
             decoration: BoxDecoration(
-              color: Colors.grey[300],
+              color: theme.colorScheme.onSurfaceVariant.withAlpha(80),
               borderRadius: BorderRadius.circular(2),
             ),
           ),
-          
+
           // Header
           Padding(
-            padding: EdgeInsets.all(2.h),
+            padding: EdgeInsets.fromLTRB(4.w, 1.5.h, 2.w, 0),
             child: Row(
               children: [
                 Expanded(
                   child: Text(
-                    widget.exerciseName,
-                    style: GoogleFonts.inter(
-                      fontSize: 18.sp,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    exerciseName,
+                    style: theme.textTheme.titleLarge
+                        ?.copyWith(fontWeight: FontWeight.bold),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
                 IconButton(
@@ -117,115 +65,51 @@ class _VideoPlayerModalState extends State<VideoPlayerModal> {
               ],
             ),
           ),
-          
-          // Video player
-          YoutubePlayerBuilder(
-            player: YoutubePlayer(
-              controller: _controller,
-              showVideoProgressIndicator: true,
-              progressIndicatorColor: Theme.of(context).primaryColor,
-              progressColors: ProgressBarColors(
-                playedColor: Theme.of(context).primaryColor,
-                handleColor: Theme.of(context).primaryColor,
-              ),
-              onReady: () {
-                print('YouTube player is ready');
-                if (mounted) {
-                  setState(() {
-                    _hasError = false;
-                  });
-                }
-              },
-              onEnded: (metaData) {
-                print('Video ended');
-              },
-            ),
-            builder: (context, player) {
-              return Column(
-                children: [
-                  player,
-                  // Error message if video can't be played
-                  if (_controller.value.hasError || _hasError)
-                    Container(
-                      margin: EdgeInsets.all(2.h),
-                      padding: EdgeInsets.all(2.h),
-                      decoration: BoxDecoration(
-                        color: Colors.orange.shade50,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.orange.shade200),
-                      ),
-                      child: Column(
-                        children: [
-                          Row(
-                            children: [
-                              Icon(Icons.info_outline, color: Colors.orange.shade700),
-                              SizedBox(width: 2.w),
-                              Expanded(
-                                child: Text(
-                                  'This video cannot be played in the app',
-                                  style: GoogleFonts.inter(
-                                    fontSize: 14.sp,
-                                    fontWeight: FontWeight.w600,
-                                    color: Colors.orange.shade900,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          SizedBox(height: 1.h),
-                          Text(
-                            'The video owner has restricted playback in external apps.',
-                            style: GoogleFonts.inter(
-                              fontSize: 12.sp,
-                              color: Colors.grey[700],
-                            ),
-                          ),
-                          SizedBox(height: 1.5.h),
-                          ElevatedButton.icon(
-                            onPressed: _openInYouTube,
-                            icon: const Icon(Icons.open_in_new),
-                            label: Text(
-                              'Open in YouTube',
-                              style: GoogleFonts.inter(fontWeight: FontWeight.w600),
-                            ),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.red,
-                              foregroundColor: Colors.white,
-                              padding: EdgeInsets.symmetric(
-                                horizontal: 4.w,
-                                vertical: 1.5.h,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                ],
-              );
-            },
-          ),
-          
-          // Instructions section (optional)
+
+          // Scrollable content
           Expanded(
             child: SingleChildScrollView(
-              padding: EdgeInsets.all(2.h),
+              padding: EdgeInsets.fromLTRB(4.w, 1.h, 4.w, 4.h),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // 3D exercise demonstration
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(16),
+                    child: Exercise3DWidget(
+                      exerciseName: exerciseName,
+                      height: 28.h,
+                    ),
+                  ),
+                  SizedBox(height: 2.h),
+
+                  // Muscle map
+                  if (targetMuscles.isNotEmpty) ...[
+                    Container(
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF141414),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      padding: EdgeInsets.symmetric(
+                          vertical: 1.5.h, horizontal: 2.w),
+                      child:
+                          MuscleBodyWidget(targetMuscles: targetMuscles),
+                    ),
+                    SizedBox(height: 2.h),
+                  ],
+
+                  // How to perform
                   Text(
                     'How to Perform',
-                    style: GoogleFonts.inter(
-                      fontSize: 16.sp,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: theme.textTheme.titleMedium
+                        ?.copyWith(fontWeight: FontWeight.bold),
                   ),
                   SizedBox(height: 1.h),
                   Text(
-                    'Watch the video above for proper form and technique. '
+                    'Watch the animation above for proper form and technique. '
                     'Make sure to warm up before starting and maintain proper form throughout the exercise.',
-                    style: GoogleFonts.inter(
-                      fontSize: 13.sp,
-                      color: Colors.grey[700],
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
                     ),
                   ),
                 ],

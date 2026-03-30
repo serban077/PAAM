@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:sizer/sizer.dart';
-import 'package:youtube_player_flutter/youtube_player_flutter.dart';
 
 import '../../../../core/app_export.dart';
 import '../../../widgets/custom_icon_widget.dart';
+import '../../../widgets/exercise_3d_widget.dart';
+import '../../../widgets/muscle_body_widget.dart';
 
 /// Exercise Detail Bottom Sheet
 /// Shows exercise info and embedded YouTube demo video when videoId is available
@@ -17,37 +18,12 @@ class ExerciseDetailSheet extends StatefulWidget {
 }
 
 class _ExerciseDetailSheetState extends State<ExerciseDetailSheet> {
-  YoutubePlayerController? _youtubeController;
-
-  @override
-  void initState() {
-    super.initState();
-    final videoId = widget.exercise['videoId'] as String?;
-    if (videoId != null && videoId.isNotEmpty) {
-      _youtubeController = YoutubePlayerController(
-        initialVideoId: videoId,
-        flags: const YoutubePlayerFlags(
-          autoPlay: false,
-          mute: false,
-          disableDragSeek: false,
-          loop: false,
-          enableCaption: false,
-        ),
-      );
-    }
-  }
-
-  @override
-  void dispose() {
-    _youtubeController?.dispose();
-    super.dispose();
-  }
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final exercise = widget.exercise;
     final name = exercise['name'] as String? ?? 'Exercise';
+    final englishName = exercise['englishName'] as String? ?? name;
     final bodyPart = exercise['bodyPart'] as String? ?? '';
     final targetMuscles = exercise['targetMuscles'] as String? ?? '';
     final equipment = exercise['equipment'] as String? ?? '';
@@ -131,19 +107,27 @@ class _ExerciseDetailSheetState extends State<ExerciseDetailSheet> {
                         ],
                       ),
                       SizedBox(height: 2.h),
-                      // YouTube player
-                      if (_youtubeController != null) ...[
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(12),
-                          child: YoutubePlayer(
-                            controller: _youtubeController!,
-                            showVideoProgressIndicator: true,
-                            progressIndicatorColor:
-                                theme.colorScheme.primary,
-                          ),
+                      // 3D exercise demonstration
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(16),
+                        child: Exercise3DWidget(
+                          exerciseName: englishName,
+                          height: 28.h,
                         ),
-                        SizedBox(height: 2.h),
-                      ],
+                      ),
+                      SizedBox(height: 1.5.h),
+                      // Muscle body diagram
+                      Container(
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF141414),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        padding: EdgeInsets.symmetric(
+                            vertical: 1.5.h, horizontal: 2.w),
+                        child: MuscleBodyWidget(
+                            targetMuscles: targetMuscles),
+                      ),
+                      SizedBox(height: 2.h),
                       // Target muscles
                       Text(
                         'Target Muscles',

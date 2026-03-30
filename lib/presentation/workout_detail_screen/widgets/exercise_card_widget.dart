@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:sizer/sizer.dart';
 
-import '../../../core/app_export.dart';
+import '../../../widgets/exercise_3d_widget.dart';
 import '../../ai_plan/widgets/video_player_modal.dart';
 
 class ExerciseCardWidget extends StatelessWidget {
@@ -23,7 +23,15 @@ class ExerciseCardWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final videoUrl = exercise['exercises'] != null ? exercise['exercises']['video_url'] : exercise['video_url'];
+    // Support both nested (session_exercises join) and flat exercise maps
+    final exData = exercise['exercises'] as Map<String, dynamic>? ?? exercise;
+    final name = exData['name'] as String? ?? 'Exercise';
+    final videoUrl = exData['video_url'] as String? ?? '';
+    // Build muscle string from array or text field
+    final muscleGroups = exData['target_muscle_groups'];
+    final muscles = muscleGroups is List
+        ? muscleGroups.join(', ')
+        : (exData['muscle_group'] as String? ?? '');
 
     return Card(
       margin: EdgeInsets.symmetric(vertical: 1.h, horizontal: 2.w),
@@ -32,42 +40,26 @@ class ExerciseCardWidget extends StatelessWidget {
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: () {
-          if (videoUrl != null) {
-            showModalBottomSheet(
-              context: context,
-              isScrollControlled: true,
-              backgroundColor: Colors.transparent,
-              builder: (context) => VideoPlayerModal(
-                videoUrl: videoUrl,
-                exerciseName: exercise['name'] ?? 'Exercise',
-              ),
-            );
-          } else {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Video unavailable for this exercise')),
-            );
-          }
+          showModalBottomSheet(
+            context: context,
+            isScrollControlled: true,
+            backgroundColor: Colors.transparent,
+            builder: (context) => VideoPlayerModal(
+              videoUrl: videoUrl,
+              exerciseName: name,
+              targetMuscles: muscles,
+            ),
+          );
         },
         child: Row(
           children: [
+            // Exercise animation thumbnail
             SizedBox(
               width: 25.w,
               height: 25.w,
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  CustomImageWidget(
-                    imageUrl: exercise['image'],
-                    fit: BoxFit.cover,
-                  ),
-                  if (videoUrl != null)
-                    Container(
-                      color: Colors.black26,
-                      child: const Center(
-                        child: Icon(Icons.play_circle_fill, color: Colors.white, size: 30),
-                      ),
-                    ),
-                ],
+              child: Exercise3DWidget(
+                exerciseName: name,
+                height: 25.w,
               ),
             ),
             Expanded(
@@ -77,7 +69,7 @@ class ExerciseCardWidget extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      exercise['name'],
+                      name,
                       style: theme.textTheme.titleMedium
                           ?.copyWith(fontWeight: FontWeight.bold),
                       maxLines: 2,

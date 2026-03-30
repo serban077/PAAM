@@ -18,6 +18,7 @@ import '../presentation/nutrition_planning_screen/widgets/product_not_found_scre
 import '../presentation/user_food_submission_screen/user_food_submission_screen.dart';
 import '../presentation/user_food_submission_screen/my_contributions_screen.dart';
 import '../presentation/active_workout_session/active_workout_session.dart';
+import '../presentation/photo_recipe_screen/photo_recipe_screen.dart';
 
 class AppRoutes {
   static const String mainDashboard = '/main-dashboard';
@@ -42,6 +43,7 @@ class AppRoutes {
   static const String userFoodSubmission = '/user-food-submission';
   static const String myFoodContributions = '/my-food-contributions';
   static const String activeWorkout = '/active-workout';
+  static const String photoRecipe = '/photo-recipe';
 
   static Map<String, WidgetBuilder> get routes => {
     mainDashboard: (context) => const MainDashboard(),
@@ -50,7 +52,6 @@ class AppRoutes {
     userProfile: (context) => const UserProfileManagement(),
     progressTracking: (context) => const ProgressTrackingScreen(),
     nutritionPlanning: (context) => const NutritionPlanningScreen(),
-    workoutDetail: (context) => const WorkoutDetailScreen(),
     loginScreen: (context) => const LoginScreen(),
     signupScreen: (context) => const SignupScreen(),
     onboardingSurvey: (context) => const OnboardingSurveyScreen(),
@@ -62,6 +63,12 @@ class AppRoutes {
   };
 
   static Route<dynamic>? onGenerateRoute(RouteSettings settings) {
+    if (settings.name == workoutDetail) {
+      return MaterialPageRoute(
+        builder: (context) => const WorkoutDetailScreen(),
+        settings: settings,
+      );
+    }
     if (settings.name == exerciseDetails) {
       final args = settings.arguments as Map<String, dynamic>?;
       return MaterialPageRoute(
@@ -97,6 +104,11 @@ class AppRoutes {
         builder: (context) => ActiveWorkoutSession(
           sessionId: args?['sessionId'] as String? ?? '',
         ),
+      );
+    }
+    if (settings.name == photoRecipe) {
+      return MaterialPageRoute(
+        builder: (context) => const PhotoRecipeScreen(),
       );
     }
     return null;

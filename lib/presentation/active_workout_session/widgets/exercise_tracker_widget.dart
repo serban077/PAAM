@@ -1,12 +1,10 @@
-import 'dart:async';
-
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:sizer/sizer.dart';
 
-import '../../../utils/exercise_gif_utils.dart';
 import '../../../widgets/custom_icon_widget.dart';
+import '../../../widgets/exercise_3d_widget.dart';
+import '../../../widgets/muscle_body_widget.dart';
 import 'set_row_widget.dart';
 
 /// Displays the current exercise with interactive set-logging rows.
@@ -57,11 +55,11 @@ class ExerciseTrackerWidget extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Exercise animation — alternates between start and end position
+                // Exercise animation — 3D demo (ExerciseDB) or free-exercise-db fallback
                 ClipRRect(
                   borderRadius:
                       const BorderRadius.vertical(top: Radius.circular(16)),
-                  child: _ExerciseAnimationWidget(
+                  child: Exercise3DWidget(
                       exerciseName: name, height: 22.h),
                 ),
 
@@ -113,7 +111,12 @@ class ExerciseTrackerWidget extends StatelessWidget {
               ],
             ),
           ),
-          SizedBox(height: 2.h),
+          SizedBox(height: 1.h),
+
+          // Muscle map — collapsible so it doesn't block the workout flow
+          _MuscleMapExpansion(exercise: exercise),
+
+          SizedBox(height: 1.5.h),
 
           // Set rows
           Text(
@@ -173,90 +176,65 @@ class ExerciseTrackerWidget extends StatelessWidget {
   }
 }
 
-/// Animates between the start-position and end-position frames for an exercise.
-/// Uses the free-exercise-db GitHub CDN (real-person technique photos).
-/// Falls back to a placeholder icon when no images are mapped.
-class _ExerciseAnimationWidget extends StatefulWidget {
-  final String exerciseName;
-  final double height;
+/// Collapsible muscle-map tile shown below the exercise header card.
+class _MuscleMapExpansion extends StatelessWidget {
+  final Map<String, dynamic> exercise;
 
-  const _ExerciseAnimationWidget({
-    required this.exerciseName,
-    required this.height,
-  });
+  const _MuscleMapExpansion({required this.exercise});
 
-  @override
-  State<_ExerciseAnimationWidget> createState() =>
-      _ExerciseAnimationWidgetState();
-}
-
-class _ExerciseAnimationWidgetState
-    extends State<_ExerciseAnimationWidget> {
-  bool _showFrame1 = false;
-  Timer? _timer;
-
-  String? get _f0 => ExerciseGifUtils.getFrame0Url(widget.exerciseName);
-  String? get _f1 => ExerciseGifUtils.getFrame1Url(widget.exerciseName);
-
-  @override
-  void initState() {
-    super.initState();
-    if (_f0 != null && _f1 != null) {
-      // Flip between frames every 1.1 s (slow enough to see the form)
-      _timer = Timer.periodic(const Duration(milliseconds: 1100), (_) {
-        if (mounted) setState(() => _showFrame1 = !_showFrame1);
-      });
+  /// Builds a comma-separated muscle string from either a List (Supabase
+  /// `target_muscle_groups` array) or a plain text field (`muscle_group`).
+  String _muscles() {
+    final groups = exercise['target_muscle_groups'];
+    if (groups is List && groups.isNotEmpty) {
+      return groups.join(', ');
     }
-  }
-
-  @override
-  void dispose() {
-    _timer?.cancel();
-    super.dispose();
+    final group = exercise['muscle_group'] as String?;
+    if (group != null && group.isNotEmpty) return group;
+    // Fallback to description keywords
+    return exercise['description'] as String? ?? '';
   }
 
   @override
   Widget build(BuildContext context) {
-    final f0 = _f0;
-    final f1 = _f1;
-    final bg = Theme.of(context).brightness == Brightness.dark
-        ? const Color(0xFF1A1A1A)
-        : const Color(0xFF2A2A2A);
+    final theme = Theme.of(context);
+    final muscles = _muscles();
+    if (muscles.isEmpty) return const SizedBox.shrink();
 
-    if (f0 == null) return _placeholder(bg);
-
-    final url = (_showFrame1 && f1 != null) ? f1 : f0;
-
-    return AnimatedSwitcher(
-      duration: const Duration(milliseconds: 400),
-      child: CachedNetworkImage(
-        key: ValueKey(url),
-        imageUrl: url,
-        width: double.infinity,
-        height: widget.height,
-        fit: BoxFit.cover,
-        fadeInDuration: const Duration(milliseconds: 200),
-        placeholder: (_, __) => Container(
-          width: double.infinity,
-          height: widget.height,
-          color: bg,
-          child: const Center(
-            child: CircularProgressIndicator(
-                strokeWidth: 2, color: Colors.white38),
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(16),
+      child: Theme(
+        data: theme.copyWith(dividerColor: Colors.transparent),
+        child: ExpansionTile(
+          tilePadding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 0),
+          childrenPadding: EdgeInsets.zero,
+          collapsedBackgroundColor:
+              theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+          backgroundColor:
+              theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+          shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16)),
+          collapsedShape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16)),
+          leading: CustomIconWidget(
+            iconName: 'accessibility_new',
+            color: theme.colorScheme.primary,
+            size: 20,
           ),
+          title: Text(
+            'Muscle Map',
+            style: theme.textTheme.titleSmall
+                ?.copyWith(fontWeight: FontWeight.w600),
+          ),
+          children: [
+            Container(
+              color: const Color(0xFF141414),
+              padding:
+                  EdgeInsets.symmetric(vertical: 1.5.h, horizontal: 2.w),
+              child: MuscleBodyWidget(targetMuscles: muscles),
+            ),
+          ],
         ),
-        errorWidget: (_, __, ___) => _placeholder(bg),
-      ),
-    );
-  }
-
-  Widget _placeholder(Color bg) {
-    return Container(
-      width: double.infinity,
-      height: widget.height,
-      color: bg,
-      child: const Center(
-        child: Icon(Icons.fitness_center, color: Colors.white24, size: 48),
       ),
     );
   }

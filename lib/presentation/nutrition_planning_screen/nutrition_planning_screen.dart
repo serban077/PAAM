@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 import '../../routes/app_routes.dart';
 import '../../services/nutrition_service.dart';
 import '../../services/supabase_service.dart';
+import '../../services/app_cache_service.dart';
 import './widgets/calorie_goal_widget.dart';
 import './widgets/macro_progress_widget.dart';
 import './widgets/add_food_modal_widget.dart';
@@ -14,6 +15,7 @@ import './widgets/simple_meal_card.dart';
 import './widgets/water_tracking_card.dart';
 import './widgets/ai_meal_plan_section.dart';
 import './widgets/barcode_scanner_page.dart';
+import '../../widgets/custom_icon_widget.dart';
 
 class NutritionPlanningScreen extends StatefulWidget {
   const NutritionPlanningScreen({super.key});
@@ -25,6 +27,7 @@ class NutritionPlanningScreen extends StatefulWidget {
 
 class _NutritionPlanningScreenState extends State<NutritionPlanningScreen> {
   final _nutritionService = NutritionService(Supabase.instance.client);
+  final _cache = AppCacheService.instance;
   DateTime _selectedDate = DateTime.now();
   bool _isLoading = true;
 
@@ -44,21 +47,53 @@ class _NutritionPlanningScreenState extends State<NutritionPlanningScreen> {
 
   List<Map<String, dynamic>> _meals = [];
 
+  String get _dateKey {
+    final d = _selectedDate;
+    return '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+  }
+
   @override
   void initState() {
     super.initState();
     _loadNutritionData();
   }
 
-  Future<void> _loadNutritionData() async {
+  Future<void> _loadNutritionData({bool forceRefresh = false}) async {
     setState(() => _isLoading = true);
     try {
-      final meals = await _nutritionService.getUserMeals(_selectedDate);
-      final totals = await _nutritionService.getDailyNutritionTotals(
-        _selectedDate,
-      );
-      final goal = await _nutritionService.getDailyGoal(_selectedDate);
+      // Check cache first
+      if (!forceRefresh) {
+        final cached = _cache.getNutrition(_dateKey);
+        if (cached != null) {
+          setState(() {
+            _meals = cached.meals;
+            _dailyTotals = cached.dailyTotals;
+            _dailyGoal = cached.dailyGoal;
+            _isLoading = false;
+          });
+          return;
+        }
+      }
 
+      // Parallel fetch
+      final results = await Future.wait([
+        _nutritionService.getUserMeals(_selectedDate),
+        _nutritionService.getDailyNutritionTotals(_selectedDate),
+        _nutritionService.getDailyGoal(_selectedDate),
+      ]);
+
+      final meals = results[0] as List<Map<String, dynamic>>;
+      final totals = results[1] as Map<String, double>;
+      final goal = results[2] as Map<String, dynamic>;
+
+      // Update cache
+      _cache.setNutrition(_dateKey, NutritionCacheData(
+        meals: meals,
+        dailyTotals: totals,
+        dailyGoal: goal,
+      ));
+
+      if (!mounted) return;
       setState(() {
         _meals = meals;
         _dailyTotals = totals;
@@ -75,6 +110,30 @@ class _NutritionPlanningScreenState extends State<NutritionPlanningScreen> {
     }
   }
 
+  /// Recalculate totals from local _meals list.
+  /// Uses the same formula as the Supabase RPC: calories * serving_quantity / serving_size.
+  void _recalculateTotals() {
+    double totalCal = 0, totalP = 0, totalC = 0, totalF = 0;
+    for (final meal in _meals) {
+      final food = meal['food_database'] as Map<String, dynamic>?;
+      if (food == null) continue;
+      final qty = (meal['serving_quantity'] as num?)?.toDouble() ?? 0;
+      final size = (food['serving_size'] as num?)?.toDouble() ?? 100;
+      final factor = size > 0 ? qty / size : 0.0;
+      totalCal += ((food['calories'] as num?)?.toDouble() ?? 0) * factor;
+      totalP += ((food['protein_g'] as num?)?.toDouble() ?? 0) * factor;
+      totalC += ((food['carbs_g'] as num?)?.toDouble() ?? 0) * factor;
+      totalF += ((food['fat_g'] as num?)?.toDouble() ?? 0) * factor;
+    }
+    _dailyTotals = {
+      'total_calories': totalCal,
+      'total_protein_g': totalP,
+      'total_carbs_g': totalC,
+      'total_fat_g': totalF,
+    };
+    _cache.invalidateNutrition(_dateKey);
+  }
+
   void _showAddFoodModal(String mealType) {
     showModalBottomSheet(
       context: context,
@@ -84,7 +143,8 @@ class _NutritionPlanningScreenState extends State<NutritionPlanningScreen> {
         mealType: mealType,
         onFoodAdded: () {
           Navigator.pop(context);
-          _loadNutritionData();
+          _cache.invalidateNutrition(_dateKey);
+          _loadNutritionData(forceRefresh: true);
         },
       ),
     );
@@ -94,17 +154,24 @@ class _NutritionPlanningScreenState extends State<NutritionPlanningScreen> {
     return _meals.where((meal) => meal['meal_type'] == mealType).toList();
   }
 
-  /// Edit meal quantity and update in database
+  /// Edit meal quantity — update DB then apply locally.
   Future<void> _editMealQuantity(String mealId, double newQuantity) async {
     try {
       await SupabaseService.instance.client
           .from('user_meals')
           .update({'serving_quantity': newQuantity})
           .eq('id', mealId);
-      
-      // Reload data to refresh calories
-      await _loadNutritionData();
-      
+
+      // Local update instead of full reload
+      if (!mounted) return;
+      setState(() {
+        final idx = _meals.indexWhere((m) => m['id'] == mealId);
+        if (idx != -1) {
+          _meals[idx] = {..._meals[idx], 'serving_quantity': newQuantity};
+        }
+        _recalculateTotals();
+      });
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -125,13 +192,33 @@ class _NutritionPlanningScreenState extends State<NutritionPlanningScreen> {
     }
   }
 
+  /// Delete a meal — update DB then remove locally.
+  Future<void> _deleteMeal(String mealId) async {
+    try {
+      await _nutritionService.deleteMeal(mealId);
+      if (!mounted) return;
+      setState(() {
+        _meals.removeWhere((m) => m['id'] == mealId);
+        _recalculateTotals();
+      });
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error deleting meal: $e')),
+        );
+      }
+    }
+  }
+
   Future<void> _openBarcodeScanner() async {
     HapticFeedback.lightImpact();
     final result = await Navigator.push<String?>(
       context,
       MaterialPageRoute(
         builder: (context) => BarcodeScannerPage(
-          onFoodAdded: _loadNutritionData,
+          onFoodAdded: () {
+            _cache.invalidateNutrition(_dateKey);
+          },
         ),
       ),
     );
@@ -146,11 +233,12 @@ class _NutritionPlanningScreenState extends State<NutritionPlanningScreen> {
         ),
       );
     }
-    _loadNutritionData();
+    _loadNutritionData(forceRefresh: true);
   }
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(
         title: const Text('Nutrition Planning'),
@@ -301,7 +389,83 @@ class _NutritionPlanningScreenState extends State<NutritionPlanningScreen> {
 
                     // Water tracking
                     const WaterTrackingCard(),
-                    SizedBox(height: 3.h),
+                    SizedBox(height: 2.h),
+
+                    // Photo Recipe CTA
+                    Card(
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        side: BorderSide(
+                          color: theme.colorScheme.outlineVariant,
+                          width: 0.5,
+                        ),
+                      ),
+                      child: InkWell(
+                        onTap: () async {
+                          HapticFeedback.lightImpact();
+                          final result = await Navigator.of(context,
+                                  rootNavigator: true)
+                              .pushNamed(AppRoutes.photoRecipe);
+                          if (result == true && mounted) {
+                            _loadNutritionData();
+                          }
+                        },
+                        borderRadius: BorderRadius.circular(16),
+                        child: Padding(
+                          padding: EdgeInsets.symmetric(
+                              horizontal: 4.w, vertical: 2.h),
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: EdgeInsets.all(2.5.w),
+                                decoration: BoxDecoration(
+                                  color: theme.colorScheme.tertiary
+                                      .withValues(alpha: 0.12),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: CustomIconWidget(
+                                  iconName: 'camera_alt',
+                                  size: 24,
+                                  color: theme.colorScheme.tertiary,
+                                ),
+                              ),
+                              SizedBox(width: 3.w),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Generate Recipe from Photo',
+                                      style: theme.textTheme.titleSmall
+                                          ?.copyWith(
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                    SizedBox(height: 0.3.h),
+                                    Text(
+                                      'Snap your ingredients, get recipes',
+                                      style: theme.textTheme.bodySmall
+                                          ?.copyWith(
+                                        color: theme
+                                            .colorScheme.onSurfaceVariant,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              CustomIconWidget(
+                                iconName: 'chevron_right',
+                                size: 20,
+                                color: theme.colorScheme.onSurfaceVariant,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                    SizedBox(height: 2.h),
 
                     // AI Meal Plan Section
                     AIMealPlanSection(

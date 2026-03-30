@@ -3,6 +3,7 @@ import 'package:sizer/sizer.dart';
 import '../../data/models/ai_plan_models.dart';
 import '../../services/gemini_ai_service.dart';
 import '../../services/supabase_service.dart';
+import '../../widgets/ai_loading_widget.dart';
 import 'widgets/workout_tab.dart';
 
 class AIPlanScreen extends StatefulWidget {
@@ -217,9 +218,24 @@ class _AIPlanScreenState extends State<AIPlanScreen>
     );
   }
 
+  Widget _buildLoadingState() {
+    return AILoadingWidget(
+      iconName: 'fitness_center',
+      title: 'Building your AI plan...',
+      statusMessages: const [
+        'Analyzing your fitness profile...',
+        'Designing workout schedule...',
+        'Calculating optimal exercises...',
+        'Tailoring to your goals...',
+      ],
+      stepLabels: const ['Profile', 'Plan', 'Optimize'],
+      activeStep: 1,
+    );
+  }
+
   Widget _buildBody() {
     if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
+      return _buildLoadingState();
     }
 
     if (_errorMessage != null) {
@@ -258,3 +274,4 @@ class _AIPlanScreenState extends State<AIPlanScreen>
     );
   }
 }
+
