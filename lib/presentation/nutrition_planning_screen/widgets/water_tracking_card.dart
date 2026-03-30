@@ -47,7 +47,7 @@ class _WaterTrackingCardState extends State<WaterTrackingCard> {
 
   Future<void> _addWater() async {
     final controller = TextEditingController(text: '250');
-    
+
     final result = await showDialog<int>(
       context: context,
       builder: (context) => AlertDialog(
@@ -84,6 +84,7 @@ class _WaterTrackingCardState extends State<WaterTrackingCard> {
         ],
       ),
     );
+    controller.dispose();
 
     if (result != null) {
       final newTotal = _consumedWater + result;
