@@ -5,6 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../core/app_export.dart';
 import '../../services/supabase_service.dart';
+import '../../services/app_cache_service.dart';
 import './widgets/metric_card_widget.dart';
 import './widgets/today_workout_card_widget.dart';
 import './widgets/weekly_progress_widget.dart';
@@ -23,21 +24,20 @@ class _MainDashboardInitialPageState extends State<MainDashboardInitialPage> {
   Map<String, dynamic>? _todayWorkout;
   int _workoutStreak = 0;
 
+  late final String _dailyTip;
+
+  final _cache = AppCacheService.instance;
+
   @override
   void initState() {
     super.initState();
+    final now = DateTime.now();
+    final dayOfYear = now.difference(DateTime(now.year, 1, 1)).inDays;
+    _dailyTip = _fitnessTips[dayOfYear % _fitnessTips.length];
     _loadDashboardData();
   }
 
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    if (!_isLoading) {
-      _loadDashboardData();
-    }
-  }
-
-  Future<void> _loadDashboardData() async {
+  Future<void> _loadDashboardData({bool forceRefresh = false}) async {
     try {
       if (!mounted) return;
       setState(() => _isLoading = true);
@@ -49,32 +49,61 @@ class _MainDashboardInitialPageState extends State<MainDashboardInitialPage> {
         return;
       }
 
-      final profileResponse = await SupabaseService.instance.client
-          .from('user_profiles')
-          .select()
-          .eq('id', userId)
-          .maybeSingle();
+      final now = DateTime.now();
+      final dateKey = '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
 
+      // Check cache first (skip on pull-to-refresh)
+      if (!forceRefresh) {
+        final cachedProfile = _cache.getUserProfile();
+        final cachedWorkout = _cache.getTodayWorkout(dateKey);
+        final cachedStreak = _cache.getWorkoutStreak();
+        if (cachedProfile != null && cachedStreak != null) {
+          if (!mounted) return;
+          setState(() {
+            _userProfile = cachedProfile;
+            _todayWorkout = cachedWorkout;
+            _workoutStreak = cachedStreak;
+            _isLoading = false;
+          });
+          return;
+        }
+      }
+
+      // Phase 1: Independent queries in parallel
+      final results = await Future.wait([
+        SupabaseService.instance.client
+            .from('user_profiles')
+            .select('id, full_name, daily_calorie_goal, activity_level, current_weight_kg, target_weight_kg')
+            .eq('id', userId)
+            .maybeSingle()
+            .timeout(const Duration(seconds: 15)),
+        SupabaseService.instance.client
+            .from('user_workout_schedules')
+            .select('plan_id')
+            .eq('user_id', userId)
+            .eq('is_active', true)
+            .maybeSingle()
+            .timeout(const Duration(seconds: 15)),
+        _fetchWorkoutStreak(userId),
+      ]);
+
+      final profileResponse = results[0] as Map<String, dynamic>?;
+      final scheduleResponse = results[1] as Map<String, dynamic>?;
+      final workoutStreak = results[2] as int;
+
+      // Phase 2: Dependent queries (only if schedule found)
       Map<String, dynamic>? todaysSession;
-      int exerciseCount = 0;
-
-      final scheduleResponse = await SupabaseService.instance.client
-          .from('user_workout_schedules')
-          .select('plan_id')
-          .eq('user_id', userId)
-          .eq('is_active', true)
-          .maybeSingle();
-
       if (scheduleResponse != null) {
         final planId = scheduleResponse['plan_id'];
-        final currentWeekday = DateTime.now().weekday;
+        final currentWeekday = now.weekday;
 
         final sessionResponse = await SupabaseService.instance.client
             .from('workout_sessions')
             .select('id, session_name, estimated_duration_minutes, focus_area')
             .eq('plan_id', planId)
             .eq('day_number', currentWeekday)
-            .maybeSingle();
+            .maybeSingle()
+            .timeout(const Duration(seconds: 15));
 
         if (sessionResponse != null) {
           todaysSession = sessionResponse;
@@ -82,33 +111,14 @@ class _MainDashboardInitialPageState extends State<MainDashboardInitialPage> {
               .from('session_exercises')
               .count(CountOption.exact)
               .eq('session_id', sessionResponse['id']);
-          exerciseCount = count;
-          todaysSession['exercises_count'] = exerciseCount;
+          todaysSession['exercises_count'] = count;
         }
       }
 
-      // Calculate workout streak from workout_logs
-      int workoutStreak = 0;
-      try {
-        final logs = await SupabaseService.instance.client
-            .from('workout_logs')
-            .select('completed_at')
-            .eq('user_id', userId)
-            .order('completed_at', ascending: false)
-            .timeout(const Duration(seconds: 15));
-
-        final logDays = (logs as List).map((l) {
-          final dt = DateTime.parse(l['completed_at'] as String);
-          return DateTime(dt.year, dt.month, dt.day);
-        }).toSet();
-
-        final today = DateTime.now();
-        var checkDay = DateTime(today.year, today.month, today.day);
-        while (logDays.contains(checkDay)) {
-          workoutStreak++;
-          checkDay = checkDay.subtract(const Duration(days: 1));
-        }
-      } catch (_) {}
+      // Update cache
+      if (profileResponse != null) _cache.setUserProfile(profileResponse);
+      _cache.setTodayWorkout(dateKey, todaysSession);
+      _cache.setWorkoutStreak(workoutStreak);
 
       if (!mounted) return;
       setState(() {
@@ -123,9 +133,37 @@ class _MainDashboardInitialPageState extends State<MainDashboardInitialPage> {
     }
   }
 
+  Future<int> _fetchWorkoutStreak(String userId) async {
+    try {
+      final logs = await SupabaseService.instance.client
+          .from('workout_logs')
+          .select('completed_at')
+          .eq('user_id', userId)
+          .order('completed_at', ascending: false)
+          .limit(365)
+          .timeout(const Duration(seconds: 15));
+
+      final logDays = (logs as List).map((l) {
+        final dt = DateTime.parse(l['completed_at'] as String);
+        return DateTime(dt.year, dt.month, dt.day);
+      }).toSet();
+
+      int streak = 0;
+      final today = DateTime.now();
+      var checkDay = DateTime(today.year, today.month, today.day);
+      while (logDays.contains(checkDay)) {
+        streak++;
+        checkDay = checkDay.subtract(const Duration(days: 1));
+      }
+      return streak;
+    } catch (_) {
+      return 0;
+    }
+  }
+
   Future<void> _refresh() async {
     HapticFeedback.lightImpact();
-    await _loadDashboardData();
+    await _loadDashboardData(forceRefresh: true);
   }
 
   // ── Helpers ────────────────────────────────────────────────────────
@@ -535,9 +573,7 @@ class _MainDashboardInitialPageState extends State<MainDashboardInitialPage> {
 
   Widget _buildDailyTipCard(ThemeData theme) {
     final isDark = theme.brightness == Brightness.dark;
-    final now = DateTime.now();
-    final dayOfYear = now.difference(DateTime(now.year, 1, 1)).inDays;
-    final tip = _fitnessTips[dayOfYear % _fitnessTips.length];
+    final tip = _dailyTip;
 
     return Container(
       width: double.infinity,
