@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:sizer/sizer.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -41,6 +43,8 @@ class _AddFoodModalWidgetState extends State<AddFoodModalWidget>
   int _offPage = 1;
   String? _lastQuery;
 
+  Timer? _debounceTimer;
+
   late final AnimationController _shimmerController;
   late final Animation<double> _shimmerAnimation;
 
@@ -58,6 +62,7 @@ class _AddFoodModalWidgetState extends State<AddFoodModalWidget>
 
   @override
   void dispose() {
+    _debounceTimer?.cancel();
     _shimmerController.dispose();
     _searchController.dispose();
     _servingController.dispose();
@@ -499,7 +504,13 @@ class _AddFoodModalWidgetState extends State<AddFoodModalWidget>
                   borderRadius: BorderRadius.circular(3.w),
                 ),
               ),
-              onChanged: _searchFood,
+              onChanged: (value) {
+                _debounceTimer?.cancel();
+                _debounceTimer = Timer(
+                  const Duration(milliseconds: 400),
+                  () => _searchFood(value),
+                );
+              },
             ),
           ),
 
