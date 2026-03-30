@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:sizer/sizer.dart';
 
 import '../../../core/app_export.dart';
+import '../../../services/app_cache_service.dart';
 import '../../widgets/custom_icon_widget.dart';
 import './widgets/exercise_card_widget.dart';
 import './widgets/exercise_detail_sheet.dart';
@@ -68,9 +69,21 @@ class _ExerciseLibraryState extends State<ExerciseLibrary> {
   }
 
   Future<void> _loadExercises() async {
+    final cached = AppCacheService.instance.getExerciseLibrary();
+    if (cached != null) {
+      setState(() {
+        _exercises = cached;
+        _filteredExercises = cached.take(_itemsPerPage).toList();
+        _currentPage = 1;
+        _isLoading = false;
+      });
+      return;
+    }
+
     setState(() => _isLoading = true);
     await Future.delayed(const Duration(milliseconds: 500));
     final exercises = _generateMockExercises();
+    AppCacheService.instance.setExerciseLibrary(exercises);
     setState(() {
       _exercises = exercises;
       _filteredExercises = exercises.take(_itemsPerPage).toList();

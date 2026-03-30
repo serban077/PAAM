@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:sizer/sizer.dart';
 
 import '../../services/supabase_service.dart';
+import '../../services/app_cache_service.dart';
 import '../../services/gemini_ai_service.dart';
 import '../../services/calorie_calculator_service.dart';
 import '../../services/theme_service.dart';
@@ -36,9 +37,17 @@ class _UserProfileManagementState extends State<UserProfileManagement> {
     _loadContributionCount();
   }
 
-  Future<void> _loadContributionCount() async {
+  Future<void> _loadContributionCount({bool forceRefresh = false}) async {
     try {
+      if (!forceRefresh) {
+        final cached = AppCacheService.instance.getContributions();
+        if (cached != null) {
+          if (mounted) setState(() => _contributionCount = cached.length);
+          return;
+        }
+      }
       final data = await _nutritionService.getMyContributions();
+      AppCacheService.instance.setContributions(data);
       if (mounted) setState(() => _contributionCount = data.length);
     } catch (_) {}
   }
@@ -135,11 +144,12 @@ class _UserProfileManagementState extends State<UserProfileManagement> {
 
   Future<void> _handleLogout() async {
     try {
+      AppCacheService.instance.invalidateAll();
       await SupabaseService.instance.client.auth.signOut();
       if (mounted) {
-        Navigator.pushReplacementNamed(
-          context,
-          AppRoutes.loginScreen,
+        Navigator.of(context, rootNavigator: true).pushNamedAndRemoveUntil(
+          AppRoutes.authenticationOnboardingFlow,
+          (_) => false,
         );
       }
     } catch (e) {
@@ -558,7 +568,8 @@ class _UserProfileManagementState extends State<UserProfileManagement> {
                 onTap: () async {
                   await Navigator.of(context, rootNavigator: true)
                       .pushNamed(AppRoutes.myFoodContributions);
-                  _loadContributionCount();
+                  AppCacheService.instance.invalidateContributions();
+                  _loadContributionCount(forceRefresh: true);
                 },
               ),
             ),
