@@ -144,6 +144,10 @@ class CustomImageWidget extends StatelessWidget {
             fit: fit,
             imageUrl: imageUrl!,
             color: color,
+            fadeInDuration: const Duration(milliseconds: 200),
+            memCacheWidth: (width != null && width!.isFinite && width! > 0)
+                ? width!.toInt()
+                : null,
             placeholder: (context, url) => SizedBox(
               height: 30,
               width: 30,
