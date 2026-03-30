@@ -10,7 +10,7 @@ class WorkoutService {
     try {
       final response = await _client
           .from('workout_plans')
-          .select('*')
+          .select('id, plan_name, fitness_goal, weekly_frequency, duration_weeks, is_active')
           .order('fitness_goal', ascending: true)
           .order('weekly_frequency', ascending: true);
 
@@ -33,7 +33,7 @@ class WorkoutService {
       // Get sessions for this plan with category info
       final sessions = await _client
           .from('workout_sessions')
-          .select('*, workout_categories(*)')
+          .select('*, workout_categories(id, name)')
           .eq('plan_id', planId)
           .order('day_of_week', ascending: true);
 
@@ -140,7 +140,7 @@ class WorkoutService {
 
       final response = await _client
           .from('workout_plans')
-          .select('*')
+          .select('id, plan_name, fitness_goal, weekly_frequency, duration_weeks, is_active')
           .eq('user_id', userId)
           .eq('is_active', true)
           .maybeSingle();
@@ -156,7 +156,7 @@ class WorkoutService {
     try {
       final response = await _client
           .from('workout_categories')
-          .select('*')
+          .select('id, name')
           .order('name', ascending: true);
 
       return response;

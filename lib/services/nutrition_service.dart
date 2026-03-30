@@ -80,7 +80,8 @@ class NutritionService {
           .eq('user_id', userId)
           .gte('consumed_at', startOfDay.toIso8601String())
           .lt('consumed_at', endOfDay.toIso8601String())
-          .order('consumed_at', ascending: true);
+          .order('consumed_at', ascending: true)
+          .limit(50);
 
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
@@ -231,6 +232,7 @@ class NutritionService {
           .select()
           .eq('contributed_by', userId)
           .order('created_at', ascending: false)
+          .limit(50)
           .timeout(const Duration(seconds: 15));
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
