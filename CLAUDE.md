@@ -12,11 +12,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Current Status
 
-**Last updated:** 2026-03-31
-**Last session:** M19 — Performance Optimization & Client-Side Caching (core items complete: 5-cache AppCacheService expansion, exercise library + contributions wired, 400ms debounce on food search, memCacheWidth guard on images, column projection in WorkoutService, .limit(50) on list queries, daily tip cached in initState, offline connectivity banner, water tracking controller leak fixed)
+**Last updated:** 2026-04-01
+**Last session:** M19 — Performance Optimization (final: food search cache wired to AddFoodModalWidget; image cache cleared on app background via WidgetsBindingObserver in MainDashboard; food image URL query params stripped before DB upsert; flutter analyze clean — 0 errors in lib/)
 **Next session starts with:** M11 — Testing & Quality (widget tests + unit tests + flutter analyze clean)
 **Active branches:** main
-**Blockers:** `pubspec.lock` is gitignored — run `flutter pub get` at every session start. DB enum values are now fully English — NEVER reintroduce Romanian strings in any enum column. USDA_API_KEY lives in env.json only (not committed). `product_found_sheet.dart` is an unused untracked file — safe to delete. Gemini 2.5 Flash thinking model needs `maxTokens ≥ 8192` for OCR — thinking tokens consume the output budget. MuscleWiki moved media behind paid API — exercise animations now use free-exercise-db GitHub CDN (lib/utils/exercise_gif_utils.dart). M19 partial: body measurements + strength PRs cache fields created but not wired to screens yet. `Stack(fit: StackFit.expand)` is required when overlaying widgets on `IndexedStack` in Scaffold.body — `StackFit.loose` passes unbounded height to children. `memCacheWidth` in CachedNetworkImage requires `.isFinite` guard — `double.infinity.toInt()` throws UnsupportedError.
+**Blockers:** `pubspec.lock` is gitignored — run `flutter pub get` at every session start. DB enum values fully English. USDA_API_KEY in env.json only. `product_found_sheet.dart` unused untracked — safe to delete. Gemini 2.5 Flash needs `maxTokens ≥ 8192` for OCR. Exercise animations use free-exercise-db CDN. `Stack(fit: StackFit.expand)` required for IndexedStack overlay. `memCacheWidth` needs `.isFinite` guard. M19 deferred: pagination UI, streak RPC, lazy ProgressTrackingScreen, SharedPreferences layer, build/bundle (19.9), perf monitoring (19.10).
 
 ---
 
@@ -90,19 +90,4 @@ Access in Dart: `const String.fromEnvironment('GEMINI_API_KEY')`
 
 ## Session Workflow
 
-Full kickoff + end-of-session prompts → `SESSION_WORKFLOW.md`
-
-**KICKOFF (short version):**
-```
-Read CLAUDE.md → read TASKS.md → run git status → read the relevant subdirectory CLAUDE.md
-for the layer we will work on → confirm plan before writing code.
-```
-
-**END OF SESSION (short version):**
-```
-1. One commit per completed feature on main → git push origin main
-2. Update ## Current Status in this file
-3. Update TASKS.md (mark [x], update status block)
-4. Update relevant subdirectory CLAUDE.md if new patterns emerged
-5. Print session summary
-```
+Kickoff + end-of-session prompts → `SESSION_WORKFLOW.md`

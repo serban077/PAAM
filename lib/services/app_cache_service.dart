@@ -1,5 +1,3 @@
-import 'dart:collection';
-
 /// In-memory cache with TTL for frequently-accessed data.
 ///
 /// Eliminates redundant Supabase queries when navigating between screens.
@@ -10,15 +8,17 @@ class AppCacheService {
   static final AppCacheService instance = AppCacheService._();
 
   // ── TTL configuration ──────────────────────────────────────────────
-  static const _profileTtl       = Duration(minutes: 5);
-  static const _streakTtl        = Duration(minutes: 10);
-  static const _nutritionTtl     = Duration(minutes: 5);
-  static const _exerciseTtl      = Duration(minutes: 30);
-  static const _measurementsTtl  = Duration(minutes: 5);
-  static const _strengthPrTtl    = Duration(minutes: 5);
-  static const _foodSearchTtl    = Duration(minutes: 3);
-  static const _contributionsTtl = Duration(minutes: 5);
-  static const _foodSearchMax    = 20;
+  static const _profileTtl         = Duration(minutes: 5);
+  static const _streakTtl          = Duration(minutes: 10);
+  static const _nutritionTtl       = Duration(minutes: 5);
+  static const _exerciseTtl        = Duration(minutes: 30);
+  static const _measurementsTtl    = Duration(minutes: 5);
+  static const _strengthPrTtl      = Duration(minutes: 5);
+  static const _foodSearchTtl      = Duration(minutes: 3);
+  static const _contributionsTtl   = Duration(minutes: 5);
+  static const _activeWorkoutTtl   = Duration(minutes: 10);
+  static const _weeklyScheduleTtl  = Duration(minutes: 10);
+  static const _foodSearchMax      = 20;
 
   // ── User profile ───────────────────────────────────────────────────
   Map<String, dynamic>? _userProfile;
@@ -169,7 +169,7 @@ class AppCacheService {
   }
 
   // ── Food search LRU (max 20 entries, TTL 3 min) ────────────────────
-  final Map<String, _FoodSearchEntry> _foodSearch = LinkedHashMap();
+  final Map<String, _FoodSearchEntry> _foodSearch = {};
 
   List<Map<String, dynamic>>? getFoodSearch(String query) {
     final key = query.toLowerCase().trim();
@@ -191,6 +191,52 @@ class AppCacheService {
       results: results,
       cachedAt: DateTime.now(),
     );
+  }
+
+  // ── Active workout plan ────────────────────────────────────────────
+  Map<String, dynamic>? _activeWorkout;
+  DateTime? _activeWorkoutAt;
+
+  Map<String, dynamic>? getActiveWorkout() {
+    if (_activeWorkout == null || _activeWorkoutAt == null) return null;
+    if (DateTime.now().difference(_activeWorkoutAt!) > _activeWorkoutTtl) {
+      _activeWorkout = null;
+      return null;
+    }
+    return _activeWorkout;
+  }
+
+  void setActiveWorkout(Map<String, dynamic>? workout) {
+    _activeWorkout = workout;
+    _activeWorkoutAt = DateTime.now();
+  }
+
+  void invalidateActiveWorkout() {
+    _activeWorkout = null;
+    _activeWorkoutAt = null;
+  }
+
+  // ── Weekly schedule (scheduled day numbers for active plan) ───────
+  List<int>? _weeklySchedule;
+  DateTime? _weeklyScheduleAt;
+
+  List<int>? getWeeklySchedule() {
+    if (_weeklySchedule == null || _weeklyScheduleAt == null) return null;
+    if (DateTime.now().difference(_weeklyScheduleAt!) > _weeklyScheduleTtl) {
+      _weeklySchedule = null;
+      return null;
+    }
+    return _weeklySchedule;
+  }
+
+  void setWeeklySchedule(List<int> days) {
+    _weeklySchedule = days;
+    _weeklyScheduleAt = DateTime.now();
+  }
+
+  void invalidateWeeklySchedule() {
+    _weeklySchedule = null;
+    _weeklyScheduleAt = null;
   }
 
   // ── User contributions ─────────────────────────────────────────────
@@ -235,6 +281,10 @@ class AppCacheService {
     _foodSearch.clear();
     _contributions = null;
     _contributionsAt = null;
+    _activeWorkout = null;
+    _activeWorkoutAt = null;
+    _weeklySchedule = null;
+    _weeklyScheduleAt = null;
   }
 }
 

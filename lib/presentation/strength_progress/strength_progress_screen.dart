@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:sizer/sizer.dart';
 
+import '../../services/app_cache_service.dart';
 import '../../services/supabase_service.dart';
 import '../../routes/app_routes.dart';
 import '../../widgets/custom_icon_widget.dart';
@@ -25,6 +26,14 @@ class _StrengthProgressScreenState extends State<StrengthProgressScreen> {
   }
 
   Future<void> _loadSessions() async {
+    final cached = AppCacheService.instance.getStrengthPrs();
+    if (cached != null) {
+      setState(() {
+        _sessions = cached;
+        _isLoading = false;
+      });
+      return;
+    }
     try {
       setState(() => _isLoading = true);
 
@@ -52,9 +61,11 @@ class _StrengthProgressScreenState extends State<StrengthProgressScreen> {
           .eq('plan_id', scheduleResponse['plan_id'])
           .order('day_number');
 
+      final sessions = List<Map<String, dynamic>>.from(sessionsResponse);
+      AppCacheService.instance.setStrengthPrs(sessions);
       if (mounted) {
         setState(() {
-          _sessions = List<Map<String, dynamic>>.from(sessionsResponse);
+          _sessions = sessions;
           _isLoading = false;
         });
       }
@@ -66,6 +77,7 @@ class _StrengthProgressScreenState extends State<StrengthProgressScreen> {
 
   Future<void> _refresh() async {
     HapticFeedback.lightImpact();
+    AppCacheService.instance.invalidateStrengthPrs();
     await _loadSessions();
   }
 

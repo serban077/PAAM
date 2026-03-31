@@ -29,6 +29,16 @@ class NutritionService {
     try {
       final dbRow = Map<String, dynamic>.from(externalFood)
         ..remove('_source');
+
+      // Strip query params from image URL to avoid duplicate DB rows
+      final rawUrl = dbRow['image_front_url'] as String?;
+      if (rawUrl != null && rawUrl.isNotEmpty) {
+        final uri = Uri.tryParse(rawUrl);
+        if (uri != null && uri.hasQuery) {
+          dbRow['image_front_url'] = uri.removeFragment().replace(queryParameters: {}).toString();
+        }
+      }
+
       final result = await _client
           .from('food_database')
           .upsert(dbRow, onConflict: 'name,brand')

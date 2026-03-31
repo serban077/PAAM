@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:sizer/sizer.dart';
 
 import '../../../services/body_measurements_service.dart';
+import '../../../services/app_cache_service.dart';
 
 /// Body Measurements Card with improved design and positioned buttons
 class BodyMeasurementsCard extends StatefulWidget {
@@ -41,9 +42,18 @@ class _BodyMeasurementsCardState extends State<BodyMeasurementsCard> {
   }
 
   Future<void> _loadMeasurements() async {
+    final cached = AppCacheService.instance.getBodyMeasurements();
+    if (cached != null) {
+      setState(() {
+        _recentMeasurements = cached;
+        _isLoading = false;
+      });
+      return;
+    }
     setState(() => _isLoading = true);
     try {
       final measurements = await _measurementsService.getMeasurements(limit: 5);
+      AppCacheService.instance.setBodyMeasurements(measurements);
       setState(() {
         _recentMeasurements = measurements;
         _isLoading = false;
@@ -190,7 +200,7 @@ class _BodyMeasurementsCardState extends State<BodyMeasurementsCard> {
                   showTitles: true,
                   reservedSize: 40,
                   getTitlesWidget: (value, meta) => Text(
-                    '${value.toStringAsFixed(0)}',
+                    value.toStringAsFixed(0),
                     style: TextStyle(fontSize: 9.sp, color: Colors.grey),
                   ),
                 ),
@@ -538,6 +548,7 @@ class _BodyMeasurementsCardState extends State<BodyMeasurementsCard> {
               measurementType: type,
               value: value,
             );
+            AppCacheService.instance.invalidateBodyMeasurements();
             await _loadMeasurements();
             
             // Use captured scaffoldMessenger instead of context

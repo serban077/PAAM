@@ -18,7 +18,8 @@ class MainDashboard extends StatefulWidget {
   MainDashboardState createState() => MainDashboardState();
 }
 
-class MainDashboardState extends State<MainDashboard> {
+class MainDashboardState extends State<MainDashboard>
+    with WidgetsBindingObserver {
   int currentIndex = 0;
 
   StreamSubscription<List<ConnectivityResult>>? _connectivitySub;
@@ -35,6 +36,7 @@ class MainDashboardState extends State<MainDashboard> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _connectivitySub = Connectivity().onConnectivityChanged.listen((results) {
       final offline = results.every((r) => r == ConnectivityResult.none);
       if (offline != _isOffline) setState(() => _isOffline = offline);
@@ -43,8 +45,17 @@ class MainDashboardState extends State<MainDashboard> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _connectivitySub?.cancel();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused) {
+      PaintingBinding.instance.imageCache.clear();
+      PaintingBinding.instance.imageCache.clearLiveImages();
+    }
   }
 
   @override

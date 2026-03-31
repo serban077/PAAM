@@ -334,56 +334,64 @@ class _NutritionPlanningScreenState extends State<NutritionPlanningScreen> {
                     ),
                     SizedBox(height: 3.h),
 
-                    // Meal cards (4 simple cards)
-                    SimpleMealCard(
-                      title: 'Breakfast',
-                      mealType: 'mic_dejun',
-                      meals: _getMealsForType('mic_dejun'),
-                      onAddFood: () => _showAddFoodModal('mic_dejun'),
-                      onDeleteMeal: (mealId) async {
-                        await _nutritionService.deleteMeal(mealId);
-                        _loadNutritionData();
-                      },
-                      onEditMeal: _editMealQuantity,
+                    // Meal cards (4 simple cards, each in RepaintBoundary)
+                    RepaintBoundary(
+                      child: SimpleMealCard(
+                        title: 'Breakfast',
+                        mealType: 'mic_dejun',
+                        meals: _getMealsForType('mic_dejun'),
+                        onAddFood: () => _showAddFoodModal('mic_dejun'),
+                        onDeleteMeal: (mealId) async {
+                          await _nutritionService.deleteMeal(mealId);
+                          _loadNutritionData();
+                        },
+                        onEditMeal: _editMealQuantity,
+                      ),
                     ),
                     SizedBox(height: 1.5.h),
 
-                    SimpleMealCard(
-                      title: 'Lunch',
-                      mealType: 'pranz',
-                      meals: _getMealsForType('pranz'),
-                      onAddFood: () => _showAddFoodModal('pranz'),
-                      onDeleteMeal: (mealId) async {
-                        await _nutritionService.deleteMeal(mealId);
-                        _loadNutritionData();
-                      },
-                      onEditMeal: _editMealQuantity,
+                    RepaintBoundary(
+                      child: SimpleMealCard(
+                        title: 'Lunch',
+                        mealType: 'pranz',
+                        meals: _getMealsForType('pranz'),
+                        onAddFood: () => _showAddFoodModal('pranz'),
+                        onDeleteMeal: (mealId) async {
+                          await _nutritionService.deleteMeal(mealId);
+                          _loadNutritionData();
+                        },
+                        onEditMeal: _editMealQuantity,
+                      ),
                     ),
                     SizedBox(height: 1.5.h),
 
-                    SimpleMealCard(
-                      title: 'Dinner',
-                      mealType: 'cina',
-                      meals: _getMealsForType('cina'),
-                      onAddFood: () => _showAddFoodModal('cina'),
-                      onDeleteMeal: (mealId) async {
-                        await _nutritionService.deleteMeal(mealId);
-                        _loadNutritionData();
-                      },
-                      onEditMeal: _editMealQuantity,
+                    RepaintBoundary(
+                      child: SimpleMealCard(
+                        title: 'Dinner',
+                        mealType: 'cina',
+                        meals: _getMealsForType('cina'),
+                        onAddFood: () => _showAddFoodModal('cina'),
+                        onDeleteMeal: (mealId) async {
+                          await _nutritionService.deleteMeal(mealId);
+                          _loadNutritionData();
+                        },
+                        onEditMeal: _editMealQuantity,
+                      ),
                     ),
                     SizedBox(height: 1.5.h),
 
-                    SimpleMealCard(
-                      title: 'Snack',
-                      mealType: 'gustare_dimineata',
-                      meals: _getMealsForType('gustare_dimineata'),
-                      onAddFood: () => _showAddFoodModal('gustare_dimineata'),
-                      onDeleteMeal: (mealId) async {
-                        await _nutritionService.deleteMeal(mealId);
-                        _loadNutritionData();
-                      },
-                      onEditMeal: _editMealQuantity,
+                    RepaintBoundary(
+                      child: SimpleMealCard(
+                        title: 'Snack',
+                        mealType: 'gustare_dimineata',
+                        meals: _getMealsForType('gustare_dimineata'),
+                        onAddFood: () => _showAddFoodModal('gustare_dimineata'),
+                        onDeleteMeal: (mealId) async {
+                          await _nutritionService.deleteMeal(mealId);
+                          _loadNutritionData();
+                        },
+                        onEditMeal: _editMealQuantity,
+                      ),
                     ),
                     SizedBox(height: 2.h),
 
@@ -392,78 +400,8 @@ class _NutritionPlanningScreenState extends State<NutritionPlanningScreen> {
                     SizedBox(height: 2.h),
 
                     // Photo Recipe CTA
-                    Card(
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                        side: BorderSide(
-                          color: theme.colorScheme.outlineVariant,
-                          width: 0.5,
-                        ),
-                      ),
-                      child: InkWell(
-                        onTap: () async {
-                          HapticFeedback.lightImpact();
-                          final result = await Navigator.of(context,
-                                  rootNavigator: true)
-                              .pushNamed(AppRoutes.photoRecipe);
-                          if (result == true && mounted) {
-                            _loadNutritionData();
-                          }
-                        },
-                        borderRadius: BorderRadius.circular(16),
-                        child: Padding(
-                          padding: EdgeInsets.symmetric(
-                              horizontal: 4.w, vertical: 2.h),
-                          child: Row(
-                            children: [
-                              Container(
-                                padding: EdgeInsets.all(2.5.w),
-                                decoration: BoxDecoration(
-                                  color: theme.colorScheme.tertiary
-                                      .withValues(alpha: 0.12),
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: CustomIconWidget(
-                                  iconName: 'camera_alt',
-                                  size: 24,
-                                  color: theme.colorScheme.tertiary,
-                                ),
-                              ),
-                              SizedBox(width: 3.w),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'Generate Recipe from Photo',
-                                      style: theme.textTheme.titleSmall
-                                          ?.copyWith(
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                    SizedBox(height: 0.3.h),
-                                    Text(
-                                      'Snap your ingredients, get recipes',
-                                      style: theme.textTheme.bodySmall
-                                          ?.copyWith(
-                                        color: theme
-                                            .colorScheme.onSurfaceVariant,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              CustomIconWidget(
-                                iconName: 'chevron_right',
-                                size: 20,
-                                color: theme.colorScheme.onSurfaceVariant,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
+                    _PhotoRecipeCtaWidget(
+                      onMealAdded: _loadNutritionData,
                     ),
                     SizedBox(height: 2.h),
 
@@ -510,6 +448,79 @@ class _NutritionPlanningScreenState extends State<NutritionPlanningScreen> {
             ),
           )),
         ],
+      ),
+    );
+  }
+}
+
+/// Extracted Photo Recipe CTA — stable widget identity reduces parent rebuild cost.
+class _PhotoRecipeCtaWidget extends StatelessWidget {
+  const _PhotoRecipeCtaWidget({required this.onMealAdded});
+
+  final VoidCallback onMealAdded;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: theme.colorScheme.outlineVariant, width: 0.5),
+      ),
+      child: InkWell(
+        onTap: () async {
+          HapticFeedback.lightImpact();
+          final result = await Navigator.of(context, rootNavigator: true)
+              .pushNamed(AppRoutes.photoRecipe);
+          if (result == true) onMealAdded();
+        },
+        borderRadius: BorderRadius.circular(16),
+        child: Padding(
+          padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 2.h),
+          child: Row(
+            children: [
+              Container(
+                padding: EdgeInsets.all(2.5.w),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.tertiary.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: CustomIconWidget(
+                  iconName: 'camera_alt',
+                  size: 24,
+                  color: theme.colorScheme.tertiary,
+                ),
+              ),
+              SizedBox(width: 3.w),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Generate Recipe from Photo',
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    SizedBox(height: 0.3.h),
+                    Text(
+                      'Snap your ingredients, get recipes',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              CustomIconWidget(
+                iconName: 'chevron_right',
+                size: 20,
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

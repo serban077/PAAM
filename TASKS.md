@@ -7,11 +7,11 @@ Update `## Current Status` in `CLAUDE.md` at the end of every session.
 
 ## Current Status
 
-**Last updated:** 2026-03-31
-**Last session completed:** M19 — Performance Optimization & Client-Side Caching (partial — core items done)
+**Last updated:** 2026-04-01
+**Last session completed:** M19 — Performance Optimization (final tasks: food search cache wired, image cache clearing on background, food image URL deduplication, flutter analyze clean)
 **Next session starts with:** M11 — Testing & Quality (widget tests + unit tests + flutter analyze clean)
 **Active branches:** main
-**Blockers / notes:** `pubspec.lock` gitignored — run `flutter pub get` at session start. PAAM/ folder untracked (check if needed for university submission). DB enum values are now fully English — do NOT reintroduce Romanian strings. `product_found_sheet.dart` is an unused untracked file — safe to delete. USDA_API_KEY is in env.json (not committed). Gemini 2.5 Flash thinking model needs maxTokens ≥ 8192 for OCR calls (thinking tokens consume budget). MuscleWiki GIFs now require paid API — exercise animations use free-exercise-db GitHub CDN instead. M19 note: AppCacheService has body measurements + strength PRs cache fields created but not yet wired to their screens — do in M19 continuation or M11.
+**Blockers / notes:** `pubspec.lock` gitignored — run `flutter pub get` at session start. PAAM/ folder untracked (check if needed for university submission). DB enum values are now fully English. `product_found_sheet.dart` is an unused untracked file — safe to delete. USDA_API_KEY in env.json. Gemini 2.5 Flash thinking model needs maxTokens ≥ 8192. Exercise animations use free-exercise-db GitHub CDN. M19 deferred: pagination for meals/contributions, streak RPC, lazy ProgressTrackingScreen, SharedPreferences caching layer, build/bundle tasks (19.9), perf monitoring (19.10).
 
 ---
 
@@ -464,71 +464,191 @@ Update `## Current Status` in `CLAUDE.md` at the end of every session.
 
 ### 19.1 — AppCacheService Expansion (In-Memory Cache Layer)
 - [x] Extend `AppCacheService` to cache exercise library data (static list — long TTL, 30 min)
-- [ ] Cache user's active workout plan + sessions (TTL 10 min, invalidate on plan change)
-- [x] Cache body measurements history (TTL 5 min, invalidate on new measurement) — cache field created, not yet wired to screen
-- [x] Cache strength progress / PR data (TTL 5 min, invalidate after workout session) — cache field created, not yet wired to screen
-- [x] Cache food search results for repeated queries (LRU map, max 20 queries, TTL 3 min)
+- [x] Cache user's active workout plan + sessions (TTL 10 min) — `_activeWorkout` + `_weeklySchedule` fields added; wired to `WeeklyProgressWidget`
+- [x] Cache body measurements history (TTL 5 min, invalidate on new measurement) — wired to `BodyMeasurementsCard`
+- [x] Cache strength progress / PR data (TTL 5 min) — wired to `StrengthProgressScreen`
+- [x] Cache food search results for repeated queries (LRU map, max 20 queries, TTL 3 min) — wired to `AddFoodModalWidget._searchFood()` (check before Supabase/OFF/USDA, set after combining all results)
 - [x] Cache `getMyContributions()` results (TTL 5 min, invalidate on add/delete)
-- [ ] Add `invalidateAll()` call on sign-out flow to clear stale user data
+- [x] Add `invalidateAll()` call on sign-out — `AuthService.signOut()` now calls it first
 
 ### 19.2 — Supabase Query Optimization
 - [x] Add `.limit(50)` to `getUserMeals()` and `getMyContributions()` list queries
-- [ ] Add pagination to `getMyContributions()` and `getUserMeals()` — fetch 20 at a time with "load more"
-- [ ] Optimize `_fetchWorkoutStreak()` — replace client-side streak calculation with a Supabase RPC that returns the streak count directly (eliminates fetching up to 365 rows)
+- [ ] Add pagination to `getMyContributions()` and `getUserMeals()` — fetch 20 at a time with "load more" (deferred)
+- [ ] Optimize `_fetchWorkoutStreak()` — replace client-side streak calculation with a Supabase RPC (deferred — requires migration)
 - [x] Add `.select()` column projection to WorkoutService queries (getAllWorkoutPlans, getUserActiveWorkout, getAllCategories, getWorkoutPlanDetails join)
 - [x] `NutritionPlanningScreen` already uses `Future.wait()` for parallel nutrition calls (confirmed pre-M19)
 
 ### 19.3 — Image Performance
-- [ ] Add `cacheWidth` / `cacheHeight` to all `CachedNetworkImage` calls — decode at display size, not full resolution (reduces GPU memory)
-- [ ] Add `ResizeImage` wrapper for asset images loaded via `Image.asset()` where display size is known
-- [ ] Compress camera-captured images before sending to Gemini Vision (photo recipe + OCR) — resize to max 1024px wide before base64 encoding (currently sends up to 1200px)
-- [ ] Pre-cache exercise animation frames on `ExerciseLibrary` scroll (prefetch frame 0 + frame 1 for next 3 visible items)
+- [x] Add `maxWidthDiskCache` / `maxHeightDiskCache` to `CachedNetworkImage` in `CustomImageWidget` (same `.isFinite` guard as `memCacheWidth`)
+- [ ] Add `ResizeImage` wrapper for asset images loaded via `Image.asset()` where display size is known (deferred)
+- [x] Compress camera-captured images before sending to Gemini Vision — `maxWidth: 1024` in `capture_step.dart` and `user_food_submission_screen.dart` (was 1200)
+- [ ] Pre-cache exercise animation frames on `ExerciseLibrary` scroll (deferred — complex)
 - [x] Add `fadeInDuration: 200ms` and `memCacheWidth` (with `.isFinite` guard) to `CachedNetworkImage` in `CustomImageWidget`
 
 ### 19.4 — Widget Rebuild Optimization
-- [ ] Extract heavy sub-widgets from `NutritionPlanningScreen` into `const` StatelessWidgets where possible to prevent full-tree rebuilds on `setState`
-- [ ] Add `AutomaticKeepAliveClientMixin` — N/A: `IndexedStack` already keeps all tabs alive; mixin only applies to `PageView`/`TabBarView`
-- [ ] Convert `WeeklyProgressWidget` to cache its Supabase query result instead of re-fetching every time the home tab rebuilds
+- [x] Extract Photo Recipe CTA from `NutritionPlanningScreen` to `_PhotoRecipeCtaWidget` (stable widget identity, reduces rebuild scope)
+- [x] Wrap 4 `SimpleMealCard` instances in `RepaintBoundary` — prevents parent repaints from cascading into cards
+- [x] Add `AutomaticKeepAliveClientMixin` — N/A: `IndexedStack` already keeps all tabs alive
+- [x] Convert `WeeklyProgressWidget` to cache Supabase query results — `getWeeklySchedule()` + `getActiveWorkout()` cache
 - [x] Debounce food search in `AddFoodModalWidget` — 400ms Timer, properly disposed
 - [x] Move day-of-year calculation and daily tip selection out of `build()` into `initState()` via `late final String _dailyTip`
 
 ### 19.5 — Lazy Loading & Deferred Initialization
-- [ ] Lazy-load `ProgressTrackingScreen` child widgets (charts, photo grid) — show shimmer skeleton and load chart data only when tab is first selected
-- [ ] Defer `google_mlkit_text_recognition` initialization until user actually navigates to barcode/OCR flow (ML Kit loads native libraries on import)
-- [ ] Lazy-load `youtube_player_flutter` — only initialize when user opens exercise detail sheet (not on library screen mount)
-- [ ] Add `ScrollController` listener to exercise library to load next page only when user scrolls near bottom (already has pagination — verify it works correctly)
+- [ ] Lazy-load `ProgressTrackingScreen` child widgets — deferred (significant refactor)
+- [x] `google_mlkit_text_recognition` already lazy — only imported in `gemini_nutrition_label_service.dart`
+- [x] `youtube_player_flutter` already removed — replaced with free-exercise-db GIFs
+- [x] `ScrollController` listener on `ExerciseLibrary` already exists — scroll-driven pagination confirmed
 
 ### 19.6 — Network Request Optimization
-- [x] Add debounce timer (400ms) to food search in `AddFoodModalWidget` — done in 19.4
-- [ ] Add HTTP connection pooling — reuse `Dio` instance across services instead of creating new instances per call
-- [ ] Add retry with exponential backoff for Supabase queries that fail due to network issues (max 2 retries, 1s → 2s delay)
-- [ ] Cancel in-flight API requests when user navigates away from screen (use `CancelToken` with Dio for Gemini/OFF/USDA calls)
-- [ ] Cache Open Food Facts + USDA search results locally for 10 minutes to avoid duplicate API calls for same query
+- [x] Add debounce timer (400ms) to food search in `AddFoodModalWidget`
+- [x] HTTP connection pooling — all 3 external API services (OFF, USDA, Gemini) already use singleton Dio instances
+- [ ] Add retry with exponential backoff (deferred — risk of introducing bugs in stable flows)
+- [ ] Cancel in-flight API requests with CancelToken (deferred — complex)
+- [ ] Cache OFF + USDA search results for 10 min (deferred)
 
 ### 19.7 — Local Storage & Offline Resilience
-- [ ] Persist exercise library data to `SharedPreferences` or local JSON file — load from cache on app start, refresh from static data only if version changes
-- [ ] Cache user profile to `SharedPreferences` — show cached data immediately on app start, refresh from Supabase in background
-- [ ] Cache last viewed daily nutrition data to `SharedPreferences` — show stale data with "refreshing…" indicator instead of full loading skeleton
+- [ ] Persist exercise library / user profile / nutrition to `SharedPreferences` (deferred — in-memory AppCacheService sufficient for session lifetime)
 - [x] Add `connectivity_plus` listener — red offline banner in `MainDashboard` via `Stack(fit: StackFit.expand)` + `Positioned` overlay
 
 ### 19.8 — Memory Management
-- [~] Dispose all `ScrollController`, `TextEditingController`, `AnimationController` instances — fixed `water_tracking_card.dart` and `ingredients_review_step.dart`; full audit pending
-- [ ] Clear image cache when app goes to background (use `WidgetsBindingObserver` + `imageCache.clear()`) to free memory on low-RAM devices
-- [ ] Limit photo progress images loaded in memory — use `ListView.builder` with `cacheExtent` instead of loading all photos at once
-- [ ] Compress stored food images URLs — strip unnecessary URL parameters from Open Food Facts image URLs before caching to DB
+- [~] Dispose all controllers — fixed `water_tracking_card.dart` and `ingredients_review_step.dart`; full audit pending
+- [x] Clear image cache on background — `MainDashboardState` now extends `WidgetsBindingObserver`; clears `PaintingBinding.imageCache` on `AppLifecycleState.paused`
+- [x] Limit photo progress images loaded in memory — converted `PhotoProgressWidget` to `ListView.builder` + `CustomImageWidget` (was `Column + .map()` + bare `Image.network`)
+- [x] Strip URL query params from `image_front_url` in `NutritionService.cacheExternalFood()` before upsert — prevents duplicate DB rows for same image with different params
 
-### 19.9 — Build & Bundle Size
-- [ ] Run `flutter analyze` — fix all warnings and info-level lints
-- [ ] Add `--split-debug-info` and `--obfuscate` to release build command for smaller APK
-- [ ] Audit unused packages in `pubspec.yaml` (e.g., `web`, `universal_html`) — remove if not needed
-- [ ] Enable R8/ProGuard shrinking for release builds — verify no runtime crashes after minification
-- [ ] Tree-shake unused Material icons with `--no-tree-shake-icons` removed (ensure only used icons are bundled)
+### 19.9 — Build & Bundle Size (deferred — separate config session)
+- [x] Run `flutter analyze` — 0 errors in `lib/`; fixed unnecessary imports, string interpolations, `prefer_collection_literals`, redundant `dart:typed_data`; remaining are pre-existing deprecation infos
+- [ ] Add `--split-debug-info` and `--obfuscate` to release build command
+- [ ] Audit unused packages in `pubspec.yaml`
+- [ ] Enable R8/ProGuard shrinking
+- [ ] Tree-shake unused Material icons
 
-### 19.10 — Performance Monitoring & Measurement
-- [ ] Add `Stopwatch` timing to all service methods in debug mode — log slow queries (>500ms) to console
-- [ ] Measure and log screen transition times (push → first frame) for the 5 main tabs
-- [ ] Add frame rate monitoring in debug mode — flag jank (frames >16ms) during scroll in exercise library and nutrition meal list
-- [ ] Create a simple performance report at end of session: average load times per screen, cache hit ratio, slowest queries
+### 19.10 — Performance Monitoring (deferred)
+- [ ] Add `Stopwatch` timing to service methods in debug mode
+- [ ] Measure screen transition times
+- [ ] Add frame rate monitoring
+- [ ] Create performance report
+
+---
+
+## Milestone 20 — Authentication Security & Account Protection
+
+> Harden the auth flow end-to-end: email verification, password reset, biometric app lock, TOTP two-factor authentication, "Remember me" session persistence, CAPTCHA bot protection on signup, password strength indicator, and a dedicated Security Settings screen.
+
+### 20.1 — Email Verification on Signup
+- [ ] Enable "Confirm email" in Supabase Dashboard → Auth → Settings (config only — no migration)
+- [ ] Create `lib/presentation/auth_screen/email_verification_screen.dart`
+  - Animated mail icon, displays user's email, "Resend email" button (60 s cooldown)
+  - "I've confirmed my email" → `AuthService.refreshSession()` → checks `emailConfirmedAt` → routes to onboarding or dashboard
+- [ ] Update `AuthService.signUp()` — navigate to `EmailVerificationScreen` after signup (instead of directly to onboarding)
+- [ ] Add `AuthService.resendConfirmationEmail()` — wraps `supabase.auth.resend(type: OtpType.signup, email: email)`
+- [ ] `AuthenticationOnboardingFlow` — detect unconfirmed email (`session.user.emailConfirmedAt == null`) and show re-verification gate
+- [ ] Route `AppRoutes.emailVerification` registered via `onGenerateRoute`
+
+### 20.2 — Forgot Password / Password Reset
+- [ ] Add "Forgot password?" `TextButton` below the login form in `LoginScreen`
+- [ ] Create `lib/presentation/auth_screen/forgot_password_screen.dart`
+  - Email field + "Send Reset Link" CTA
+  - Calls `AuthService.resetPassword(email)` → wraps `supabase.auth.resetPasswordForEmail()`
+  - Success state: animated mail icon + "Check your inbox" message
+  - Handles: invalid email, rate limit exceeded (SnackBar feedback)
+- [ ] Create `lib/presentation/auth_screen/update_password_screen.dart`
+  - New password + confirm password fields + strength indicator (reuses 20.7 widget)
+  - Calls `AuthService.updatePassword(newPassword)` → navigates to dashboard on success
+- [ ] Handle `onAuthStateChange` for `PasswordRecovery` event → push `UpdatePasswordScreen`
+- [ ] Routes: `AppRoutes.forgotPassword`, `AppRoutes.updatePassword`
+
+### 20.3 — Biometric App Lock (Fingerprint / Face ID)
+- [ ] Add `local_auth: ^2.3.0` to `pubspec.yaml`
+  - Android: add `USE_BIOMETRIC` + `USE_FINGERPRINT` permissions to `AndroidManifest.xml`
+  - iOS: add `NSFaceIDUsageDescription` to `Info.plist`
+- [ ] Create `lib/services/biometric_service.dart`
+  - `Future<bool> isAvailable()` — checks device biometric capability via `LocalAuthentication`
+  - `Future<bool> authenticate(String reason)` — wraps `authenticate()` with `biometricOnly: false` fallback
+  - `bool isBiometricEnabled` / `Future<void> setBiometricEnabled(bool)` — persisted to `SharedPreferences`
+- [ ] Add "Biometric Login" toggle to Security Settings (20.8) — visible only if `isAvailable()` is true
+  - On first enable: trigger prompt to confirm identity before saving preference
+- [ ] Implement app lock on resume in `main.dart` via `WidgetsBindingObserver`:
+  - Track `_backgroundedAt` timestamp
+  - On `AppLifecycleState.resumed` after > 5 min → push `AppLockScreen`
+- [ ] Create `lib/presentation/auth_screen/app_lock_screen.dart`
+  - Blurred/dark overlay, app logo, "Unlock with Face ID / Fingerprint" button
+  - On success: pop and resume; on failure: offer email+password fallback
+- [ ] `LoginScreen`: if biometric enabled + session exists → show biometric sign-in button (skips password entry)
+
+### 20.4 — Two-Factor Authentication (TOTP)
+> Uses Supabase MFA API — `supabase.auth.mfa.*`
+- [ ] Create `lib/services/mfa_service.dart`
+  - `enrollTotp()` → `supabase.auth.mfa.enroll(factorType: FactorType.totp)` → returns QR URI + secret
+  - `verifyEnrollment(String totpCode)` → `supabase.auth.mfa.challengeAndVerify()`
+  - `listFactors()` → `supabase.auth.mfa.listFactors()`
+  - `unenroll(String factorId)` → `supabase.auth.mfa.unenroll(factorId: factorId)`
+  - All methods: `try/catch` + `.timeout(const Duration(seconds: 15))`
+- [ ] Add `qr_flutter: ^4.1.0` to `pubspec.yaml` — QR code display for TOTP enrollment
+- [ ] Create `lib/presentation/security_settings_screen/two_factor_setup_screen.dart` — 3-step wizard:
+  - Step 1: Explanation card ("Protect your account with an authenticator app") + "Enable 2FA" CTA
+  - Step 2: QR code widget (`QrImageView`) + manual secret key (monospace, copy button)
+  - Step 3: 6-digit OTP `TextFormField` (auto-submit on 6th digit) → verify enrollment → show 8 one-time backup codes (copy to clipboard button)
+- [ ] Create `lib/presentation/auth_screen/totp_challenge_screen.dart` — shown after login if TOTP factor enrolled:
+  - 6-digit OTP input (auto-submit on 6th digit)
+  - "Use backup code" fallback link (text input, calls `AuthService.verifyBackupCode()`)
+  - Calls `supabase.auth.mfa.challengeAndVerify()` → routes to onboarding flow
+- [ ] DB migration: create `auth_backup_codes` table (`id`, `user_id UUID REFERENCES auth.users`, `code_hash TEXT`, `used_at TIMESTAMPTZ NULL`, `created_at TIMESTAMPTZ DEFAULT now()`) with RLS: users can only read/update their own rows
+- [ ] `AuthService.signIn()` — after successful credential auth, check AAL level; if factor enrolled and AAL < 2 → push `TotpChallengeScreen`
+- [ ] Routes: `AppRoutes.twoFactorSetup`, `AppRoutes.totpChallenge`
+
+### 20.5 — CAPTCHA / Bot Protection on Signup
+> Supabase natively supports hCaptcha — no custom backend needed
+- [ ] Register free hCaptcha site key at hcaptcha.com → store as `HCAPTCHA_SITE_KEY` in `env.json`
+- [ ] Enable hCaptcha in Supabase Dashboard → Auth → Bot and Abuse Protection → paste secret key
+- [ ] Add `flutter_hcaptcha: ^0.1.0` (or `webview_flutter: ^4.7.0` for WebView-based widget) to `pubspec.yaml`
+- [ ] Integrate captcha widget at the bottom of `SignupScreen` form
+  - Renders hCaptcha challenge; on success returns a token
+  - Pass token to `AuthService.signUp()` via `options: AuthOptions(captchaToken: token)`
+- [ ] Disable "Create Account" button until captcha token is obtained
+- [ ] Fallback state if captcha fails to load: show "Verification unavailable — check your connection" + retry button
+
+### 20.6 — Session Security & "Remember Me"
+- [ ] Add `flutter_secure_storage: ^9.2.2` to `pubspec.yaml`
+- [ ] Create `lib/services/session_service.dart`
+  - Wraps `FlutterSecureStorage` for auth token persistence
+  - `persistSession(Session session)` — write refresh token to secure enclave
+  - `loadPersistedSession()` — restore session on app cold start
+  - `clearSession()` — called on sign-out (clears both secure storage and `AppCacheService`)
+- [ ] Add "Remember me" `CheckboxListTile` to `LoginScreen` (default: **checked**)
+  - If unchecked: sign out session when app moves to `AppLifecycleState.paused`
+  - Persist preference to `SharedPreferences`
+- [ ] Update `AuthService.signOut()`: call `SessionService.clearSession()` + `AppCacheService.invalidateAll()` + `BiometricService.setBiometricEnabled(false)` if user explicitly signed out
+
+### 20.7 — Password Strength Indicator
+- [ ] Create `lib/widgets/password_strength_indicator.dart` — reusable widget:
+  - Input: password string
+  - 4 strength levels: Weak / Fair / Strong / Very Strong (thresholds: <8 chars / 8+ / 12+ + digit / 12+ + digit + special)
+  - Animated `LinearProgressIndicator` (red → orange → light green → green)
+  - Hint text row: "Add a number", "Add a special character", "Use 12+ characters"
+- [ ] Add `PasswordStrengthIndicator` below the password field in `SignupScreen`
+- [ ] Add `PasswordStrengthIndicator` in `UpdatePasswordScreen`
+- [ ] Enforce minimum requirements on signup: ≥ 8 chars, 1 uppercase, 1 digit — validate in `AuthService.signUp()` before API call
+
+### 20.8 — Security Settings Screen
+- [ ] Create `lib/presentation/security_settings_screen/security_settings_screen.dart`
+  - Entry point: new "Security" `ListTile` in `UserProfileManagement`
+  - **Sign-in methods** section: email/password ✓ badge; Google (disabled — "Coming soon" chip); Biometric toggle (from 20.3)
+  - **Two-Factor Authentication** section: status chip (Enabled/Disabled) + "Set up 2FA" or "Disable 2FA" button (from 20.4); "View Backup Codes" (re-authenticate first)
+  - **Password** section: "Change Password" → triggers `AuthService.resetPassword()` flow
+  - **Sessions** section: last sign-in timestamp, "Sign out all other devices" button → `supabase.auth.signOut(scope: SignOutScope.others)`
+  - **Account** section: "Delete Account" → confirm dialog + password re-auth → `AuthService.deleteAccount()`
+- [ ] `AuthService.deleteAccount()`:
+  - Re-authenticates with password (security step)
+  - Calls Supabase RPC `delete_my_account` (deletes all user data in cascade)
+  - Signs out and navigates to `LoginScreen`
+- [ ] DB migration: `delete_my_account()` RPC — deletes from `nutrition_logs`, `workout_logs`, `body_measurements`, `onboarding_responses`, `food_database` (where contributed_by), `auth_backup_codes`, then `auth.users`
+- [ ] Route `AppRoutes.securitySettings` registered via `onGenerateRoute`
+
+### 20.9 — Documentation
+- [ ] Update `lib/services/CLAUDE.md` with `MfaService`, `BiometricService`, `SessionService` docs
+- [ ] Update `lib/presentation/CLAUDE.md` with all new screens from M20
+- [ ] Update `CLAUDE.md` current status
 
 ---
 

@@ -5,6 +5,7 @@ import 'package:sizer/sizer.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../routes/app_routes.dart';
+import '../../../services/app_cache_service.dart';
 import '../../../services/nutrition_service.dart';
 import '../../../services/open_food_facts_service.dart';
 import '../../../services/usda_food_service.dart';
@@ -84,6 +85,18 @@ class _AddFoodModalWidgetState extends State<AddFoodModalWidget>
     _lastQuery = query;
     _offPage = 1;
 
+    // Check in-memory cache first (3-min TTL, LRU-20)
+    final cached = AppCacheService.instance.getFoodSearch(query);
+    if (cached != null) {
+      setState(() {
+        _searchResults = cached;
+        _isSearching = false;
+        _isLoadingExternal = false;
+        _hasMoreOffPages = false;
+      });
+      return;
+    }
+
     // Tier 1: local Supabase — instant, shown immediately
     setState(() => _isSearching = true);
 
@@ -129,6 +142,8 @@ class _AddFoodModalWidgetState extends State<AddFoodModalWidget>
           combined.add(food);
         }
       }
+
+      AppCacheService.instance.setFoodSearch(query, combined);
 
       setState(() {
         _searchResults = combined;

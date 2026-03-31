@@ -148,6 +148,12 @@ class CustomImageWidget extends StatelessWidget {
             memCacheWidth: (width != null && width!.isFinite && width! > 0)
                 ? width!.toInt()
                 : null,
+            maxWidthDiskCache: (width != null && width!.isFinite && width! > 0)
+                ? width!.toInt()
+                : null,
+            maxHeightDiskCache: (height != null && height!.isFinite && height! > 0)
+                ? height!.toInt()
+                : null,
             placeholder: (context, url) => SizedBox(
               height: 30,
               width: 30,

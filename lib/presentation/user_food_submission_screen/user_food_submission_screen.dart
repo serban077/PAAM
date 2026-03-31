@@ -176,7 +176,7 @@ class _UserFoodSubmissionScreenState extends State<UserFoodSubmissionScreen> {
       final picked = await _imagePicker.pickImage(
         source: source,
         imageQuality: 85,
-        maxWidth: 1200,
+        maxWidth: 1024,
       );
       if (picked == null) return;
       final bytes = await picked.readAsBytes();

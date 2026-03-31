@@ -1,5 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../services/supabase_service.dart';
+import '../services/app_cache_service.dart';
 
 class AuthService {
   final SupabaseClient _client = SupabaseService.instance.client;
@@ -41,6 +42,7 @@ class AuthService {
   // Sign Out
   Future<void> signOut() async {
     try {
+      AppCacheService.instance.invalidateAll();
       await _client.auth.signOut().timeout(const Duration(seconds: 10));
     } catch (error) {
       throw Exception('Sign-out failed: $error');

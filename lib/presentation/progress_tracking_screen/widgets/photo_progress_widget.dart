@@ -7,7 +7,6 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:sizer/sizer.dart';
 
 import '../../../core/app_export.dart';
-import '../../../widgets/custom_icon_widget.dart';
 
 /// Photo progress widget with before/after comparison
 class PhotoProgressWidget extends StatefulWidget {
@@ -354,12 +353,15 @@ class _PhotoProgressWidgetState extends State<PhotoProgressWidget> {
           ),
         ),
         SizedBox(height: 2.h),
-        ..._photoProgress.map((progress) {
-          return Padding(
+        ListView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: _photoProgress.length,
+          itemBuilder: (context, index) => Padding(
             padding: EdgeInsets.only(bottom: 3.h),
-            child: _buildPhotoComparisonCard(theme, progress),
-          );
-        }),
+            child: _buildPhotoComparisonCard(theme, _photoProgress[index]),
+          ),
+        ),
       ],
     );
   }
@@ -418,13 +420,13 @@ class _PhotoProgressWidgetState extends State<PhotoProgressWidget> {
             child: SizedBox(
               height: 40.h,
               child: BeforeAfter(
-                before: Image.network(
-                  progress["beforeImage"] as String,
+                before: CustomImageWidget(
+                  imageUrl: progress["beforeImage"] as String,
                   fit: BoxFit.cover,
                   semanticLabel: progress["beforeSemanticLabel"] as String,
                 ),
-                after: Image.network(
-                  progress["afterImage"] as String,
+                after: CustomImageWidget(
+                  imageUrl: progress["afterImage"] as String,
                   fit: BoxFit.cover,
                   semanticLabel: progress["afterSemanticLabel"] as String,
                 ),

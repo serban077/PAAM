@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:sizer/sizer.dart';
 
 import '../../../core/app_export.dart';
+import '../../../services/app_cache_service.dart';
 import '../../../services/supabase_service.dart';
 
 class WeeklyProgressWidget extends StatefulWidget {
@@ -23,64 +24,65 @@ class _WeeklyProgressWidgetState extends State<WeeklyProgressWidget> {
   }
 
   Future<void> _loadScheduledDays() async {
+    // Check full result cache first (skips both queries)
+    final cachedDays = AppCacheService.instance.getWeeklySchedule();
+    if (cachedDays != null) {
+      if (mounted) setState(() { _scheduledDays = cachedDays; _isLoading = false; });
+      return;
+    }
+
     try {
       setState(() => _isLoading = true);
-      
+
       final userId = SupabaseService.instance.client.auth.currentUser?.id;
       if (userId == null) {
         if (mounted) setState(() => _isLoading = false);
         return;
       }
 
-      // Get active workout schedule
-      final scheduleResponse = await SupabaseService.instance.client
-          .from('user_workout_schedules')
-          .select('plan_id')
-          .eq('user_id', userId)
-          .eq('is_active', true)
-          .maybeSingle();
-
-      if (scheduleResponse == null) {
-        if (mounted) {
-          setState(() {
-            _scheduledDays = [];
-            _isLoading = false;
-          });
+      // Check if plan_id is already cached (skip first query)
+      Map<String, dynamic>? scheduleResponse;
+      final cachedPlan = AppCacheService.instance.getActiveWorkout();
+      if (cachedPlan != null) {
+        scheduleResponse = cachedPlan;
+      } else {
+        scheduleResponse = await SupabaseService.instance.client
+            .from('user_workout_schedules')
+            .select('plan_id')
+            .eq('user_id', userId)
+            .eq('is_active', true)
+            .maybeSingle()
+            .timeout(const Duration(seconds: 15));
+        if (scheduleResponse != null) {
+          AppCacheService.instance.setActiveWorkout(scheduleResponse);
         }
-        return;
       }
 
-      final planId = scheduleResponse['plan_id'];
+      if (scheduleResponse == null) {
+        AppCacheService.instance.setWeeklySchedule([]);
+        if (mounted) setState(() { _scheduledDays = []; _isLoading = false; });
+        return;
+      }
 
       // Get all workout sessions for this plan
       final sessionsResponse = await SupabaseService.instance.client
           .from('workout_sessions')
           .select('day_number, day_of_week')
-          .eq('plan_id', planId);
+          .eq('plan_id', scheduleResponse['plan_id'])
+          .timeout(const Duration(seconds: 15));
 
       final days = <int>{};
       for (var session in sessionsResponse) {
-        // Try day_number first, fallback to day_of_week
         final dayNum = session['day_number'] ?? session['day_of_week'];
-        if (dayNum != null) {
-          days.add(dayNum as int);
-        }
+        if (dayNum != null) days.add(dayNum as int);
       }
+      final sortedDays = days.toList()..sort();
+      AppCacheService.instance.setWeeklySchedule(sortedDays);
 
-      if (mounted) {
-        setState(() {
-          _scheduledDays = days.toList()..sort();
-          _isLoading = false;
-        });
-      }
+      if (mounted) setState(() { _scheduledDays = sortedDays; _isLoading = false; });
     } catch (e) {
       debugPrint('Error loading scheduled days: $e');
-      if (mounted) {
-        setState(() {
-          _scheduledDays = [];
-          _isLoading = false;
-        });
-      }
+      if (mounted) setState(() { _scheduledDays = []; _isLoading = false; });
     }
   }
 

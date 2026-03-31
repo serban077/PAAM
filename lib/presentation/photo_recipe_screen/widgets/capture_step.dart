@@ -1,5 +1,3 @@
-import 'dart:typed_data';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
@@ -30,7 +28,7 @@ class _CaptureStepState extends State<CaptureStep> {
       final picked = await _imagePicker.pickImage(
         source: source,
         imageQuality: 85,
-        maxWidth: 1200,
+        maxWidth: 1024,
       );
       if (picked == null) {
         setState(() => _isPicking = false);
