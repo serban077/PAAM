@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:sizer/sizer.dart';
 
 import '../../../core/app_export.dart';
+import '../../../services/biometric_service.dart';
+import '../../../services/session_service.dart';
 
 class LoginFormWidget extends StatefulWidget {
   final Function(String email, String password) onLogin;
@@ -21,7 +23,28 @@ class _LoginFormWidgetState extends State<LoginFormWidget> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _sessionService = SessionService();
+  final _biometricService = BiometricService();
   bool _obscurePassword = true;
+  bool _rememberMe = true;
+  bool _isBiometricAvailable = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPreferences();
+  }
+
+  Future<void> _loadPreferences() async {
+    final remember = await _sessionService.rememberMe;
+    final biometricAvail = await _biometricService.isAvailable();
+    if (mounted) {
+      setState(() {
+        _rememberMe = remember;
+        _isBiometricAvailable = biometricAvail;
+      });
+    }
+  }
 
   @override
   void dispose() {
@@ -32,6 +55,7 @@ class _LoginFormWidgetState extends State<LoginFormWidget> {
 
   void _handleSubmit() {
     if (_formKey.currentState?.validate() ?? false) {
+      _sessionService.setRememberMe(_rememberMe);
       widget.onLogin(_emailController.text.trim(), _passwordController.text);
     }
   }
@@ -106,13 +130,8 @@ class _LoginFormWidgetState extends State<LoginFormWidget> {
           Align(
             alignment: Alignment.centerRight,
             child: TextButton(
-              onPressed: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Password reset not available in demo.'),
-                  ),
-                );
-              },
+              onPressed: () =>
+                  Navigator.pushNamed(context, AppRoutes.forgotPassword),
               style: TextButton.styleFrom(
                 padding:
                     EdgeInsets.symmetric(horizontal: 2.w, vertical: 0.5.h),
@@ -126,6 +145,39 @@ class _LoginFormWidgetState extends State<LoginFormWidget> {
                       ? AppTheme.secondaryDark
                       : AppTheme.secondaryLight,
                 ),
+              ),
+            ),
+          ),
+          SizedBox(height: 1.h),
+
+          // Remember me
+          InkWell(
+            onTap: () => setState(() => _rememberMe = !_rememberMe),
+            borderRadius: BorderRadius.circular(8),
+            child: Padding(
+              padding: EdgeInsets.symmetric(vertical: 0.5.h),
+              child: Row(
+                children: [
+                  SizedBox(
+                    width: 6.w,
+                    height: 6.w,
+                    child: Checkbox(
+                      value: _rememberMe,
+                      onChanged: (v) =>
+                          setState(() => _rememberMe = v ?? true),
+                    ),
+                  ),
+                  SizedBox(width: 2.w),
+                  Text(
+                    'Remember me',
+                    style: TextStyle(
+                      fontSize: 13.sp,
+                      color: isDark
+                          ? AppTheme.textSecondaryDark
+                          : AppTheme.textSecondaryLight,
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
@@ -164,6 +216,40 @@ class _LoginFormWidgetState extends State<LoginFormWidget> {
             ),
           ),
           SizedBox(height: 1.5.h),
+
+          // Biometric login shortcut
+          if (_isBiometricAvailable) ...[
+            OutlinedButton.icon(
+              onPressed: () async {
+                final success = await _biometricService.authenticate(
+                  'Sign in to SmartFitAI',
+                );
+                if (success && context.mounted) {
+                  // Session already restored via SessionService on app start;
+                  // biometric just confirms identity — trigger auth state re-check
+                  Navigator.pushReplacementNamed(
+                    context,
+                    AppRoutes.authenticationOnboardingFlow,
+                  );
+                }
+              },
+              icon: CustomIconWidget(
+                iconName: 'fingerprint',
+                size: 20,
+                color: isDark ? AppTheme.primaryDark : AppTheme.primaryLight,
+              ),
+              label: Text(
+                'Sign in with Biometrics',
+                style: TextStyle(fontSize: 13.sp),
+              ),
+              style: OutlinedButton.styleFrom(
+                minimumSize: Size(double.infinity, 5.5.h),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14)),
+              ),
+            ),
+            SizedBox(height: 1.5.h),
+          ],
 
           // Demo credentials hint
           Center(

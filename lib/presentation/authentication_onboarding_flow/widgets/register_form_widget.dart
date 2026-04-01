@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:sizer/sizer.dart';
 
 import '../../../core/app_export.dart';
+import '../../../widgets/password_strength_indicator.dart';
 
 class RegisterFormWidget extends StatefulWidget {
   final Function(String email, String password, String fullName) onRegister;
@@ -107,6 +108,7 @@ class _RegisterFormWidgetState extends State<RegisterFormWidget> {
           TextFormField(
             controller: _passwordController,
             obscureText: _obscurePassword,
+            onChanged: (_) => setState(() {}),
             decoration: InputDecoration(
               labelText: 'Password',
               prefixIcon: CustomIconWidget(
@@ -128,10 +130,17 @@ class _RegisterFormWidgetState extends State<RegisterFormWidget> {
             ),
             validator: (value) {
               if (value == null || value.isEmpty) return 'Enter a password';
-              if (value.length < 6) return 'At least 6 characters';
+              if (value.length < 8) return 'At least 8 characters';
+              if (!value.contains(RegExp(r'[A-Z]'))) {
+                return 'Add at least one uppercase letter';
+              }
+              if (!value.contains(RegExp(r'\d'))) {
+                return 'Add at least one number';
+              }
               return null;
             },
           ),
+          PasswordStrengthIndicator(password: _passwordController.text),
           SizedBox(height: 2.h),
 
           // Confirm Password

@@ -6,6 +6,7 @@ import 'package:sizer/sizer.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../core/app_export.dart';
+import '../../services/mfa_service.dart';
 import '../../services/supabase_service.dart';
 import './widgets/login_form_widget.dart';
 import './widgets/onboarding_survey_widget.dart';
@@ -37,7 +38,16 @@ class _AuthenticationOnboardingFlowState
   void _setupAuthListener() {
     _authSubscription =
         SupabaseService.instance.client.auth.onAuthStateChange.listen((data) {
+      final event = data.event;
       final user = data.session?.user;
+
+      // Password recovery deep-link → go straight to update password screen
+      if (event == AuthChangeEvent.passwordRecovery) {
+        if (mounted) {
+          Navigator.pushNamed(context, AppRoutes.updatePassword);
+        }
+        return;
+      }
 
       if (user != null) {
         if (mounted) {
@@ -69,6 +79,38 @@ class _AuthenticationOnboardingFlowState
     if (_currentUser == null) {
       if (mounted) setState(() => _isCheckingAuth = false);
       return;
+    }
+
+    // Email verification gate (20.1)
+    if (_currentUser!.emailConfirmedAt == null) {
+      if (mounted) {
+        setState(() => _isCheckingAuth = false);
+        Navigator.pushNamed(
+          context,
+          AppRoutes.emailVerification,
+          arguments: {'email': _currentUser!.email ?? ''},
+        );
+      }
+      return;
+    }
+
+    // MFA / TOTP challenge gate (20.4)
+    try {
+      final needsMfa = await MfaService().needsMfaChallenge();
+      if (needsMfa && mounted) {
+        final factorId = await MfaService().verifiedFactorId;
+        if (factorId != null) {
+          setState(() => _isCheckingAuth = false);
+          Navigator.pushNamed(
+            context,
+            AppRoutes.totpChallenge,
+            arguments: {'factorId': factorId},
+          );
+          return;
+        }
+      }
+    } catch (_) {
+      // Non-fatal — proceed to onboarding check
     }
 
     try {

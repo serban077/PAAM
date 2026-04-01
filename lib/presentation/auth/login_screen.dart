@@ -4,6 +4,8 @@ import 'package:sizer/sizer.dart';
 
 import '../../core/app_export.dart';
 import '../../services/auth_service.dart';
+import '../../services/biometric_service.dart';
+import '../../services/supabase_service.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -17,8 +19,35 @@ class _LoginScreenState extends State<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _authService = AuthService();
+  final _biometricService = BiometricService();
   bool _isLoading = false;
   bool _obscurePassword = true;
+  bool _isCheckingSession = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkExistingSession();
+  }
+
+  Future<void> _checkExistingSession() async {
+    try {
+      final session = SupabaseService.instance.client.auth.currentSession;
+      if (session == null) {
+        if (mounted) setState(() => _isCheckingSession = false);
+        return;
+      }
+      final bioEnabled = await _biometricService.isBiometricEnabled;
+      if (!mounted) return;
+      if (bioEnabled) {
+        Navigator.pushReplacementNamed(context, AppRoutes.appLock);
+        return;
+      }
+      Navigator.pushReplacementNamed(context, AppRoutes.mainDashboard);
+    } catch (_) {
+      if (mounted) setState(() => _isCheckingSession = false);
+    }
+  }
 
   @override
   void dispose() {
@@ -37,6 +66,7 @@ class _LoginScreenState extends State<LoginScreen> {
       );
       if (!mounted) return;
       final profile = await _authService.getUserProfile();
+      if (!mounted) return;
       final onboardingCompleted = profile?['onboarding_completed'] ?? false;
       if (onboardingCompleted) {
         Navigator.of(context).pushReplacementNamed(AppRoutes.mainDashboard);
@@ -60,6 +90,19 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (_isCheckingSession) {
+      final isDarkSplash = Theme.of(context).brightness == Brightness.dark;
+      return Scaffold(
+        backgroundColor:
+            isDarkSplash ? AppTheme.backgroundDark : AppTheme.backgroundLight,
+        body: Center(
+          child: CircularProgressIndicator(
+            color: Theme.of(context).colorScheme.primary,
+          ),
+        ),
+      );
+    }
+
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     final gradientColors = isDark

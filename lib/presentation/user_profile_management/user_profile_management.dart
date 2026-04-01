@@ -575,6 +575,34 @@ class _UserProfileManagementState extends State<UserProfileManagement> {
             ),
             SizedBox(height: 2.h),
 
+            // Security Settings
+            Container(
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surface,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: Theme.of(context)
+                      .colorScheme
+                      .outline
+                      .withValues(alpha: 0.2),
+                ),
+              ),
+              child: ListTile(
+                contentPadding:
+                    EdgeInsets.symmetric(horizontal: 4.w, vertical: 0.5.h),
+                leading: Icon(
+                  Icons.security_outlined,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+                title: const Text('Security'),
+                subtitle: const Text('Password, 2FA, biometric lock'),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => Navigator.pushNamed(
+                    context, AppRoutes.securitySettings),
+              ),
+            ),
+            SizedBox(height: 2.h),
+
             AccountManagementSectionWidget(
               onLogout: _handleLogout,
             ),

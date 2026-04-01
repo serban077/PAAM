@@ -4,6 +4,8 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:sizer/sizer.dart';
 
+import '../../routes/app_routes.dart';
+import '../../services/biometric_service.dart';
 import '../../widgets/custom_bottom_bar.dart';
 import './main_dashboard_initial_page.dart';
 import '../exercise_library/exercise_library.dart';
@@ -24,6 +26,8 @@ class MainDashboardState extends State<MainDashboard>
 
   StreamSubscription<List<ConnectivityResult>>? _connectivitySub;
   bool _isOffline = false;
+  DateTime? _backgroundedAt;
+  final _biometricService = BiometricService();
 
   final List<Widget> _tabs = const [
     MainDashboardInitialPage(),
@@ -55,7 +59,20 @@ class MainDashboardState extends State<MainDashboard>
     if (state == AppLifecycleState.paused) {
       PaintingBinding.instance.imageCache.clear();
       PaintingBinding.instance.imageCache.clearLiveImages();
+      _backgroundedAt = DateTime.now();
+    } else if (state == AppLifecycleState.resumed) {
+      _checkBiometricLock();
     }
+  }
+
+  Future<void> _checkBiometricLock() async {
+    if (_backgroundedAt == null) return;
+    final elapsed = DateTime.now().difference(_backgroundedAt!);
+    if (elapsed.inMinutes < 5) return;
+    final enabled = await _biometricService.isBiometricEnabled;
+    if (!enabled || !mounted) return;
+    Navigator.of(context, rootNavigator: true)
+        .pushNamed(AppRoutes.appLock);
   }
 
   @override
