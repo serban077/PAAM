@@ -12,11 +12,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Current Status
 
-**Last updated:** 2026-04-01
-**Last session:** M19 — Performance Optimization (final: food search cache wired to AddFoodModalWidget; image cache cleared on app background via WidgetsBindingObserver in MainDashboard; food image URL query params stripped before DB upsert; flutter analyze clean — 0 errors in lib/)
+**Last updated:** 2026-04-05
+**Last session:** M20 hotfixes — TOTP enrollment issuer fix (`issuer:'SmartFitAI'` required by SDK), QR source fix (`totp.uri` not `totp.qrCode` which is a 2MB SVG), QrImageView infinite-height fix (SizedBox wrapper), session restore on cold start (LoginScreen._checkExistingSession), AppLockScreen redesign (pulse animation, fade-to-dashboard, PageRouteBuilder fade transition)
 **Next session starts with:** M11 — Testing & Quality (widget tests + unit tests + flutter analyze clean)
 **Active branches:** main
-**Blockers:** `pubspec.lock` is gitignored — run `flutter pub get` at every session start. DB enum values fully English. USDA_API_KEY in env.json only. `product_found_sheet.dart` unused untracked — safe to delete. Gemini 2.5 Flash needs `maxTokens ≥ 8192` for OCR. Exercise animations use free-exercise-db CDN. `Stack(fit: StackFit.expand)` required for IndexedStack overlay. `memCacheWidth` needs `.isFinite` guard. M19 deferred: pagination UI, streak RPC, lazy ProgressTrackingScreen, SharedPreferences layer, build/bundle (19.9), perf monitoring (19.10).
+**Blockers:** `pubspec.lock` is gitignored — run `flutter pub get` at every session start. DB enum values fully English. USDA_API_KEY in env.json only. `product_found_sheet.dart` unused untracked — safe to delete. Gemini 2.5 Flash needs `maxTokens ≥ 8192` for OCR. Exercise animations use free-exercise-db CDN. `Stack(fit: StackFit.expand)` required for IndexedStack overlay. `memCacheWidth` needs `.isFinite` guard. **M20 manual config required:** enable "Confirm email" in Supabase Dashboard → Auth → Settings; enable hCaptcha in Supabase Dashboard + add `HCAPTCHA_SITE_KEY` to `env.json`. M19 deferred: pagination UI, streak RPC, lazy ProgressTrackingScreen, SharedPreferences layer, build/bundle (19.9), perf monitoring (19.10).
 
 ---
 

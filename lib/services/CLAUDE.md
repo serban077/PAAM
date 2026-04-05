@@ -132,14 +132,71 @@ Profile screen uses its own `ValueListenableBuilder` for the toggle tile.
 
 | Method | What it does |
 |---|---|
-| `signUp(email, password, fullName)` | Creates Supabase auth user + sets `full_name` in metadata |
+| `signUp(email, password, fullName, captchaToken?)` | Creates Supabase auth user; passes captchaToken when hCaptcha is enabled |
 | `signIn(email, password)` | Returns `AuthResponse` |
-| `signOut()` | Clears session |
+| `signOut()` | Clears cache + session + biometric pref |
 | `getCurrentUser()` | Returns `User?` from Supabase auth |
 | `isAuthenticated()` | Returns `bool` |
+| `resendConfirmationEmail(email)` | Resends email verification link (OtpType.signup) |
+| `refreshSession()` | Refreshes JWT and returns updated User (used to check emailConfirmedAt) |
+| `resetPassword(email)` | Sends password reset email via Supabase |
+| `updatePassword(newPassword)` | Updates password for logged-in user |
+| `deleteAccount(email, password)` | Re-auths → calls `delete_my_account()` RPC → signs out |
 
 Auth state stream: `SupabaseService.instance.client.auth.onAuthStateChange`
-Used in `AuthenticationOnboardingFlow` to react to login/logout events.
+Used in `AuthenticationOnboardingFlow` to react to login/logout + `passwordRecovery` events.
+
+---
+
+## BiometricService (M20)
+
+Wraps `local_auth` for fingerprint/Face ID.
+
+```dart
+final bio = BiometricService();
+await bio.isAvailable()             // bool — device supports biometrics
+await bio.authenticate('reason')    // bool — prompts biometric/PIN
+await bio.isBiometricEnabled        // bool — stored in SharedPreferences
+await bio.setBiometricEnabled(true) // persist preference
+```
+
+---
+
+## MfaService (M20)
+
+Wraps Supabase MFA API for TOTP two-factor authentication.
+
+```dart
+final mfa = MfaService();
+await mfa.enrollTotp()              // returns {qrUri, secret, factorId}
+await mfa.verifyEnrollment(factorId: id, code: '123456')
+await mfa.listFactors()             // List<Factor>
+await mfa.unenroll(factorId)        // disable 2FA
+await mfa.isTotpEnabled             // bool
+await mfa.verifiedFactorId          // String? — first verified factor ID
+await mfa.needsMfaChallenge()       // bool — aal1 but aal2 required
+```
+
+**Critical gotchas:**
+- `enroll()` REQUIRES `issuer: 'SmartFitAI'` — omitting it throws `ArgumentError: expected an issuer for totp factor type`
+- `enrollTotp()` returns `qrUri = totp.uri` (the `otpauth://totp/...` URI, ~100 chars) — this is what `QrImageView(data: ...)` needs
+- `totp.qrCode` is an SVG data URI (~2 MB) — passing it to `QrImageView` causes `QrInputTooLongException` (limit is 23648 chars)
+- Wrap `QrImageView` in a `SizedBox(width: N, height: N)` — the widget doesn't constrain itself and crashes with infinite height inside `SingleChildScrollView`
+
+---
+
+## SessionService (M20)
+
+Wraps `FlutterSecureStorage` for refresh token persistence and "remember me" preference.
+
+```dart
+final session = SessionService();
+await session.persistSession(supabaseSession)     // store refresh token
+await session.loadPersistedSession()              // restore session on cold start → User?
+await session.clearSession()                      // wipe on sign-out
+await session.rememberMe                          // bool (default true)
+await session.setRememberMe(false)                // persist preference
+```
 
 ---
 

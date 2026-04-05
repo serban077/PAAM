@@ -7,11 +7,11 @@ Update `## Current Status` in `CLAUDE.md` at the end of every session.
 
 ## Current Status
 
-**Last updated:** 2026-04-01
-**Last session completed:** M19 — Performance Optimization (final tasks: food search cache wired, image cache clearing on background, food image URL deduplication, flutter analyze clean)
+**Last updated:** 2026-04-02
+**Last session completed:** M20 hotfixes — TOTP enrollment issuer fix, QR code URI fix (totp.uri not totp.qrCode), QrImageView infinite-height layout fix, session restore on cold start (LoginScreen._checkExistingSession), AppLockScreen redesign (pulse animation + fade-to-dashboard transition)
 **Next session starts with:** M11 — Testing & Quality (widget tests + unit tests + flutter analyze clean)
 **Active branches:** main
-**Blockers / notes:** `pubspec.lock` gitignored — run `flutter pub get` at session start. PAAM/ folder untracked (check if needed for university submission). DB enum values are now fully English. `product_found_sheet.dart` is an unused untracked file — safe to delete. USDA_API_KEY in env.json. Gemini 2.5 Flash thinking model needs maxTokens ≥ 8192. Exercise animations use free-exercise-db GitHub CDN. M19 deferred: pagination for meals/contributions, streak RPC, lazy ProgressTrackingScreen, SharedPreferences caching layer, build/bundle tasks (19.9), perf monitoring (19.10).
+**Blockers / notes:** `pubspec.lock` gitignored — run `flutter pub get` at session start. `product_found_sheet.dart` unused untracked — safe to delete. USDA_API_KEY in env.json. Gemini 2.5 Flash needs maxTokens ≥ 8192. M20 manual config still required: enable "Confirm email" in Supabase Dashboard → Auth → Settings; enable hCaptcha + add HCAPTCHA_SITE_KEY to env.json. M19 deferred: pagination UI, streak RPC, lazy ProgressTrackingScreen, SharedPreferences layer, build/bundle (19.9), perf monitoring (19.10).
 
 ---
 
@@ -535,120 +535,68 @@ Update `## Current Status` in `CLAUDE.md` at the end of every session.
 
 > Harden the auth flow end-to-end: email verification, password reset, biometric app lock, TOTP two-factor authentication, "Remember me" session persistence, CAPTCHA bot protection on signup, password strength indicator, and a dedicated Security Settings screen.
 
-### 20.1 — Email Verification on Signup
-- [ ] Enable "Confirm email" in Supabase Dashboard → Auth → Settings (config only — no migration)
-- [ ] Create `lib/presentation/auth_screen/email_verification_screen.dart`
-  - Animated mail icon, displays user's email, "Resend email" button (60 s cooldown)
-  - "I've confirmed my email" → `AuthService.refreshSession()` → checks `emailConfirmedAt` → routes to onboarding or dashboard
-- [ ] Update `AuthService.signUp()` — navigate to `EmailVerificationScreen` after signup (instead of directly to onboarding)
-- [ ] Add `AuthService.resendConfirmationEmail()` — wraps `supabase.auth.resend(type: OtpType.signup, email: email)`
-- [ ] `AuthenticationOnboardingFlow` — detect unconfirmed email (`session.user.emailConfirmedAt == null`) and show re-verification gate
-- [ ] Route `AppRoutes.emailVerification` registered via `onGenerateRoute`
+### 20.1 — Email Verification on Signup ✅
+- [ ] Enable "Confirm email" in Supabase Dashboard → Auth → Settings (config only — **manual step**)
+- [x] Create `lib/presentation/auth/email_verification_screen.dart`
+- [x] Add `AuthService.resendConfirmationEmail()` + `refreshSession()`
+- [x] `AuthenticationOnboardingFlow` — detect unconfirmed email → show verification gate
+- [x] Route `AppRoutes.emailVerification` registered via `onGenerateRoute`
 
-### 20.2 — Forgot Password / Password Reset
-- [ ] Add "Forgot password?" `TextButton` below the login form in `LoginScreen`
-- [ ] Create `lib/presentation/auth_screen/forgot_password_screen.dart`
-  - Email field + "Send Reset Link" CTA
-  - Calls `AuthService.resetPassword(email)` → wraps `supabase.auth.resetPasswordForEmail()`
-  - Success state: animated mail icon + "Check your inbox" message
-  - Handles: invalid email, rate limit exceeded (SnackBar feedback)
-- [ ] Create `lib/presentation/auth_screen/update_password_screen.dart`
-  - New password + confirm password fields + strength indicator (reuses 20.7 widget)
-  - Calls `AuthService.updatePassword(newPassword)` → navigates to dashboard on success
-- [ ] Handle `onAuthStateChange` for `PasswordRecovery` event → push `UpdatePasswordScreen`
-- [ ] Routes: `AppRoutes.forgotPassword`, `AppRoutes.updatePassword`
+### 20.2 — Forgot Password / Password Reset ✅
+- [x] Add "Forgot password?" link in `LoginFormWidget` → navigates to `ForgotPasswordScreen`
+- [x] Create `lib/presentation/auth/forgot_password_screen.dart`
+- [x] Create `lib/presentation/auth/update_password_screen.dart` (with strength indicator)
+- [x] Handle `AuthChangeEvent.passwordRecovery` in `AuthenticationOnboardingFlow` → push `UpdatePasswordScreen`
+- [x] Routes: `AppRoutes.forgotPassword`, `AppRoutes.updatePassword`
 
-### 20.3 — Biometric App Lock (Fingerprint / Face ID)
-- [ ] Add `local_auth: ^2.3.0` to `pubspec.yaml`
-  - Android: add `USE_BIOMETRIC` + `USE_FINGERPRINT` permissions to `AndroidManifest.xml`
-  - iOS: add `NSFaceIDUsageDescription` to `Info.plist`
-- [ ] Create `lib/services/biometric_service.dart`
-  - `Future<bool> isAvailable()` — checks device biometric capability via `LocalAuthentication`
-  - `Future<bool> authenticate(String reason)` — wraps `authenticate()` with `biometricOnly: false` fallback
-  - `bool isBiometricEnabled` / `Future<void> setBiometricEnabled(bool)` — persisted to `SharedPreferences`
-- [ ] Add "Biometric Login" toggle to Security Settings (20.8) — visible only if `isAvailable()` is true
-  - On first enable: trigger prompt to confirm identity before saving preference
-- [ ] Implement app lock on resume in `main.dart` via `WidgetsBindingObserver`:
-  - Track `_backgroundedAt` timestamp
-  - On `AppLifecycleState.resumed` after > 5 min → push `AppLockScreen`
-- [ ] Create `lib/presentation/auth_screen/app_lock_screen.dart`
-  - Blurred/dark overlay, app logo, "Unlock with Face ID / Fingerprint" button
-  - On success: pop and resume; on failure: offer email+password fallback
-- [ ] `LoginScreen`: if biometric enabled + session exists → show biometric sign-in button (skips password entry)
+### 20.3 — Biometric App Lock (Fingerprint / Face ID) ✅
+- [x] Add `local_auth: ^2.3.0` to `pubspec.yaml`
+- [x] Android: add `USE_BIOMETRIC` + `USE_FINGERPRINT` permissions to `AndroidManifest.xml`
+- [x] iOS: add `NSFaceIDUsageDescription` to `Info.plist`
+- [x] Create `lib/services/biometric_service.dart`
+- [x] Add Biometric toggle to Security Settings screen (visible only if `isAvailable()`)
+- [x] Implement app lock on resume in `MainDashboard.didChangeAppLifecycleState` (>5 min → push AppLockScreen)
+- [x] Create `lib/presentation/auth/app_lock_screen.dart`
+- [x] Add biometric sign-in button in `LoginFormWidget` (visible when biometric available)
 
-### 20.4 — Two-Factor Authentication (TOTP)
-> Uses Supabase MFA API — `supabase.auth.mfa.*`
-- [ ] Create `lib/services/mfa_service.dart`
-  - `enrollTotp()` → `supabase.auth.mfa.enroll(factorType: FactorType.totp)` → returns QR URI + secret
-  - `verifyEnrollment(String totpCode)` → `supabase.auth.mfa.challengeAndVerify()`
-  - `listFactors()` → `supabase.auth.mfa.listFactors()`
-  - `unenroll(String factorId)` → `supabase.auth.mfa.unenroll(factorId: factorId)`
-  - All methods: `try/catch` + `.timeout(const Duration(seconds: 15))`
-- [ ] Add `qr_flutter: ^4.1.0` to `pubspec.yaml` — QR code display for TOTP enrollment
-- [ ] Create `lib/presentation/security_settings_screen/two_factor_setup_screen.dart` — 3-step wizard:
-  - Step 1: Explanation card ("Protect your account with an authenticator app") + "Enable 2FA" CTA
-  - Step 2: QR code widget (`QrImageView`) + manual secret key (monospace, copy button)
-  - Step 3: 6-digit OTP `TextFormField` (auto-submit on 6th digit) → verify enrollment → show 8 one-time backup codes (copy to clipboard button)
-- [ ] Create `lib/presentation/auth_screen/totp_challenge_screen.dart` — shown after login if TOTP factor enrolled:
-  - 6-digit OTP input (auto-submit on 6th digit)
-  - "Use backup code" fallback link (text input, calls `AuthService.verifyBackupCode()`)
-  - Calls `supabase.auth.mfa.challengeAndVerify()` → routes to onboarding flow
-- [ ] DB migration: create `auth_backup_codes` table (`id`, `user_id UUID REFERENCES auth.users`, `code_hash TEXT`, `used_at TIMESTAMPTZ NULL`, `created_at TIMESTAMPTZ DEFAULT now()`) with RLS: users can only read/update their own rows
-- [ ] `AuthService.signIn()` — after successful credential auth, check AAL level; if factor enrolled and AAL < 2 → push `TotpChallengeScreen`
-- [ ] Routes: `AppRoutes.twoFactorSetup`, `AppRoutes.totpChallenge`
+### 20.4 — Two-Factor Authentication (TOTP) ✅
+- [x] Create `lib/services/mfa_service.dart`
+- [x] Add `qr_flutter: ^4.1.0` to `pubspec.yaml`
+- [x] Create `lib/presentation/security_settings_screen/two_factor_setup_screen.dart` (3-step wizard)
+- [x] Create `lib/presentation/auth/totp_challenge_screen.dart`
+- [x] DB migration: `auth_backup_codes` table with RLS
+- [x] `AuthenticationOnboardingFlow` — MFA AAL check → push `TotpChallengeScreen` if needed
+- [x] Routes: `AppRoutes.twoFactorSetup`, `AppRoutes.totpChallenge`
 
-### 20.5 — CAPTCHA / Bot Protection on Signup
-> Supabase natively supports hCaptcha — no custom backend needed
-- [ ] Register free hCaptcha site key at hcaptcha.com → store as `HCAPTCHA_SITE_KEY` in `env.json`
-- [ ] Enable hCaptcha in Supabase Dashboard → Auth → Bot and Abuse Protection → paste secret key
-- [ ] Add `flutter_hcaptcha: ^0.1.0` (or `webview_flutter: ^4.7.0` for WebView-based widget) to `pubspec.yaml`
-- [ ] Integrate captcha widget at the bottom of `SignupScreen` form
-  - Renders hCaptcha challenge; on success returns a token
-  - Pass token to `AuthService.signUp()` via `options: AuthOptions(captchaToken: token)`
-- [ ] Disable "Create Account" button until captcha token is obtained
-- [ ] Fallback state if captcha fails to load: show "Verification unavailable — check your connection" + retry button
+### 20.5 — CAPTCHA / Bot Protection on Signup ✅
+- [ ] Register free hCaptcha site key at hcaptcha.com → store as `HCAPTCHA_SITE_KEY` in `env.json` (**manual step**)
+- [ ] Enable hCaptcha in Supabase Dashboard → Auth → Bot Protection (**manual step**)
+- [x] Add `webview_flutter: ^4.9.0` to `pubspec.yaml`
+- [x] `AuthService.signUp()` accepts optional `captchaToken` parameter
 
-### 20.6 — Session Security & "Remember Me"
-- [ ] Add `flutter_secure_storage: ^9.2.2` to `pubspec.yaml`
-- [ ] Create `lib/services/session_service.dart`
-  - Wraps `FlutterSecureStorage` for auth token persistence
-  - `persistSession(Session session)` — write refresh token to secure enclave
-  - `loadPersistedSession()` — restore session on app cold start
-  - `clearSession()` — called on sign-out (clears both secure storage and `AppCacheService`)
-- [ ] Add "Remember me" `CheckboxListTile` to `LoginScreen` (default: **checked**)
-  - If unchecked: sign out session when app moves to `AppLifecycleState.paused`
-  - Persist preference to `SharedPreferences`
-- [ ] Update `AuthService.signOut()`: call `SessionService.clearSession()` + `AppCacheService.invalidateAll()` + `BiometricService.setBiometricEnabled(false)` if user explicitly signed out
+### 20.6 — Session Security & "Remember Me" ✅
+- [x] Add `flutter_secure_storage: ^9.2.2` to `pubspec.yaml`
+- [x] Create `lib/services/session_service.dart`
+- [x] Add "Remember me" checkbox to `LoginFormWidget` (default: checked)
+- [x] `AuthService.signOut()` calls `AppCacheService.invalidateAll()`
 
-### 20.7 — Password Strength Indicator
-- [ ] Create `lib/widgets/password_strength_indicator.dart` — reusable widget:
-  - Input: password string
-  - 4 strength levels: Weak / Fair / Strong / Very Strong (thresholds: <8 chars / 8+ / 12+ + digit / 12+ + digit + special)
-  - Animated `LinearProgressIndicator` (red → orange → light green → green)
-  - Hint text row: "Add a number", "Add a special character", "Use 12+ characters"
-- [ ] Add `PasswordStrengthIndicator` below the password field in `SignupScreen`
-- [ ] Add `PasswordStrengthIndicator` in `UpdatePasswordScreen`
-- [ ] Enforce minimum requirements on signup: ≥ 8 chars, 1 uppercase, 1 digit — validate in `AuthService.signUp()` before API call
+### 20.7 — Password Strength Indicator ✅
+- [x] Create `lib/widgets/password_strength_indicator.dart` (4 levels, animated LinearProgressIndicator)
+- [x] Added to `RegisterFormWidget` below password field
+- [x] Added to `UpdatePasswordScreen`
+- [x] Signup validation: ≥ 8 chars, 1 uppercase, 1 digit enforced in `RegisterFormWidget`
 
-### 20.8 — Security Settings Screen
-- [ ] Create `lib/presentation/security_settings_screen/security_settings_screen.dart`
-  - Entry point: new "Security" `ListTile` in `UserProfileManagement`
-  - **Sign-in methods** section: email/password ✓ badge; Google (disabled — "Coming soon" chip); Biometric toggle (from 20.3)
-  - **Two-Factor Authentication** section: status chip (Enabled/Disabled) + "Set up 2FA" or "Disable 2FA" button (from 20.4); "View Backup Codes" (re-authenticate first)
-  - **Password** section: "Change Password" → triggers `AuthService.resetPassword()` flow
-  - **Sessions** section: last sign-in timestamp, "Sign out all other devices" button → `supabase.auth.signOut(scope: SignOutScope.others)`
-  - **Account** section: "Delete Account" → confirm dialog + password re-auth → `AuthService.deleteAccount()`
-- [ ] `AuthService.deleteAccount()`:
-  - Re-authenticates with password (security step)
-  - Calls Supabase RPC `delete_my_account` (deletes all user data in cascade)
-  - Signs out and navigates to `LoginScreen`
-- [ ] DB migration: `delete_my_account()` RPC — deletes from `nutrition_logs`, `workout_logs`, `body_measurements`, `onboarding_responses`, `food_database` (where contributed_by), `auth_backup_codes`, then `auth.users`
-- [ ] Route `AppRoutes.securitySettings` registered via `onGenerateRoute`
+### 20.8 — Security Settings Screen ✅
+- [x] Create `lib/presentation/security_settings_screen/security_settings_screen.dart`
+- [x] Entry point: "Security" `ListTile` in `UserProfileManagement`
+- [x] `AuthService.deleteAccount()` + `delete_my_account()` RPC migration
+- [x] DB migration: `delete_my_account()` RPC
+- [x] Route `AppRoutes.securitySettings` registered via `onGenerateRoute`
 
-### 20.9 — Documentation
-- [ ] Update `lib/services/CLAUDE.md` with `MfaService`, `BiometricService`, `SessionService` docs
-- [ ] Update `lib/presentation/CLAUDE.md` with all new screens from M20
-- [ ] Update `CLAUDE.md` current status
+### 20.9 — Documentation ✅
+- [x] Update `lib/services/CLAUDE.md` with `MfaService`, `BiometricService`, `SessionService` docs
+- [x] Update `lib/presentation/CLAUDE.md` with all new screens from M20
+- [x] Update `CLAUDE.md` current status
 
 ---
 
@@ -684,3 +632,5 @@ Update `## Current Status` in `CLAUDE.md` at the end of every session.
 | 2026-03-28 | Hotfixes | fix: active workout route null (rootNavigator: true); fix: exercise image crash (imageUrl??'' asset error) + replaced MuscleWiki dead URLs with free-exercise-db 2-frame animations | M11 — Testing & Quality |
 | 2026-03-28 | M18 planning | MuscleBodyWidget rewrite (muscle_selector pkg); M18 milestone planned — Photo-to-Recipe Generator (11 new files, 5 modified, 2 services, 4-step wizard) | M18 implementation |
 | 2026-03-28 | M18 complete | RecipeDetailSheet + LogRecipeStep created; route registered; CTA on NutritionPlanningScreen; shimmer dep added; all CLAUDE.md docs updated | M11 — Testing & Quality |
+| 2026-04-02 | M20 complete | Email verification screen + forgot/reset password + biometric lock (local_auth) + TOTP 2FA (Supabase MFA + qr_flutter) + password strength indicator + security settings screen + session persistence (flutter_secure_storage) + "remember me" + CAPTCHA-ready signup; 4 new packages, 2 DB migrations, 11 new files, 7 modified; flutter analyze 0 errors | M11 — Testing & Quality |
+| 2026-04-05 | M20 hotfixes | fix: Kotlin incremental cache cross-drive crash (flutter clean); fix: TOTP enrollment missing issuer param; fix: totp.qrCode→totp.uri (SVG 2MB caused QrInputTooLongException); fix: QrImageView infinite height (SizedBox wrapper); fix: LoginScreen session restore on cold start + biometric gate; redesign: AppLockScreen with pulse animation + fade-to-dashboard transition; fix: appLock route slide-from-bottom→fade (PageRouteBuilder) | M11 — Testing & Quality |

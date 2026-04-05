@@ -68,16 +68,24 @@ NEVER use raw string paths — always `AppRoutes.<constant>`.
 
 ---
 
-## Authentication Flow (AuthenticationOnboardingFlow)
+## Authentication Flow
 
-This screen is the real entry point (`initialRoute`). State machine:
-1. Supabase auth listener fires
-2. User logged in → query `onboarding_responses` table
-3. Row found → `pushReplacementNamed` to `/main-dashboard`
-4. No row → show `OnboardingSurveyWidget`
-5. No user → show login/signup form
+`LoginScreen` (`/login`) is the real `initialRoute`. On `initState` it calls `_checkExistingSession()`:
+1. Reads `SupabaseService.instance.client.auth.currentSession` (synchronous, no network)
+2. No session → show login form
+3. Session exists + biometric enabled → `pushNamed(AppRoutes.appLock).then((_) => pushReplacementNamed(mainDashboard))`
+4. Session exists + no biometric → `pushReplacementNamed(mainDashboard)` directly
 
-Read `authentication_onboarding_flow.dart` before modifying any auth screen.
+`AuthenticationOnboardingFlow` is still used as a secondary screen (handles MFA challenge gate, email verification gate, onboarding survey). It has its own `onAuthStateChange` listener.
+
+**AppLockScreen pattern** (M20):
+- `SingleTickerProviderStateMixin` — `AnimationController` drives a scale pulse (1.0→1.18, 1s repeat-reverse) on the icon ring while authenticating
+- Biometric triggered via `addPostFrameCallback` (needs screen rendered first)
+- On success → `Navigator.pushReplacement(PageRouteBuilder(transitionDuration: 450ms, FadeTransition))` — never `pushReplacementNamed` (that uses default slide)
+- Route itself uses `PageRouteBuilder` with 300ms fade (not `fullscreenDialog` which creates slide-from-bottom)
+- "Use email & password instead" calls `signOut()` then `pushNamedAndRemoveUntil` to `loginScreen`
+
+Read `app_lock_screen.dart` and `authentication_onboarding_flow.dart` before modifying any auth screen.
 
 ---
 
@@ -160,6 +168,13 @@ fontSize: 14.sp // responsive font size
 | Active Workout Session | `active_workout_session/active_workout_session.dart` | ✅ |
 | Workout Summary | `active_workout_session/widgets/workout_summary_screen.dart` | ✅ |
 | Photo Recipe (4-step wizard) | `photo_recipe_screen/` | ✅ |
+| Email Verification | `auth/email_verification_screen.dart` | ✅ |
+| Forgot Password | `auth/forgot_password_screen.dart` | ✅ |
+| Update Password | `auth/update_password_screen.dart` | ✅ |
+| App Lock (biometric) | `auth/app_lock_screen.dart` | ✅ |
+| TOTP Challenge | `auth/totp_challenge_screen.dart` | ✅ |
+| Security Settings | `security_settings_screen/security_settings_screen.dart` | ✅ |
+| Two-Factor Setup (3-step wizard) | `security_settings_screen/two_factor_setup_screen.dart` | ✅ |
 
 ---
 
