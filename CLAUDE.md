@@ -12,11 +12,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Current Status
 
-**Last updated:** 2026-04-05
-**Last session:** M20 hotfixes — TOTP enrollment issuer fix (`issuer:'SmartFitAI'` required by SDK), QR source fix (`totp.uri` not `totp.qrCode` which is a 2MB SVG), QrImageView infinite-height fix (SizedBox wrapper), session restore on cold start (LoginScreen._checkExistingSession), AppLockScreen redesign (pulse animation, fade-to-dashboard, PageRouteBuilder fade transition)
+**Last updated:** 2026-04-07
+**Last session:** Progress screen UI overhaul — SliverAppBar parallax header, shimmer skeleton, animated weekly calendar, arc weight-progress card (CustomPaint + bidirectional goal logic), 2×2 stat grid with staggered animations, 3D body silhouette (bezier + gradient depth) with diagram-style measurement pins (LayoutBuilder + pill labels); flutter analyze 0 issues
 **Next session starts with:** M11 — Testing & Quality (widget tests + unit tests + flutter analyze clean)
 **Active branches:** main
-**Blockers:** `pubspec.lock` is gitignored — run `flutter pub get` at every session start. DB enum values fully English. USDA_API_KEY in env.json only. `product_found_sheet.dart` unused untracked — safe to delete. Gemini 2.5 Flash needs `maxTokens ≥ 8192` for OCR. Exercise animations use free-exercise-db CDN. `Stack(fit: StackFit.expand)` required for IndexedStack overlay. `memCacheWidth` needs `.isFinite` guard. **M20 manual config required:** enable "Confirm email" in Supabase Dashboard → Auth → Settings; enable hCaptcha in Supabase Dashboard + add `HCAPTCHA_SITE_KEY` to `env.json`. M19 deferred: pagination UI, streak RPC, lazy ProgressTrackingScreen, SharedPreferences layer, build/bundle (19.9), perf monitoring (19.10).
+**Blockers:** `pubspec.lock` is gitignored — run `flutter pub get` at every session start. DB enum values fully English. USDA_API_KEY in env.json only. `product_found_sheet.dart` unused untracked — safe to delete. Gemini 2.5 Flash needs `maxTokens ≥ 8192` for OCR. Exercise animations use free-exercise-db CDN. `Stack(fit: StackFit.expand)` required for IndexedStack overlay. `memCacheWidth` needs `.isFinite` guard. **M20 manual config required:** enable "Confirm email" in Supabase Dashboard → Auth → Settings; enable hCaptcha in Supabase Dashboard + add `HCAPTCHA_SITE_KEY` to `env.json`. M19 deferred: pagination UI, streak RPC, lazy ProgressTrackingScreen, SharedPreferences layer, build/bundle (19.9), perf monitoring (19.10). `DropdownButtonFormField` uses `initialValue:` not deprecated `value:` (Flutter 3.33+).
 
 ---
 

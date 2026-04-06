@@ -389,3 +389,20 @@ Shimmer.fromColors(
 )
 ```
 Shimmer is shown while `_isLoading == true`; replaced with real content on data arrival.
+
+**Progress screen — SliverAppBar + parallax header** (2026-04-07):
+- `CustomScrollView` + `SliverAppBar(expandedHeight, pinned: true)` + `FlexibleSpaceBar(title, collapseMode: CollapseMode.parallax)`
+- Background carries only subtitle text (`Align(bottomLeft)` + `Padding`) — **never** put the title text in the background too (causes double-title overlap)
+- Entrance animation: `SingleTickerProviderStateMixin`, `FadeTransition` + `SlideTransition` on the sliver list child
+
+**Progress screen — CustomPaint arc progress** (2026-04-07):
+- `_ArcProgressPainter` draws a grey background arc then a gradient foreground arc
+- Goal direction: `isGainingWeight = targetWeight > startWeight` — progress = `(currentChange / totalChange).clamp(0,1)`; `isGoalReached` checks `>=` for gain, `<=` for loss
+- `TweenAnimationBuilder<int>` animates the center counter text
+
+**Body measurements 3D silhouette + diagram pins** (2026-04-07):
+- `_Body3DPainter`: bezier curves (`cubicTo`) + `LinearGradient.createShader` for left-to-right depth shading + `RadialGradient` sphere head
+- `_MeasLinePainter`: 4.5px dots with white rings at `fracY * H` + horizontal connector lines to pill positions
+- `_kMeasPoints` list of `_MeasPt(type, label, fracX, fracY, onLeft)` — 10 anatomical measurement zones
+- Always wrap in `LayoutBuilder` to get real `H`; pill labels are `Positioned` widgets tapping `_showAddMeasurementDialog(measurementType: type)`
+- `DropdownButtonFormField` uses `initialValue:` not deprecated `value:` (Flutter 3.33+)

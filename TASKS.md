@@ -7,8 +7,8 @@ Update `## Current Status` in `CLAUDE.md` at the end of every session.
 
 ## Current Status
 
-**Last updated:** 2026-04-02
-**Last session completed:** M20 hotfixes — TOTP enrollment issuer fix, QR code URI fix (totp.uri not totp.qrCode), QrImageView infinite-height layout fix, session restore on cold start (LoginScreen._checkExistingSession), AppLockScreen redesign (pulse animation + fade-to-dashboard transition)
+**Last updated:** 2026-04-07
+**Last session completed:** Progress screen UI overhaul — SliverAppBar header, shimmer skeleton, animated weekly calendar, arc progress card (goal direction fix), 2×2 stats grid with staggered animations, 3D body silhouette with diagram-style measurement pins
 **Next session starts with:** M11 — Testing & Quality (widget tests + unit tests + flutter analyze clean)
 **Active branches:** main
 **Blockers / notes:** `pubspec.lock` gitignored — run `flutter pub get` at session start. `product_found_sheet.dart` unused untracked — safe to delete. USDA_API_KEY in env.json. Gemini 2.5 Flash needs maxTokens ≥ 8192. M20 manual config still required: enable "Confirm email" in Supabase Dashboard → Auth → Settings; enable hCaptcha + add HCAPTCHA_SITE_KEY to env.json. M19 deferred: pagination UI, streak RPC, lazy ProgressTrackingScreen, SharedPreferences layer, build/bundle (19.9), perf monitoring (19.10).
@@ -634,3 +634,4 @@ Update `## Current Status` in `CLAUDE.md` at the end of every session.
 | 2026-03-28 | M18 complete | RecipeDetailSheet + LogRecipeStep created; route registered; CTA on NutritionPlanningScreen; shimmer dep added; all CLAUDE.md docs updated | M11 — Testing & Quality |
 | 2026-04-02 | M20 complete | Email verification screen + forgot/reset password + biometric lock (local_auth) + TOTP 2FA (Supabase MFA + qr_flutter) + password strength indicator + security settings screen + session persistence (flutter_secure_storage) + "remember me" + CAPTCHA-ready signup; 4 new packages, 2 DB migrations, 11 new files, 7 modified; flutter analyze 0 errors | M11 — Testing & Quality |
 | 2026-04-05 | M20 hotfixes | fix: Kotlin incremental cache cross-drive crash (flutter clean); fix: TOTP enrollment missing issuer param; fix: totp.qrCode→totp.uri (SVG 2MB caused QrInputTooLongException); fix: QrImageView infinite height (SizedBox wrapper); fix: LoginScreen session restore on cold start + biometric gate; redesign: AppLockScreen with pulse animation + fade-to-dashboard transition; fix: appLock route slide-from-bottom→fade (PageRouteBuilder) | M11 — Testing & Quality |
+| 2026-04-07 | Progress screen UI overhaul | SliverAppBar + parallax header; shimmer skeleton; animated weekly calendar (AnimatedContainer + HapticFeedback + progress bar); arc weight progress card (CustomPaint, bidirectional goal logic, count-up animation); 2×2 stat grid with staggered entrance animations; 3D body silhouette (bezier + LinearGradient depth) with diagram-style measurement pins (LayoutBuilder, dots + connector lines + pill labels); flutter analyze 0 issues | M11 — Testing & Quality |
