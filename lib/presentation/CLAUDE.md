@@ -400,9 +400,20 @@ Shimmer is shown while `_isLoading == true`; replaced with real content on data 
 - Goal direction: `isGainingWeight = targetWeight > startWeight` — progress = `(currentChange / totalChange).clamp(0,1)`; `isGoalReached` checks `>=` for gain, `<=` for loss
 - `TweenAnimationBuilder<int>` animates the center counter text
 
-**Body measurements 3D silhouette + diagram pins** (2026-04-07):
-- `_Body3DPainter`: bezier curves (`cubicTo`) + `LinearGradient.createShader` for left-to-right depth shading + `RadialGradient` sphere head
-- `_MeasLinePainter`: 4.5px dots with white rings at `fracY * H` + horizontal connector lines to pill positions
-- `_kMeasPoints` list of `_MeasPt(type, label, fracX, fracY, onLeft)` — 10 anatomical measurement zones
-- Always wrap in `LayoutBuilder` to get real `H`; pill labels are `Positioned` widgets tapping `_showAddMeasurementDialog(measurementType: type)`
+**Body measurements — holographic wireframe** (2026-04-07):
+- `_HolographicBodyPainter` (replaces old `_Body3DPainter`): cyan mesh on dark navy container (`#030B18→#0A1630`)
+- Render order: ambient particles → interior fill (α0.05) → horizontal scan mesh (clipped per section, h*0.022 interval) → structural polygon lines → blurred glow stroke (9px) → sharp outline (1.3px) → vertex nodes
+- `_drawStructuralLines`: spine + 4 horizontal rings (shoulder/chest/waist/hip) + diagonal ribs + arm/leg cross-sections
+- `_drawNodes`: 15 anatomical vertices with `MaskFilter.blur` glow + ring + white core dot
+- Pill labels: dark navy glass (`#060F1E` α0.88) + cyan border + cyan text — always dark regardless of theme
+- `_MeasLinePainter`: fixed cyan (`#00C8F0`) for lines + dots + blur glow halo; `shouldRepaint` returns `false`
 - `DropdownButtonFormField` uses `initialValue:` not deprecated `value:` (Flutter 3.33+)
+
+**Nutrition screen — gradient hero layout** (2026-04-07):
+- Same `Stack(fit: StackFit.expand)` + gradient + white surface sheet pattern as auth/dashboard screens
+- `CalorieGoalWidget(onGradient: bool)`: `true` → glass card (white α0.14, white ring, amber accent); `false` → surface card (default)
+- Horizontal ring layout: ring left + stats column right (Goal / Consumed / Remaining rows + linear progress bar)
+- `MacroProgressWidget` redesigned for 3-column `Row`: colored dot + label + bold value + thin `LinearProgressIndicator` + percentage
+- Date stepper: left/right `IconButton` arrows + pill container with "Today" or `EEE, MMM d` label; right arrow disabled when `_isToday`
+- Quick Add strip: `_QuickActionCard` widgets in `Row` — gradient `Container` + icon + label + sublabel + color-matched `boxShadow`
+- Skeleton mirrors new layout: gradient header section + white sheet section with shimmer placeholders

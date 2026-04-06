@@ -8,10 +8,10 @@ Update `## Current Status` in `CLAUDE.md` at the end of every session.
 ## Current Status
 
 **Last updated:** 2026-04-07
-**Last session completed:** Progress screen UI overhaul — SliverAppBar header, shimmer skeleton, animated weekly calendar, arc progress card (goal direction fix), 2×2 stats grid with staggered animations, 3D body silhouette with diagram-style measurement pins
+**Last session completed:** UI polish — holographic wireframe body (progress screen) + nutrition screen gradient hero redesign (date stepper, calorie glass card, macro row, quick-add strip)
 **Next session starts with:** M11 — Testing & Quality (widget tests + unit tests + flutter analyze clean)
 **Active branches:** main
-**Blockers / notes:** `pubspec.lock` gitignored — run `flutter pub get` at session start. `product_found_sheet.dart` unused untracked — safe to delete. USDA_API_KEY in env.json. Gemini 2.5 Flash needs maxTokens ≥ 8192. M20 manual config still required: enable "Confirm email" in Supabase Dashboard → Auth → Settings; enable hCaptcha + add HCAPTCHA_SITE_KEY to env.json. M19 deferred: pagination UI, streak RPC, lazy ProgressTrackingScreen, SharedPreferences layer, build/bundle (19.9), perf monitoring (19.10).
+**Blockers / notes:** `pubspec.lock` gitignored — run `flutter pub get` at session start. `product_found_sheet.dart` unused untracked — safe to delete. USDA_API_KEY in env.json. Gemini 2.5 Flash needs maxTokens ≥ 8192. M20 manual config: "Confirm email" enabled in Supabase ✅; hCaptcha skipped (no free tier needed for PAAM). M19 deferred: pagination UI, streak RPC, lazy ProgressTrackingScreen, SharedPreferences layer, build/bundle (19.9), perf monitoring (19.10).
 
 ---
 

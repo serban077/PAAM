@@ -13,10 +13,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Current Status
 
 **Last updated:** 2026-04-07
-**Last session:** Progress screen UI overhaul — SliverAppBar parallax header, shimmer skeleton, animated weekly calendar, arc weight-progress card (CustomPaint + bidirectional goal logic), 2×2 stat grid with staggered animations, 3D body silhouette (bezier + gradient depth) with diagram-style measurement pins (LayoutBuilder + pill labels); flutter analyze 0 issues
+**Last session:** UI polish — holographic wireframe body silhouette (progress screen: cyan mesh+glow+nodes on dark navy, pill labels dark glass) + nutrition screen gradient hero redesign (date stepper, CalorieGoalWidget glass-card onGradient mode, MacroProgressWidget compact 3-col row, Quick Add strip with 3 gradient cards); flutter analyze 0 issues
 **Next session starts with:** M11 — Testing & Quality (widget tests + unit tests + flutter analyze clean)
 **Active branches:** main
-**Blockers:** `pubspec.lock` is gitignored — run `flutter pub get` at every session start. DB enum values fully English. USDA_API_KEY in env.json only. `product_found_sheet.dart` unused untracked — safe to delete. Gemini 2.5 Flash needs `maxTokens ≥ 8192` for OCR. Exercise animations use free-exercise-db CDN. `Stack(fit: StackFit.expand)` required for IndexedStack overlay. `memCacheWidth` needs `.isFinite` guard. **M20 manual config required:** enable "Confirm email" in Supabase Dashboard → Auth → Settings; enable hCaptcha in Supabase Dashboard + add `HCAPTCHA_SITE_KEY` to `env.json`. M19 deferred: pagination UI, streak RPC, lazy ProgressTrackingScreen, SharedPreferences layer, build/bundle (19.9), perf monitoring (19.10). `DropdownButtonFormField` uses `initialValue:` not deprecated `value:` (Flutter 3.33+).
+**Blockers:** `pubspec.lock` is gitignored — run `flutter pub get` at every session start. DB enum values fully English. USDA_API_KEY in env.json only. `product_found_sheet.dart` unused untracked — safe to delete. Gemini 2.5 Flash needs `maxTokens ≥ 8192` for OCR. Exercise animations use free-exercise-db CDN. `Stack(fit: StackFit.expand)` required for IndexedStack overlay. `memCacheWidth` needs `.isFinite` guard. M20 manual config: "Confirm email" ✅ enabled; hCaptcha skipped (PAAM project, no paid tier needed). M19 deferred: pagination UI, streak RPC, lazy ProgressTrackingScreen, SharedPreferences layer, build/bundle (19.9), perf monitoring (19.10). `DropdownButtonFormField` uses `initialValue:` not deprecated `value:` (Flutter 3.33+).
 
 ---
 
