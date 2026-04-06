@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:sizer/sizer.dart';
 
-/// Widget displaying macro nutrient progress with horizontal bar
+/// Compact macro card — designed to sit inside a horizontal Row (3 cards side by side).
 class MacroProgressWidget extends StatelessWidget {
   final String label;
   final double consumed;
@@ -21,78 +21,93 @@ class MacroProgressWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final percentage = (consumed / target * 100).clamp(0.0, 100.0);
-    final progress = (consumed / target).clamp(0.0, 1.0);
+    final isDark = theme.brightness == Brightness.dark;
+    final progress = target > 0 ? (consumed / target).clamp(0.0, 1.0) : 0.0;
+    final pct = (progress * 100).toStringAsFixed(0);
+    final isOver = consumed > target;
 
     return Container(
-      margin: EdgeInsets.symmetric(horizontal: 4.w),
       padding: EdgeInsets.all(3.w),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(12),
+        color: isDark ? const Color(0xFF2D2D2D) : Colors.white,
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: theme.colorScheme.outline.withValues(alpha: 0.2),
-          width: 1,
+          color: color.withValues(alpha: isDark ? 0.30 : 0.20),
         ),
+        boxShadow: [
+          BoxShadow(
+            color: color.withValues(alpha: 0.08),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // ── Label row ──
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                label,
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
+              Container(
+                width: 2.w,
+                height: 2.w,
+                decoration: BoxDecoration(
+                  color: color,
+                  shape: BoxShape.circle,
                 ),
               ),
-              Row(
-                children: [
-                  Text(
-                    consumed.toStringAsFixed(0),
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      color: color,
-                      fontWeight: FontWeight.bold,
-                    ),
+              SizedBox(width: 1.5.w),
+              Expanded(
+                child: Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 9.5.sp,
+                    fontWeight: FontWeight.w600,
+                    color: theme.colorScheme.onSurfaceVariant,
                   ),
-                  Text(
-                    ' / ${target.toStringAsFixed(0)} $unit',
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ],
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
             ],
           ),
           SizedBox(height: 1.h),
-          Stack(
-            children: [
-              Container(
-                height: 1.h,
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(4),
-                ),
+          // ── Value ──
+          Text(
+            '${consumed.toStringAsFixed(0)}$unit',
+            style: TextStyle(
+              fontSize: 15.sp,
+              fontWeight: FontWeight.bold,
+              color: isOver ? theme.colorScheme.error : color,
+              height: 1.0,
+            ),
+          ),
+          Text(
+            '/ ${target.toStringAsFixed(0)}$unit',
+            style: TextStyle(
+              fontSize: 9.sp,
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+          SizedBox(height: 1.h),
+          // ── Progress bar ──
+          ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: LinearProgressIndicator(
+              value: progress,
+              minHeight: 0.55.h,
+              backgroundColor: color.withValues(alpha: 0.18),
+              valueColor: AlwaysStoppedAnimation<Color>(
+                isOver ? theme.colorScheme.error : color,
               ),
-              FractionallySizedBox(
-                widthFactor: progress,
-                child: Container(
-                  height: 1.h,
-                  decoration: BoxDecoration(
-                    color: color,
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                ),
-              ),
-            ],
+            ),
           ),
           SizedBox(height: 0.5.h),
+          // ── Percentage ──
           Text(
-            '${percentage.toStringAsFixed(0)}% din obiectiv',
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
+            '$pct%',
+            style: TextStyle(
+              fontSize: 8.5.sp,
+              color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.75),
             ),
           ),
         ],
