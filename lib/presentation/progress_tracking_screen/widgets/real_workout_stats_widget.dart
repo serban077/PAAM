@@ -2,44 +2,57 @@ import 'package:flutter/material.dart';
 import 'package:sizer/sizer.dart';
 
 import '../../../services/supabase_service.dart';
+import '../../../widgets/custom_icon_widget.dart';
 
-/// Real-time workout statistics widget
+/// Weekly workout statistics — animated 2×2 stat grid
 class RealWorkoutStatsWidget extends StatefulWidget {
   const RealWorkoutStatsWidget({super.key});
 
   @override
-  State<RealWorkoutStatsWidget> createState() => _RealWorkoutStatsWidgetState();
+  State<RealWorkoutStatsWidget> createState() =>
+      _RealWorkoutStatsWidgetState();
 }
 
-class _RealWorkoutStatsWidgetState extends State<RealWorkoutStatsWidget> {
+class _RealWorkoutStatsWidgetState extends State<RealWorkoutStatsWidget>
+    with SingleTickerProviderStateMixin {
   bool _isLoading = true;
   int _completedWorkouts = 0;
   int _scheduledWorkouts = 0;
   int _totalMinutes = 0;
   int _calorieStreak = 0;
+  late AnimationController _staggerCtrl;
 
   @override
   void initState() {
     super.initState();
+    _staggerCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 600),
+    );
     _loadStats();
+  }
+
+  @override
+  void dispose() {
+    _staggerCtrl.dispose();
+    super.dispose();
   }
 
   Future<void> _loadStats() async {
     try {
       setState(() => _isLoading = true);
-      
-      final userId = SupabaseService.instance.client.auth.currentUser?.id;
+
+      final userId =
+          SupabaseService.instance.client.auth.currentUser?.id;
       if (userId == null) {
         if (mounted) setState(() => _isLoading = false);
         return;
       }
 
-      // Get current week start/end
       final now = DateTime.now();
       final weekStart = now.subtract(Duration(days: now.weekday - 1));
       final weekEnd = weekStart.add(const Duration(days: 6));
 
-      // Count completed workouts this week
       final logsResponse = await SupabaseService.instance.client
           .from('workout_logs')
           .select('id, duration_seconds')
@@ -50,10 +63,10 @@ class _RealWorkoutStatsWidgetState extends State<RealWorkoutStatsWidget> {
       final completed = logsResponse.length;
       final totalMinutes = logsResponse.fold<int>(
         0,
-        (sum, log) => sum + ((log['duration_seconds'] as int?) ?? 0) ~/ 60,
+        (sum, log) =>
+            sum + ((log['duration_seconds'] as int?) ?? 0) ~/ 60,
       );
 
-      // Get scheduled workouts for this week
       final scheduleResponse = await SupabaseService.instance.client
           .from('user_workout_schedules')
           .select('plan_id')
@@ -70,7 +83,6 @@ class _RealWorkoutStatsWidgetState extends State<RealWorkoutStatsWidget> {
         scheduled = sessionsResponse.length;
       }
 
-      // Calculate calorie tracking streak
       final streak = await _calculateCalorieStreak(userId);
 
       if (mounted) {
@@ -81,6 +93,7 @@ class _RealWorkoutStatsWidgetState extends State<RealWorkoutStatsWidget> {
           _calorieStreak = streak;
           _isLoading = false;
         });
+        _staggerCtrl.forward(from: 0);
       }
     } catch (e) {
       debugPrint('Error loading stats: $e');
@@ -90,7 +103,6 @@ class _RealWorkoutStatsWidgetState extends State<RealWorkoutStatsWidget> {
 
   Future<int> _calculateCalorieStreak(String userId) async {
     try {
-      // Get all dates with meal entries, ordered descending
       final response = await SupabaseService.instance.client
           .from('user_meals')
           .select('consumed_at')
@@ -99,18 +111,16 @@ class _RealWorkoutStatsWidgetState extends State<RealWorkoutStatsWidget> {
 
       if (response.isEmpty) return 0;
 
-      // Extract unique dates
       final dates = response
           .map((meal) => DateTime.parse(meal['consumed_at'] as String))
           .map((dt) => DateTime(dt.year, dt.month, dt.day))
           .toSet()
           .toList()
-        ..sort((a, b) => b.compareTo(a)); // Sort descending
+        ..sort((a, b) => b.compareTo(a));
 
-      // Count consecutive days from today
       final today = DateTime.now();
-      final todayDate = DateTime(today.year, today.month, today.day);
-      
+      final todayDate =
+          DateTime(today.year, today.month, today.day);
       int streak = 0;
       DateTime checkDate = todayDate;
 
@@ -119,13 +129,11 @@ class _RealWorkoutStatsWidgetState extends State<RealWorkoutStatsWidget> {
           streak++;
           checkDate = checkDate.subtract(const Duration(days: 1));
         } else if (date.isBefore(checkDate)) {
-          break; // Gap in streak
+          break;
         }
       }
-
       return streak;
     } catch (e) {
-      debugPrint('Error calculating streak: $e');
       return 0;
     }
   }
@@ -135,65 +143,123 @@ class _RealWorkoutStatsWidgetState extends State<RealWorkoutStatsWidget> {
     final theme = Theme.of(context);
 
     if (_isLoading) {
-      return Card(
-        child: Padding(
-          padding: EdgeInsets.all(4.w),
-          child: const Center(child: CircularProgressIndicator()),
+      return Container(
+        height: 22.h,
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surfaceContainerHighest
+              .withValues(alpha: 0.3),
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Center(
+          child: CircularProgressIndicator(
+            color: theme.colorScheme.primary,
+            strokeWidth: 2.5,
+          ),
         ),
       );
     }
 
     final completionRate = _scheduledWorkouts > 0
-        ? (_completedWorkouts / _scheduledWorkouts * 100).toInt()
-        : 0;
+        ? _completedWorkouts / _scheduledWorkouts
+        : 0.0;
 
-    return Card(
+    final stats = [
+      _StatData(
+        label: 'Workouts',
+        value: '$_completedWorkouts',
+        sub: 'of $_scheduledWorkouts planned',
+        iconName: 'fitness_center',
+        color: theme.colorScheme.primary,
+        progress: completionRate,
+      ),
+      _StatData(
+        label: 'Completion',
+        value: '${(completionRate * 100).toInt()}%',
+        sub: completionRate >= 0.8 ? 'Great week!' : 'Keep going!',
+        iconName: 'trending_up',
+        color: completionRate >= 0.8
+            ? theme.colorScheme.primary
+            : theme.colorScheme.tertiary,
+        progress: completionRate,
+      ),
+      _StatData(
+        label: 'Active Time',
+        value: '$_totalMinutes',
+        sub: 'minutes this week',
+        iconName: 'schedule',
+        color: theme.colorScheme.secondary,
+        progress: (_totalMinutes / 300).clamp(0.0, 1.0),
+      ),
+      _StatData(
+        label: 'Streak',
+        value: '$_calorieStreak',
+        sub: _calorieStreak == 1 ? 'day logged' : 'days logged',
+        iconName: 'local_fire_department',
+        color: const Color(0xFFFF6F00),
+        progress: (_calorieStreak / 7).clamp(0.0, 1.0),
+      ),
+    ];
+
+    return Container(
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+            color: theme.colorScheme.outline.withValues(alpha: 0.15)),
+        boxShadow: [
+          BoxShadow(
+            color: theme.colorScheme.shadow.withValues(alpha: 0.07),
+            blurRadius: 14,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
       child: Padding(
         padding: EdgeInsets.all(4.w),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Current Week Statistics',
-              style: theme.textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+            Row(
+              children: [
+                Container(
+                  padding: EdgeInsets.all(2.w),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.primary.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: CustomIconWidget(
+                    iconName: 'bar_chart',
+                    color: theme.colorScheme.primary,
+                    size: 18,
+                  ),
+                ),
+                SizedBox(width: 3.w),
+                Text(
+                  'This Week',
+                  style: TextStyle(
+                    fontSize: 15.sp,
+                    fontWeight: FontWeight.bold,
+                    color: theme.colorScheme.onSurface,
+                  ),
+                ),
+              ],
             ),
             SizedBox(height: 2.h),
-            
-            // Workout completion
-            _buildStatRow(
-              icon: Icons.fitness_center,
-              label: 'Completed Workouts',
-              value: '$_completedWorkouts / $_scheduledWorkouts',
-              color: Colors.blue,
+            // 2×2 grid
+            Row(
+              children: [
+                Expanded(child: _buildStatCard(theme, stats[0], 0)),
+                SizedBox(width: 3.w),
+                Expanded(child: _buildStatCard(theme, stats[1], 1)),
+              ],
             ),
-            SizedBox(height: 1.h),
-            
-            // Completion rate
-            _buildStatRow(
-              icon: Icons.trending_up,
-              label: 'Completion Rate',
-              value: '$completionRate%',
-              color: completionRate >= 80 ? Colors.green : Colors.orange,
-            ),
-            SizedBox(height: 1.h),
-            
-            // Total minutes
-            _buildStatRow(
-              icon: Icons.schedule,
-              label: 'Active Minutes',
-              value: '$_totalMinutes min',
-              color: Colors.purple,
-            ),
-            SizedBox(height: 1.h),
-            
-            // Calorie streak
-            _buildStatRow(
-              icon: Icons.local_fire_department,
-              label: 'Calorie Streak',
-              value: '$_calorieStreak days',
-              color: Colors.deepOrange,
+            SizedBox(height: 2.w),
+            Row(
+              children: [
+                Expanded(child: _buildStatCard(theme, stats[2], 2)),
+                SizedBox(width: 3.w),
+                Expanded(child: _buildStatCard(theme, stats[3], 3)),
+              ],
             ),
           ],
         ),
@@ -201,38 +267,124 @@ class _RealWorkoutStatsWidgetState extends State<RealWorkoutStatsWidget> {
     );
   }
 
-  Widget _buildStatRow({
-    required IconData icon,
-    required String label,
-    required String value,
-    required Color color,
-  }) {
-    return Row(
-      children: [
-        Container(
-          padding: EdgeInsets.all(2.w),
-          decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(8),
+  Widget _buildStatCard(ThemeData theme, _StatData stat, int index) {
+    // Staggered entrance per card
+    final delay = index * 0.15;
+    final begin = delay;
+    final end = (delay + 0.55).clamp(0.0, 1.0);
+
+    return AnimatedBuilder(
+      animation: _staggerCtrl,
+      builder: (_, child) {
+        final t = _staggerCtrl.value;
+        final localT = ((t - begin) / (end - begin)).clamp(0.0, 1.0);
+        final curve = Curves.easeOutCubic.transform(localT);
+        return Opacity(
+          opacity: curve,
+          child: Transform.translate(
+            offset: Offset(0, 12 * (1 - curve)),
+            child: child,
           ),
-          child: Icon(icon, color: color, size: 20.sp),
+        );
+      },
+      child: Container(
+        padding: EdgeInsets.all(3.5.w),
+        decoration: BoxDecoration(
+          color: stat.color.withValues(alpha: 0.06),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+              color: stat.color.withValues(alpha: 0.18)),
         ),
-        SizedBox(width: 3.w),
-        Expanded(
-          child: Text(
-            label,
-            style: TextStyle(fontSize: 14.sp),
-          ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                CustomIconWidget(
+                  iconName: stat.iconName,
+                  color: stat.color,
+                  size: 16,
+                ),
+                const Spacer(),
+                TweenAnimationBuilder<double>(
+                  tween: Tween(begin: 0, end: stat.progress),
+                  duration: const Duration(milliseconds: 900),
+                  curve: Curves.easeOut,
+                  builder: (_, val, __) => Text(
+                    '${(val * 100).toInt()}%',
+                    style: TextStyle(
+                      fontSize: 9.sp,
+                      fontWeight: FontWeight.w600,
+                      color: stat.color.withValues(alpha: 0.7),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: 1.h),
+            Text(
+              stat.value,
+              style: TextStyle(
+                fontSize: 20.sp,
+                fontWeight: FontWeight.bold,
+                color: stat.color,
+                height: 1,
+              ),
+            ),
+            SizedBox(height: 0.3.h),
+            Text(
+              stat.label,
+              style: TextStyle(
+                fontSize: 10.sp,
+                fontWeight: FontWeight.w600,
+                color: theme.colorScheme.onSurface,
+              ),
+            ),
+            Text(
+              stat.sub,
+              style: TextStyle(
+                fontSize: 8.5.sp,
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+            SizedBox(height: 1.h),
+            TweenAnimationBuilder<double>(
+              tween: Tween(begin: 0, end: stat.progress),
+              duration: const Duration(milliseconds: 900),
+              curve: Curves.easeOut,
+              builder: (_, val, __) => ClipRRect(
+                borderRadius: BorderRadius.circular(3),
+                child: LinearProgressIndicator(
+                  value: val,
+                  minHeight: 4,
+                  backgroundColor:
+                      stat.color.withValues(alpha: 0.12),
+                  valueColor:
+                      AlwaysStoppedAnimation(stat.color),
+                ),
+              ),
+            ),
+          ],
         ),
-        Text(
-          value,
-          style: TextStyle(
-            fontSize: 16.sp,
-            fontWeight: FontWeight.bold,
-            color: color,
-          ),
-        ),
-      ],
+      ),
     );
   }
+}
+
+class _StatData {
+  final String label;
+  final String value;
+  final String sub;
+  final String iconName;
+  final Color color;
+  final double progress;
+
+  const _StatData({
+    required this.label,
+    required this.value,
+    required this.sub,
+    required this.iconName,
+    required this.color,
+    required this.progress,
+  });
 }

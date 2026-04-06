@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:shimmer/shimmer.dart';
 import 'package:sizer/sizer.dart';
 
 import '../../services/supabase_service.dart';
-import './widgets/photo_progress_widget.dart';
-import './widgets/weekly_calendar_widget.dart';
+import '../../theme/app_theme.dart';
+import '../../widgets/custom_icon_widget.dart';
 import './widgets/body_measurements_card.dart';
+import './widgets/photo_progress_widget.dart';
 import './widgets/real_workout_stats_widget.dart';
+import './widgets/weekly_calendar_widget.dart';
 import './widgets/weight_progress_card.dart';
 import '../../routes/app_routes.dart';
 
@@ -17,40 +20,60 @@ class ProgressTrackingScreen extends StatefulWidget {
   State<ProgressTrackingScreen> createState() => _ProgressTrackingScreenState();
 }
 
-class _ProgressTrackingScreenState extends State<ProgressTrackingScreen> {
+class _ProgressTrackingScreenState extends State<ProgressTrackingScreen>
+    with SingleTickerProviderStateMixin {
   Key _calendarKey = UniqueKey();
   bool _isLoading = true;
+  late AnimationController _animController;
+  late Animation<double> _fadeAnim;
+  late Animation<Offset> _slideAnim;
 
   @override
   void initState() {
     super.initState();
+    _animController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 550),
+    );
+    _fadeAnim = CurvedAnimation(parent: _animController, curve: Curves.easeOut);
+    _slideAnim = Tween<Offset>(
+      begin: const Offset(0, 0.06),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(parent: _animController, curve: Curves.easeOut));
     _loadUserProfile();
+  }
+
+  @override
+  void dispose() {
+    _animController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadUserProfile() async {
     try {
       setState(() => _isLoading = true);
-
       final userId = SupabaseService.instance.client.auth.currentUser?.id;
       if (userId == null) {
-        setState(() => _isLoading = false);
+        if (mounted) setState(() => _isLoading = false);
         return;
       }
-
       await SupabaseService.instance.client
           .from('user_profiles')
           .select('id')
           .eq('id', userId)
           .maybeSingle();
-
-      setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+        _animController.forward();
+      }
     } catch (e) {
-      setState(() => _isLoading = false);
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
   Future<void> _refresh() async {
     HapticFeedback.lightImpact();
+    _animController.reset();
     await _loadUserProfile();
     if (mounted) {
       setState(() => _calendarKey = UniqueKey());
@@ -60,100 +83,211 @@ class _ProgressTrackingScreenState extends State<ProgressTrackingScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
     if (_isLoading) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Progress Tracking'), centerTitle: true),
+        backgroundColor: theme.colorScheme.surface,
         body: _buildSkeleton(theme),
       );
     }
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Progress Tracking'), centerTitle: true),
-      body: RefreshIndicator(
-        onRefresh: _refresh,
-        child: SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          padding: EdgeInsets.all(4.w),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              WeeklyCalendarWidget(
-                key: _calendarKey,
-                onSessionSelected: (sessionId) async {
-                  final result = await Navigator.pushNamed(
-                    context,
-                    AppRoutes.workoutDetail,
-                    arguments: {'sessionId': sessionId},
-                  );
-                  if (result == true) {
-                    setState(() => _calendarKey = UniqueKey());
-                  }
-                },
-              ),
-              SizedBox(height: 2.h),
-              const WeightProgressCard(),
-              SizedBox(height: 3.h),
-              const BodyMeasurementsCard(),
-              SizedBox(height: 3.h),
-              const RealWorkoutStatsWidget(),
-              SizedBox(height: 3.h),
-              Text(
-                'Photo Progress',
-                style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.bold),
-              ),
-              SizedBox(height: 1.h),
-              const PhotoProgressWidget(),
-            ],
+      backgroundColor: theme.colorScheme.surface,
+      body: FadeTransition(
+        opacity: _fadeAnim,
+        child: SlideTransition(
+          position: _slideAnim,
+          child: RefreshIndicator(
+            onRefresh: _refresh,
+            color: theme.colorScheme.primary,
+            child: CustomScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              slivers: [
+                _buildSliverAppBar(theme, isDark),
+                SliverPadding(
+                  padding: EdgeInsets.fromLTRB(4.w, 2.h, 4.w, 0),
+                  sliver: SliverList(
+                    delegate: SliverChildListDelegate([
+                      WeeklyCalendarWidget(
+                        key: _calendarKey,
+                        onSessionSelected: (sessionId) async {
+                          final result = await Navigator.pushNamed(
+                            context,
+                            AppRoutes.workoutDetail,
+                            arguments: {'sessionId': sessionId},
+                          );
+                          if (result == true) {
+                            setState(() => _calendarKey = UniqueKey());
+                          }
+                        },
+                      ),
+                      SizedBox(height: 2.5.h),
+                      const WeightProgressCard(),
+                      SizedBox(height: 2.5.h),
+                      const RealWorkoutStatsWidget(),
+                      SizedBox(height: 2.5.h),
+                      _buildSectionHeader(theme, 'Body Measurements', 'straighten'),
+                      SizedBox(height: 1.5.h),
+                      const BodyMeasurementsCard(),
+                      SizedBox(height: 2.5.h),
+                      _buildSectionHeader(theme, 'Photo Progress', 'photo_camera'),
+                      SizedBox(height: 1.5.h),
+                      const PhotoProgressWidget(),
+                      SizedBox(height: 4.h),
+                    ]),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 
+  SliverAppBar _buildSliverAppBar(ThemeData theme, bool isDark) {
+    return SliverAppBar(
+      expandedHeight: 15.h,
+      pinned: true,
+      floating: false,
+      backgroundColor:
+          isDark ? AppTheme.primaryVariantDark : AppTheme.primaryLight,
+      elevation: 0,
+      leading: const SizedBox.shrink(),
+      leadingWidth: 0,
+      actions: [
+        IconButton(
+          icon: const CustomIconWidget(
+            iconName: 'refresh',
+            color: Colors.white,
+            size: 22,
+          ),
+          onPressed: _refresh,
+          tooltip: 'Refresh',
+        ),
+        SizedBox(width: 1.w),
+      ],
+      flexibleSpace: FlexibleSpaceBar(
+        titlePadding: EdgeInsets.only(left: 5.w, bottom: 1.6.h),
+        title: Text(
+          'My Progress',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 15.sp,
+            fontWeight: FontWeight.bold,
+            letterSpacing: -0.3,
+          ),
+        ),
+        collapseMode: CollapseMode.parallax,
+        background: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: isDark
+                  ? [
+                      AppTheme.primaryVariantDark,
+                      AppTheme.backgroundDark,
+                    ]
+                  : [
+                      AppTheme.primaryLight,
+                      AppTheme.primaryVariantLight,
+                    ],
+            ),
+          ),
+          child: SafeArea(
+            child: Align(
+              alignment: Alignment.bottomLeft,
+              child: Padding(
+                padding: EdgeInsets.only(left: 5.w, bottom: 5.5.h),
+                child: Text(
+                  'Track your transformation',
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.8),
+                    fontSize: 11.sp,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSectionHeader(ThemeData theme, String title, String iconName) {
+    return Row(
+      children: [
+        Container(
+          width: 4,
+          height: 20,
+          decoration: BoxDecoration(
+            color: theme.colorScheme.tertiary,
+            borderRadius: BorderRadius.circular(2),
+          ),
+        ),
+        SizedBox(width: 2.5.w),
+        CustomIconWidget(
+          iconName: iconName,
+          color: theme.colorScheme.primary,
+          size: 17,
+        ),
+        SizedBox(width: 2.w),
+        Text(
+          title,
+          style: TextStyle(
+            fontSize: 15.sp,
+            fontWeight: FontWeight.bold,
+            color: theme.colorScheme.onSurface,
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildSkeleton(ThemeData theme) {
-    final color = theme.colorScheme.surfaceContainerHighest.withAlpha(76);
-    return SingleChildScrollView(
-      padding: EdgeInsets.all(4.w),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Calendar skeleton
-          Container(
-            height: 10.h,
-            decoration: BoxDecoration(
-              color: color,
-              borderRadius: BorderRadius.circular(12),
+    final isDark = theme.brightness == Brightness.dark;
+    return Shimmer.fromColors(
+      baseColor: isDark ? const Color(0xFF2A2A2A) : const Color(0xFFE8E8E8),
+      highlightColor: isDark ? const Color(0xFF3A3A3A) : const Color(0xFFF5F5F5),
+      child: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header skeleton
+            Container(
+              height: 15.h,
+              color: Colors.white,
             ),
-          ),
-          SizedBox(height: 2.h),
-          // Weight card skeleton
-          Container(
-            height: 15.h,
-            decoration: BoxDecoration(
-              color: color,
-              borderRadius: BorderRadius.circular(12),
+            Padding(
+              padding: EdgeInsets.all(4.w),
+              child: Column(
+                children: [
+                  SizedBox(height: 1.h),
+                  _skeletonBox(14.h),
+                  SizedBox(height: 2.5.h),
+                  _skeletonBox(20.h),
+                  SizedBox(height: 2.5.h),
+                  _skeletonBox(18.h),
+                  SizedBox(height: 2.5.h),
+                  _skeletonBox(60.h),
+                ],
+              ),
             ),
-          ),
-          SizedBox(height: 3.h),
-          // Measurements skeleton
-          Container(
-            height: 20.h,
-            decoration: BoxDecoration(
-              color: color,
-              borderRadius: BorderRadius.circular(12),
-            ),
-          ),
-          SizedBox(height: 3.h),
-          // Stats skeleton
-          Container(
-            height: 12.h,
-            decoration: BoxDecoration(
-              color: color,
-              borderRadius: BorderRadius.circular(12),
-            ),
-          ),
-        ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _skeletonBox(double height) {
+    return Container(
+      height: height,
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
       ),
     );
   }

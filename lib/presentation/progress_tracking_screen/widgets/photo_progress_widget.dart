@@ -86,12 +86,16 @@ class _PhotoProgressWidgetState extends State<PhotoProgressWidget> {
 
       try {
         await _cameraController!.setFocusMode(FocusMode.auto);
-      } catch (e) {}
+      } catch (_) {
+        // Focus mode not supported on this device
+      }
 
       if (!kIsWeb) {
         try {
           await _cameraController!.setFlashMode(FlashMode.auto);
-        } catch (e) {}
+        } catch (_) {
+          // Flash mode not supported on this device
+        }
       }
 
       if (mounted) {

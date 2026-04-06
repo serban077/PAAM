@@ -95,9 +95,20 @@ class _BodyMeasurementsCardState extends State<BodyMeasurementsCard> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return Card(
-      elevation: 4,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+    return Container(
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+            color: theme.colorScheme.outline.withValues(alpha: 0.15)),
+        boxShadow: [
+          BoxShadow(
+            color: theme.colorScheme.shadow.withValues(alpha: 0.07),
+            blurRadius: 14,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -184,7 +195,7 @@ class _BodyMeasurementsCardState extends State<BodyMeasurementsCard> {
               show: true,
               drawVerticalLine: false,
               getDrawingHorizontalLine: (value) => FlLine(
-                color: Colors.grey.withOpacity(0.2),
+                color: Colors.grey.withValues(alpha: 0.2),
                 strokeWidth: 1,
               ),
             ),
@@ -253,7 +264,7 @@ class _BodyMeasurementsCardState extends State<BodyMeasurementsCard> {
                 ),
                 belowBarData: BarAreaData(
                   show: true,
-                  color: theme.colorScheme.primary.withOpacity(0.1),
+                  color: theme.colorScheme.primary.withValues(alpha:0.1),
                 ),
               ),
             ],
@@ -269,22 +280,35 @@ class _BodyMeasurementsCardState extends State<BodyMeasurementsCard> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            'Body Measurements',
-            style: theme.textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: theme.colorScheme.primary,
-            ),
+          Row(
+            children: [
+              Container(
+                padding: EdgeInsets.all(2.w),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.primary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(Icons.straighten,
+                    color: theme.colorScheme.primary, size: 20),
+              ),
+              SizedBox(width: 3.w),
+              Text(
+                'Body Measurements',
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: theme.colorScheme.onSurface,
+                ),
+              ),
+            ],
           ),
           Container(
             decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Colors.blue.shade400, Colors.cyan.shade600],
-              ),
+              color: theme.colorScheme.primary.withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
             child: IconButton(
-              icon: Icon(Icons.add_circle_outline, color: Colors.white),
+              icon: Icon(Icons.add_circle_outline,
+                  color: theme.colorScheme.primary),
               onPressed: () => _showAddMeasurementDialog(),
               tooltip: 'Add measurement',
             ),
@@ -296,140 +320,83 @@ class _BodyMeasurementsCardState extends State<BodyMeasurementsCard> {
 
   Widget _buildBodyModel(ThemeData theme) {
     return Container(
-      height: 55.h,
+      height: 65.h,
       margin: EdgeInsets.symmetric(horizontal: 2.w, vertical: 2.h),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            Colors.blue.shade50,
-            Colors.cyan.shade100,
-          ],
-        ),
+        color: theme.colorScheme.primaryContainer.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.blue.withOpacity(0.2),
-            blurRadius: 15,
-            offset: Offset(0, 5),
-          ),
-        ],
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(20),
-        child: Stack(
-          children: [
-            // Body silhouette with CustomPaint
-            Positioned.fill(
-              child: CustomPaint(
-                painter: BodySilhouettePainter(
-                  color: theme.colorScheme.primary.withOpacity(0.15),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final H = constraints.maxHeight;
+            return Stack(
+              children: [
+                // 3D body silhouette
+                Positioned.fill(
+                  child: CustomPaint(
+                    painter: _Body3DPainter(
+                        primaryColor: theme.colorScheme.primary),
+                  ),
                 ),
-              ),
-            ),
-            
-            // Measurement buttons positioned on body
-            ..._buildMeasurementButtons(theme),
-          ],
-        ),
-      ),
-    );
-  }
-
-  List<Widget> _buildMeasurementButtons(ThemeData theme) {
-    // Staggered positions - trunk buttons alternating left/right for clarity
-    final measurementPoints = [
-      {'type': 'head', 'top': 0.04, 'left': 0.50, 'label': 'Head'},
-      {'type': 'neck', 'top': 0.11, 'left': 0.42, 'label': 'Neck'},
-      {'type': 'shoulders', 'top': 0.16, 'left': 0.58, 'label': 'Shoulders'},
-      {'type': 'chest', 'top': 0.24, 'left': 0.38, 'label': 'Chest'},
-      {'type': 'waist', 'top': 0.36, 'left': 0.62, 'label': 'Waist'},
-      {'type': 'hips', 'top': 0.46, 'left': 0.38, 'label': 'Hips'},
-      {'type': 'arm', 'top': 0.28, 'left': 0.22, 'label': 'Arm'},
-      {'type': 'forearm', 'top': 0.40, 'left': 0.18, 'label': 'Forearm'},
-      {'type': 'thigh', 'top': 0.56, 'left': 0.40, 'label': 'Thigh'},
-      {'type': 'calf', 'top': 0.72, 'left': 0.42, 'label': 'Calf'},
-    ];
-
-    return measurementPoints.map((point) {
-      return Positioned(
-        top: (point['top'] as double) * 55.h,
-        left: (point['left'] as double) * 96.w - 25,
-        child: _buildMeasurementButton(
-          point['type'] as String,
-          point['label'] as String,
-          theme,
-        ),
-      );
-    }).toList();
-  }
-
-  Widget _buildMeasurementButton(String type, String label, ThemeData theme) {
-    return GestureDetector(
-      onTap: () => _showAddMeasurementDialog(measurementType: type),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Button with gradient and shadow
-          Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  Colors.blue.shade400,
-                  Colors.cyan.shade600,
-                ],
-              ),
-              shape: BoxShape.circle,
-              border: Border.all(color: Colors.white, width: 3),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.blue.withOpacity(0.6),
-                  blurRadius: 15,
-                  spreadRadius: 3,
-                  offset: Offset(0, 5),
+                // Measurement dots + connector lines
+                Positioned.fill(
+                  child: CustomPaint(
+                    painter: _MeasLinePainter(
+                        color: theme.colorScheme.primary),
+                  ),
                 ),
+                // Label pills
+                ..._kMeasPoints.map((p) {
+                  const pillH = 22.0;
+                  const pillW = 72.0;
+                  final dotY = p.fracY * H;
+                  return Positioned(
+                    top: dotY - pillH / 2,
+                    left: p.onLeft ? 2 : null,
+                    right: p.onLeft ? null : 2,
+                    child: GestureDetector(
+                      onTap: () =>
+                          _showAddMeasurementDialog(measurementType: p.type),
+                      behavior: HitTestBehavior.opaque,
+                      child: Container(
+                        width: pillW,
+                        height: pillH,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.surface
+                              .withValues(alpha: 0.93),
+                          borderRadius: BorderRadius.circular(11),
+                          border: Border.all(
+                            color: theme.colorScheme.primary
+                                .withValues(alpha: 0.45),
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.1),
+                              blurRadius: 4,
+                              offset: const Offset(0, 1),
+                            ),
+                          ],
+                        ),
+                        child: Text(
+                          p.label,
+                          style: TextStyle(
+                            fontSize: 9.5,
+                            fontWeight: FontWeight.w700,
+                            color: theme.colorScheme.primary,
+                            letterSpacing: 0.2,
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                }),
               ],
-            ),
-            child: Icon(
-              Icons.add,
-              color: Colors.white,
-              size: 28,
-            ),
-          ),
-          SizedBox(height: 6),
-          // Label with background
-          Container(
-            padding: EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Colors.white, Colors.blue.shade50],
-              ),
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: Colors.blue.shade300, width: 2),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.2),
-                  blurRadius: 8,
-                  offset: Offset(0, 3),
-                ),
-              ],
-            ),
-            child: Text(
-              label,
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.bold,
-                color: theme.colorScheme.primary,
-                letterSpacing: 0.5,
-              ),
-            ),
-          ),
-        ],
+            );
+          },
+        ),
       ),
     );
   }
@@ -458,21 +425,20 @@ class _BodyMeasurementsCardState extends State<BodyMeasurementsCard> {
               width: 40,
               height: 40,
               decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [Colors.blue.shade300, Colors.cyan.shade500],
-                ),
+                color: theme.colorScheme.primary.withValues(alpha: 0.12),
                 shape: BoxShape.circle,
               ),
-              child: Icon(Icons.straighten, color: Colors.white, size: 20),
+              child: Icon(Icons.straighten,
+                  color: theme.colorScheme.primary, size: 20),
             ),
             title: Text(_measurementLabels[type] ?? type),
             subtitle: Text(formattedDate),
             trailing: Container(
-              padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [Colors.blue.shade100, Colors.cyan.shade100],
-                ),
+                color: theme.colorScheme.primaryContainer
+                    .withValues(alpha: 0.5),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Text(
@@ -485,7 +451,7 @@ class _BodyMeasurementsCardState extends State<BodyMeasurementsCard> {
               ),
             ),
           );
-        }).toList(),
+        }),
         SizedBox(height: 2.h),
       ],
     );
@@ -501,9 +467,8 @@ class _BodyMeasurementsCardState extends State<BodyMeasurementsCard> {
               width: 80,
               height: 80,
               decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [Colors.blue.shade100, Colors.cyan.shade100],
-                ),
+                color: theme.colorScheme.primaryContainer
+                    .withValues(alpha: 0.4),
                 shape: BoxShape.circle,
               ),
               child: Icon(
@@ -523,7 +488,7 @@ class _BodyMeasurementsCardState extends State<BodyMeasurementsCard> {
             Text(
               'Tap the + buttons to add measurements',
               style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant.withOpacity(0.7),
+                color: theme.colorScheme.onSurfaceVariant.withValues(alpha:0.7),
               ),
             ),
             SizedBox(height: 2.h),
@@ -574,124 +539,247 @@ class _BodyMeasurementsCardState extends State<BodyMeasurementsCard> {
   }
 }
 
-/// Custom painter for body silhouette with arms down
-class BodySilhouettePainter extends CustomPainter {
-  final Color color;
+// ─────────────────────────────────────────────────────────────────────────────
+// Measurement point data
+// ─────────────────────────────────────────────────────────────────────────────
 
-  BodySilhouettePainter({required this.color});
+class _MeasPt {
+  final String type;
+  final String label;
+  final double fracX; // fraction of container width (dot position)
+  final double fracY; // fraction of container height (dot + label position)
+  final bool onLeft;  // label on left side?
+  const _MeasPt(this.type, this.label, this.fracX, this.fracY, this.onLeft);
+}
+
+const List<_MeasPt> _kMeasPoints = [
+  _MeasPt('head',      'Head',       0.50,  0.075, true),
+  _MeasPt('neck',      'Neck',       0.50,  0.150, false),
+  _MeasPt('shoulders', 'Shoulders',  0.50,  0.182, true),
+  _MeasPt('chest',     'Chest',      0.50,  0.257, false),
+  _MeasPt('arm',       'Arm',        0.31,  0.290, true),
+  _MeasPt('waist',     'Waist',      0.50,  0.375, true),
+  _MeasPt('forearm',   'Forearm',    0.31,  0.452, true),
+  _MeasPt('hips',      'Hips',       0.50,  0.480, false),
+  _MeasPt('thigh',     'Thigh',      0.435, 0.618, true),
+  _MeasPt('calf',      'Calf',       0.435, 0.790, true),
+];
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 3D body silhouette painter
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _Body3DPainter extends CustomPainter {
+  final Color primaryColor;
+  const _Body3DPainter({required this.primaryColor});
 
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = color
-      ..style = PaintingStyle.fill;
+    final w = size.width;
+    final h = size.height;
+    final cx = w / 2;
 
-    final centerX = size.width / 2;
+    final fill = primaryColor.withValues(alpha: 0.60);
+    final light = primaryColor.withValues(alpha: 0.28);
+    final dark = primaryColor.withValues(alpha: 0.85);
+    final outline = primaryColor.withValues(alpha: 0.80);
+    final detail = primaryColor.withValues(alpha: 0.22);
 
-    // Head (circle)
+    final outlinePaint = Paint()
+      ..color = outline
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.6
+      ..strokeJoin = StrokeJoin.round
+      ..strokeCap = StrokeCap.round;
+
+    final detailPaint = Paint()
+      ..color = detail
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 0.9;
+
+    // Helper: horizontal gradient rect shader
+    Shader grad(Rect r) => LinearGradient(
+      begin: Alignment.centerLeft,
+      end: Alignment.centerRight,
+      colors: [light, fill, dark],
+      stops: const [0.0, 0.42, 1.0],
+    ).createShader(r);
+
+    Paint fillPaint(Rect r) => Paint()..shader = grad(r);
+
+    // ── HEAD ──
+    final headR = h * 0.065;
+    final headC = Offset(cx, h * 0.075);
+    final headRect = Rect.fromCircle(center: headC, radius: headR);
     canvas.drawCircle(
-      Offset(centerX, size.height * 0.06),
-      size.width * 0.065,
-      paint,
+      headC, headR,
+      Paint()..shader = RadialGradient(
+        center: const Alignment(-0.3, -0.4),
+        radius: 0.75,
+        colors: [Colors.white.withValues(alpha: 0.28), fill],
+      ).createShader(headRect),
     );
+    canvas.drawCircle(headC, headR, outlinePaint);
 
-    // Neck
-    final neckPath = Path();
-    neckPath.moveTo(centerX - size.width * 0.025, size.height * 0.10);
-    neckPath.lineTo(centerX - size.width * 0.025, size.height * 0.14);
-    neckPath.lineTo(centerX + size.width * 0.025, size.height * 0.14);
-    neckPath.lineTo(centerX + size.width * 0.025, size.height * 0.10);
-    neckPath.close();
-    canvas.drawPath(neckPath, paint);
+    // ── NECK ──
+    final nW = w * 0.046;
+    final neckRect = Rect.fromLTRB(cx - nW, h * 0.132, cx + nW, h * 0.168);
+    final neckPath = Path()
+      ..moveTo(cx - nW, h * 0.132)
+      ..lineTo(cx - nW * 0.82, h * 0.168)
+      ..lineTo(cx + nW * 0.82, h * 0.168)
+      ..lineTo(cx + nW, h * 0.132)
+      ..close();
+    canvas.drawPath(neckPath, fillPaint(neckRect));
+    canvas.drawPath(neckPath, outlinePaint);
 
-    // Torso (trapezoid shape - shoulders to hips)
-    final torsoPath = Path();
-    torsoPath.moveTo(centerX - size.width * 0.13, size.height * 0.16); // Left shoulder
-    torsoPath.lineTo(centerX - size.width * 0.10, size.height * 0.36); // Left waist
-    torsoPath.lineTo(centerX - size.width * 0.12, size.height * 0.46); // Left hip
-    torsoPath.lineTo(centerX + size.width * 0.12, size.height * 0.46); // Right hip
-    torsoPath.lineTo(centerX + size.width * 0.10, size.height * 0.36); // Right waist
-    torsoPath.lineTo(centerX + size.width * 0.13, size.height * 0.16); // Right shoulder
-    torsoPath.close();
-    canvas.drawPath(torsoPath, paint);
+    // ── LEFT ARM ──
+    final laRect = Rect.fromLTRB(cx - w * 0.26, h * 0.170, cx - w * 0.11, h * 0.540);
+    final laPath = Path()
+      ..moveTo(cx - w * 0.136, h * 0.175)
+      ..cubicTo(cx - w * 0.190, h * 0.190, cx - w * 0.220, h * 0.235, cx - w * 0.225, h * 0.310)
+      ..cubicTo(cx - w * 0.228, h * 0.365, cx - w * 0.215, h * 0.425, cx - w * 0.200, h * 0.535)
+      ..lineTo(cx - w * 0.172, h * 0.535)
+      ..cubicTo(cx - w * 0.185, h * 0.425, cx - w * 0.172, h * 0.365, cx - w * 0.168, h * 0.310)
+      ..cubicTo(cx - w * 0.162, h * 0.235, cx - w * 0.130, h * 0.190, cx - w * 0.114, h * 0.175)
+      ..close();
+    canvas.drawPath(laPath, fillPaint(laRect));
+    canvas.drawPath(laPath, outlinePaint);
 
-    // Left arm (down along body)
-    final leftArmPath = Path();
-    // Upper arm (shoulder to elbow)
-    leftArmPath.moveTo(centerX - size.width * 0.13, size.height * 0.17);
-    leftArmPath.lineTo(centerX - size.width * 0.16, size.height * 0.34);
-    leftArmPath.lineTo(centerX - size.width * 0.14, size.height * 0.35);
-    leftArmPath.lineTo(centerX - size.width * 0.11, size.height * 0.18);
-    leftArmPath.close();
-    canvas.drawPath(leftArmPath, paint);
+    // ── RIGHT ARM (mirror) ──
+    final raRect = Rect.fromLTRB(cx + w * 0.11, h * 0.170, cx + w * 0.26, h * 0.540);
+    final raPath = Path()
+      ..moveTo(cx + w * 0.114, h * 0.175)
+      ..cubicTo(cx + w * 0.130, h * 0.190, cx + w * 0.162, h * 0.235, cx + w * 0.168, h * 0.310)
+      ..cubicTo(cx + w * 0.172, h * 0.365, cx + w * 0.185, h * 0.425, cx + w * 0.172, h * 0.535)
+      ..lineTo(cx + w * 0.200, h * 0.535)
+      ..cubicTo(cx + w * 0.215, h * 0.425, cx + w * 0.228, h * 0.365, cx + w * 0.225, h * 0.310)
+      ..cubicTo(cx + w * 0.220, h * 0.235, cx + w * 0.190, h * 0.190, cx + w * 0.136, h * 0.175)
+      ..close();
+    canvas.drawPath(raPath, fillPaint(raRect));
+    canvas.drawPath(raPath, outlinePaint);
 
-    // Left forearm (elbow to wrist)
-    final leftForearmPath = Path();
-    leftForearmPath.moveTo(centerX - size.width * 0.16, size.height * 0.34);
-    leftForearmPath.lineTo(centerX - size.width * 0.17, size.height * 0.48);
-    leftForearmPath.lineTo(centerX - size.width * 0.15, size.height * 0.48);
-    leftForearmPath.lineTo(centerX - size.width * 0.14, size.height * 0.35);
-    leftForearmPath.close();
-    canvas.drawPath(leftForearmPath, paint);
+    // ── TORSO ──
+    final torsoRect = Rect.fromLTRB(cx - w * 0.155, h * 0.168, cx + w * 0.155, h * 0.530);
+    final torsoPath = Path()
+      ..moveTo(cx - w * 0.114, h * 0.175)
+      ..cubicTo(cx - w * 0.155, h * 0.245, cx - w * 0.135, h * 0.310, cx - w * 0.112, h * 0.378)
+      ..cubicTo(cx - w * 0.100, h * 0.422, cx - w * 0.125, h * 0.480, cx - w * 0.130, h * 0.530)
+      ..lineTo(cx + w * 0.130, h * 0.530)
+      ..cubicTo(cx + w * 0.125, h * 0.480, cx + w * 0.100, h * 0.422, cx + w * 0.112, h * 0.378)
+      ..cubicTo(cx + w * 0.135, h * 0.310, cx + w * 0.155, h * 0.245, cx + w * 0.114, h * 0.175)
+      ..close();
+    canvas.drawPath(torsoPath, fillPaint(torsoRect));
+    canvas.drawPath(torsoPath, outlinePaint);
 
-    // Right arm (down along body)
-    final rightArmPath = Path();
-    // Upper arm (shoulder to elbow)
-    rightArmPath.moveTo(centerX + size.width * 0.13, size.height * 0.17);
-    rightArmPath.lineTo(centerX + size.width * 0.16, size.height * 0.34);
-    rightArmPath.lineTo(centerX + size.width * 0.14, size.height * 0.35);
-    rightArmPath.lineTo(centerX + size.width * 0.11, size.height * 0.18);
-    rightArmPath.close();
-    canvas.drawPath(rightArmPath, paint);
+    // ── LEFT LEG ──
+    final llRect = Rect.fromLTRB(cx - w * 0.150, h * 0.530, cx, h * 0.970);
+    final llPath = Path()
+      ..moveTo(cx - w * 0.130, h * 0.530)
+      ..lineTo(cx - w * 0.014, h * 0.530)
+      ..cubicTo(cx - w * 0.025, h * 0.615, cx - w * 0.052, h * 0.665, cx - w * 0.052, h * 0.705)
+      ..cubicTo(cx - w * 0.052, h * 0.745, cx - w * 0.040, h * 0.842, cx - w * 0.038, h * 0.915)
+      ..lineTo(cx - w * 0.063, h * 0.915)
+      ..cubicTo(cx - w * 0.065, h * 0.842, cx - w * 0.078, h * 0.745, cx - w * 0.080, h * 0.705)
+      ..cubicTo(cx - w * 0.082, h * 0.665, cx - w * 0.115, h * 0.615, cx - w * 0.130, h * 0.530)
+      ..close();
+    canvas.drawPath(llPath, fillPaint(llRect));
+    canvas.drawPath(llPath, outlinePaint);
 
-    // Right forearm (elbow to wrist)
-    final rightForearmPath = Path();
-    rightForearmPath.moveTo(centerX + size.width * 0.16, size.height * 0.34);
-    rightForearmPath.lineTo(centerX + size.width * 0.17, size.height * 0.48);
-    rightForearmPath.lineTo(centerX + size.width * 0.15, size.height * 0.48);
-    rightForearmPath.lineTo(centerX + size.width * 0.14, size.height * 0.35);
-    rightForearmPath.close();
-    canvas.drawPath(rightForearmPath, paint);
+    // ── RIGHT LEG (mirror) ──
+    final rlRect = Rect.fromLTRB(cx, h * 0.530, cx + w * 0.150, h * 0.970);
+    final rlPath = Path()
+      ..moveTo(cx + w * 0.014, h * 0.530)
+      ..lineTo(cx + w * 0.130, h * 0.530)
+      ..cubicTo(cx + w * 0.115, h * 0.615, cx + w * 0.082, h * 0.665, cx + w * 0.080, h * 0.705)
+      ..cubicTo(cx + w * 0.078, h * 0.745, cx + w * 0.065, h * 0.842, cx + w * 0.063, h * 0.915)
+      ..lineTo(cx + w * 0.038, h * 0.915)
+      ..cubicTo(cx + w * 0.040, h * 0.842, cx + w * 0.052, h * 0.745, cx + w * 0.052, h * 0.705)
+      ..cubicTo(cx + w * 0.052, h * 0.665, cx + w * 0.025, h * 0.615, cx + w * 0.014, h * 0.530)
+      ..close();
+    canvas.drawPath(rlPath, fillPaint(rlRect));
+    canvas.drawPath(rlPath, outlinePaint);
 
-    // Left leg (thigh)
-    final leftThighPath = Path();
-    leftThighPath.moveTo(centerX - size.width * 0.10, size.height * 0.46);
-    leftThighPath.lineTo(centerX - size.width * 0.08, size.height * 0.68);
-    leftThighPath.lineTo(centerX - size.width * 0.05, size.height * 0.68);
-    leftThighPath.lineTo(centerX - size.width * 0.03, size.height * 0.46);
-    leftThighPath.close();
-    canvas.drawPath(leftThighPath, paint);
+    // ── MUSCLE DETAIL LINES ──
+    // Chest center separation
+    canvas.drawLine(Offset(cx, h * 0.182), Offset(cx, h * 0.298), detailPaint);
+    // Abs horizontal lines
+    for (int i = 0; i < 3; i++) {
+      final y = h * (0.272 + i * 0.030);
+      canvas.drawLine(Offset(cx - w * 0.072, y), Offset(cx + w * 0.072, y), detailPaint);
+    }
+    // Abs vertical
+    canvas.drawLine(Offset(cx, h * 0.300), Offset(cx, h * 0.376), detailPaint);
+    // Left bicep
+    canvas.drawLine(Offset(cx - w * 0.190, h * 0.248), Offset(cx - w * 0.180, h * 0.305), detailPaint);
+    // Left quad
+    canvas.drawLine(Offset(cx - w * 0.053, h * 0.560), Offset(cx - w * 0.047, h * 0.682), detailPaint);
+    // Left calf
+    canvas.drawLine(Offset(cx - w * 0.056, h * 0.720), Offset(cx - w * 0.054, h * 0.810), detailPaint);
 
-    // Left leg (calf)
-    final leftCalfPath = Path();
-    leftCalfPath.moveTo(centerX - size.width * 0.08, size.height * 0.68);
-    leftCalfPath.lineTo(centerX - size.width * 0.07, size.height * 0.82);
-    leftCalfPath.lineTo(centerX - size.width * 0.04, size.height * 0.82);
-    leftCalfPath.lineTo(centerX - size.width * 0.05, size.height * 0.68);
-    leftCalfPath.close();
-    canvas.drawPath(leftCalfPath, paint);
-
-    // Right leg (thigh)
-    final rightThighPath = Path();
-    rightThighPath.moveTo(centerX + size.width * 0.03, size.height * 0.46);
-    rightThighPath.lineTo(centerX + size.width * 0.05, size.height * 0.68);
-    rightThighPath.lineTo(centerX + size.width * 0.08, size.height * 0.68);
-    rightThighPath.lineTo(centerX + size.width * 0.10, size.height * 0.46);
-    rightThighPath.close();
-    canvas.drawPath(rightThighPath, paint);
-
-    // Right leg (calf)
-    final rightCalfPath = Path();
-    rightCalfPath.moveTo(centerX + size.width * 0.05, size.height * 0.68);
-    rightCalfPath.lineTo(centerX + size.width * 0.04, size.height * 0.82);
-    rightCalfPath.lineTo(centerX + size.width * 0.07, size.height * 0.82);
-    rightCalfPath.lineTo(centerX + size.width * 0.08, size.height * 0.68);
-    rightCalfPath.close();
-    canvas.drawPath(rightCalfPath, paint);
+    // ── HEAD HIGHLIGHT ──
+    canvas.drawCircle(
+      Offset(cx - headR * 0.32, headC.dy - headR * 0.32),
+      headR * 0.38,
+      Paint()..color = Colors.white.withValues(alpha: 0.10),
+    );
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+  bool shouldRepaint(_Body3DPainter old) => old.primaryColor != primaryColor;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Measurement dot + connector line painter
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _MeasLinePainter extends CustomPainter {
+  final Color color;
+  const _MeasLinePainter({required this.color});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    const pillW = 72.0;
+    const dotR = 4.5;
+    const gap = 4.0;
+
+    final linePaint = Paint()
+      ..color = color.withValues(alpha: 0.38)
+      ..strokeWidth = 1.0
+      ..style = PaintingStyle.stroke;
+
+    final dotFill = Paint()
+      ..color = color
+      ..style = PaintingStyle.fill;
+
+    final dotRing = Paint()
+      ..color = Colors.white.withValues(alpha: 0.88)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.5;
+
+    for (final p in _kMeasPoints) {
+      final dotX = p.fracX * size.width;
+      final dotY = p.fracY * size.height;
+
+      // Line goes from dot edge to pill edge
+      final lineEndX = p.onLeft ? pillW + gap : size.width - pillW - gap;
+
+      final fromX = p.onLeft ? dotX - dotR : dotX + dotR;
+      final toX = lineEndX;
+
+      if (p.onLeft && toX < fromX) {
+        canvas.drawLine(Offset(fromX, dotY), Offset(toX, dotY), linePaint);
+      } else if (!p.onLeft && toX > fromX) {
+        canvas.drawLine(Offset(fromX, dotY), Offset(toX, dotY), linePaint);
+      }
+
+      canvas.drawCircle(Offset(dotX, dotY), dotR, dotFill);
+      canvas.drawCircle(Offset(dotX, dotY), dotR, dotRing);
+    }
+  }
+
+  @override
+  bool shouldRepaint(_MeasLinePainter old) => old.color != color;
 }
 
 /// Dialog for adding a new measurement
@@ -739,7 +827,7 @@ class _AddMeasurementDialogState extends State<AddMeasurementDialog> {
         children: [
           if (widget.measurementType == null)
             DropdownButtonFormField<String>(
-              value: _selectedType,
+              initialValue: _selectedType,
               decoration: InputDecoration(
                 labelText: 'Measurement Type',
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
@@ -754,17 +842,17 @@ class _AddMeasurementDialogState extends State<AddMeasurementDialog> {
             )
           else
             Container(
-              padding: EdgeInsets.all(16),
+              padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [Colors.blue.shade50, Colors.cyan.shade50],
-                ),
+                color: theme.colorScheme.primaryContainer
+                    .withValues(alpha: 0.35),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Row(
                 children: [
-                  Icon(Icons.straighten, color: theme.colorScheme.primary),
-                  SizedBox(width: 12),
+                  Icon(Icons.straighten,
+                      color: theme.colorScheme.primary),
+                  const SizedBox(width: 12),
                   Text(
                     widget.measurementLabels[widget.measurementType] ?? '',
                     style: theme.textTheme.titleMedium?.copyWith(
