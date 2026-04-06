@@ -323,8 +323,20 @@ class _BodyMeasurementsCardState extends State<BodyMeasurementsCard> {
       height: 65.h,
       margin: EdgeInsets.symmetric(horizontal: 2.w, vertical: 2.h),
       decoration: BoxDecoration(
-        color: theme.colorScheme.primaryContainer.withValues(alpha: 0.1),
+        gradient: const LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [Color(0xFF030B18), Color(0xFF071020), Color(0xFF0A1630)],
+          stops: [0.0, 0.5, 1.0],
+        ),
         borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF00C8F0).withValues(alpha: 0.14),
+            blurRadius: 22,
+            spreadRadius: 1,
+          ),
+        ],
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(20),
@@ -335,16 +347,14 @@ class _BodyMeasurementsCardState extends State<BodyMeasurementsCard> {
               children: [
                 // 3D body silhouette
                 Positioned.fill(
-                  child: CustomPaint(
-                    painter: _Body3DPainter(
-                        primaryColor: theme.colorScheme.primary),
+                  child: const CustomPaint(
+                    painter: _HolographicBodyPainter(),
                   ),
                 ),
                 // Measurement dots + connector lines
                 Positioned.fill(
-                  child: CustomPaint(
-                    painter: _MeasLinePainter(
-                        color: theme.colorScheme.primary),
+                  child: const CustomPaint(
+                    painter: _MeasLinePainter(),
                   ),
                 ),
                 // Label pills
@@ -365,28 +375,26 @@ class _BodyMeasurementsCardState extends State<BodyMeasurementsCard> {
                         height: pillH,
                         alignment: Alignment.center,
                         decoration: BoxDecoration(
-                          color: theme.colorScheme.surface
-                              .withValues(alpha: 0.93),
+                          color: const Color(0xFF060F1E).withValues(alpha: 0.88),
                           borderRadius: BorderRadius.circular(11),
                           border: Border.all(
-                            color: theme.colorScheme.primary
-                                .withValues(alpha: 0.45),
+                            color: const Color(0xFF00C8F0).withValues(alpha: 0.55),
                           ),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.1),
-                              blurRadius: 4,
-                              offset: const Offset(0, 1),
+                              color: const Color(0xFF00C8F0).withValues(alpha: 0.18),
+                              blurRadius: 6,
+                              offset: const Offset(0, 0),
                             ),
                           ],
                         ),
                         child: Text(
                           p.label,
-                          style: TextStyle(
+                          style: const TextStyle(
                             fontSize: 9.5,
                             fontWeight: FontWeight.w700,
-                            color: theme.colorScheme.primary,
-                            letterSpacing: 0.2,
+                            color: Color(0xFF00C8F0),
+                            letterSpacing: 0.3,
                           ),
                         ),
                       ),
@@ -566,12 +574,15 @@ const List<_MeasPt> _kMeasPoints = [
 ];
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 3D body silhouette painter
+// Holographic wireframe body painter
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _Body3DPainter extends CustomPainter {
-  final Color primaryColor;
-  const _Body3DPainter({required this.primaryColor});
+class _HolographicBodyPainter extends CustomPainter {
+  const _HolographicBodyPainter();
+
+  static const _cyan = Color(0xFF00C8F0);
+  static const _cyanBright = Color(0xFF55E0FF);
+  static const _cyanGlow = Color(0xFF00A8D8);
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -579,62 +590,21 @@ class _Body3DPainter extends CustomPainter {
     final h = size.height;
     final cx = w / 2;
 
-    final fill = primaryColor.withValues(alpha: 0.60);
-    final light = primaryColor.withValues(alpha: 0.28);
-    final dark = primaryColor.withValues(alpha: 0.85);
-    final outline = primaryColor.withValues(alpha: 0.80);
-    final detail = primaryColor.withValues(alpha: 0.22);
+    // ── AMBIENT BACKGROUND PARTICLES ──
+    _drawParticles(canvas, w, h);
 
-    final outlinePaint = Paint()
-      ..color = outline
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.6
-      ..strokeJoin = StrokeJoin.round
-      ..strokeCap = StrokeCap.round;
-
-    final detailPaint = Paint()
-      ..color = detail
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 0.9;
-
-    // Helper: horizontal gradient rect shader
-    Shader grad(Rect r) => LinearGradient(
-      begin: Alignment.centerLeft,
-      end: Alignment.centerRight,
-      colors: [light, fill, dark],
-      stops: const [0.0, 0.42, 1.0],
-    ).createShader(r);
-
-    Paint fillPaint(Rect r) => Paint()..shader = grad(r);
-
-    // ── HEAD ──
-    final headR = h * 0.065;
+    // ── BUILD BODY SECTIONS AS PATHS ──
     final headC = Offset(cx, h * 0.075);
-    final headRect = Rect.fromCircle(center: headC, radius: headR);
-    canvas.drawCircle(
-      headC, headR,
-      Paint()..shader = RadialGradient(
-        center: const Alignment(-0.3, -0.4),
-        radius: 0.75,
-        colors: [Colors.white.withValues(alpha: 0.28), fill],
-      ).createShader(headRect),
-    );
-    canvas.drawCircle(headC, headR, outlinePaint);
-
-    // ── NECK ──
+    final headR = h * 0.065;
     final nW = w * 0.046;
-    final neckRect = Rect.fromLTRB(cx - nW, h * 0.132, cx + nW, h * 0.168);
+
     final neckPath = Path()
       ..moveTo(cx - nW, h * 0.132)
       ..lineTo(cx - nW * 0.82, h * 0.168)
       ..lineTo(cx + nW * 0.82, h * 0.168)
       ..lineTo(cx + nW, h * 0.132)
       ..close();
-    canvas.drawPath(neckPath, fillPaint(neckRect));
-    canvas.drawPath(neckPath, outlinePaint);
 
-    // ── LEFT ARM ──
-    final laRect = Rect.fromLTRB(cx - w * 0.26, h * 0.170, cx - w * 0.11, h * 0.540);
     final laPath = Path()
       ..moveTo(cx - w * 0.136, h * 0.175)
       ..cubicTo(cx - w * 0.190, h * 0.190, cx - w * 0.220, h * 0.235, cx - w * 0.225, h * 0.310)
@@ -643,11 +613,7 @@ class _Body3DPainter extends CustomPainter {
       ..cubicTo(cx - w * 0.185, h * 0.425, cx - w * 0.172, h * 0.365, cx - w * 0.168, h * 0.310)
       ..cubicTo(cx - w * 0.162, h * 0.235, cx - w * 0.130, h * 0.190, cx - w * 0.114, h * 0.175)
       ..close();
-    canvas.drawPath(laPath, fillPaint(laRect));
-    canvas.drawPath(laPath, outlinePaint);
 
-    // ── RIGHT ARM (mirror) ──
-    final raRect = Rect.fromLTRB(cx + w * 0.11, h * 0.170, cx + w * 0.26, h * 0.540);
     final raPath = Path()
       ..moveTo(cx + w * 0.114, h * 0.175)
       ..cubicTo(cx + w * 0.130, h * 0.190, cx + w * 0.162, h * 0.235, cx + w * 0.168, h * 0.310)
@@ -656,11 +622,7 @@ class _Body3DPainter extends CustomPainter {
       ..cubicTo(cx + w * 0.215, h * 0.425, cx + w * 0.228, h * 0.365, cx + w * 0.225, h * 0.310)
       ..cubicTo(cx + w * 0.220, h * 0.235, cx + w * 0.190, h * 0.190, cx + w * 0.136, h * 0.175)
       ..close();
-    canvas.drawPath(raPath, fillPaint(raRect));
-    canvas.drawPath(raPath, outlinePaint);
 
-    // ── TORSO ──
-    final torsoRect = Rect.fromLTRB(cx - w * 0.155, h * 0.168, cx + w * 0.155, h * 0.530);
     final torsoPath = Path()
       ..moveTo(cx - w * 0.114, h * 0.175)
       ..cubicTo(cx - w * 0.155, h * 0.245, cx - w * 0.135, h * 0.310, cx - w * 0.112, h * 0.378)
@@ -669,11 +631,7 @@ class _Body3DPainter extends CustomPainter {
       ..cubicTo(cx + w * 0.125, h * 0.480, cx + w * 0.100, h * 0.422, cx + w * 0.112, h * 0.378)
       ..cubicTo(cx + w * 0.135, h * 0.310, cx + w * 0.155, h * 0.245, cx + w * 0.114, h * 0.175)
       ..close();
-    canvas.drawPath(torsoPath, fillPaint(torsoRect));
-    canvas.drawPath(torsoPath, outlinePaint);
 
-    // ── LEFT LEG ──
-    final llRect = Rect.fromLTRB(cx - w * 0.150, h * 0.530, cx, h * 0.970);
     final llPath = Path()
       ..moveTo(cx - w * 0.130, h * 0.530)
       ..lineTo(cx - w * 0.014, h * 0.530)
@@ -683,11 +641,7 @@ class _Body3DPainter extends CustomPainter {
       ..cubicTo(cx - w * 0.065, h * 0.842, cx - w * 0.078, h * 0.745, cx - w * 0.080, h * 0.705)
       ..cubicTo(cx - w * 0.082, h * 0.665, cx - w * 0.115, h * 0.615, cx - w * 0.130, h * 0.530)
       ..close();
-    canvas.drawPath(llPath, fillPaint(llRect));
-    canvas.drawPath(llPath, outlinePaint);
 
-    // ── RIGHT LEG (mirror) ──
-    final rlRect = Rect.fromLTRB(cx, h * 0.530, cx + w * 0.150, h * 0.970);
     final rlPath = Path()
       ..moveTo(cx + w * 0.014, h * 0.530)
       ..lineTo(cx + w * 0.130, h * 0.530)
@@ -697,36 +651,172 @@ class _Body3DPainter extends CustomPainter {
       ..cubicTo(cx + w * 0.040, h * 0.842, cx + w * 0.052, h * 0.745, cx + w * 0.052, h * 0.705)
       ..cubicTo(cx + w * 0.052, h * 0.665, cx + w * 0.025, h * 0.615, cx + w * 0.014, h * 0.530)
       ..close();
-    canvas.drawPath(rlPath, fillPaint(rlRect));
-    canvas.drawPath(rlPath, outlinePaint);
 
-    // ── MUSCLE DETAIL LINES ──
-    // Chest center separation
-    canvas.drawLine(Offset(cx, h * 0.182), Offset(cx, h * 0.298), detailPaint);
-    // Abs horizontal lines
-    for (int i = 0; i < 3; i++) {
-      final y = h * (0.272 + i * 0.030);
-      canvas.drawLine(Offset(cx - w * 0.072, y), Offset(cx + w * 0.072, y), detailPaint);
+    final allPaths = [neckPath, laPath, raPath, torsoPath, llPath, rlPath];
+
+    // ── INTERIOR GLOW FILL (very subtle) ──
+    final interiorPaint = Paint()
+      ..color = _cyan.withValues(alpha: 0.05)
+      ..style = PaintingStyle.fill;
+    for (final p in allPaths) { canvas.drawPath(p, interiorPaint); }
+
+    // ── HORIZONTAL SCAN MESH (clipped per section) ──
+    final meshPaint = Paint()
+      ..color = _cyan.withValues(alpha: 0.12)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 0.55;
+
+    for (final p in allPaths) {
+      canvas.save();
+      canvas.clipPath(p);
+      double y = 0;
+      while (y < h) {
+        canvas.drawLine(Offset(0, y), Offset(w, y), meshPaint);
+        y += h * 0.022;
+      }
+      canvas.restore();
     }
-    // Abs vertical
-    canvas.drawLine(Offset(cx, h * 0.300), Offset(cx, h * 0.376), detailPaint);
-    // Left bicep
-    canvas.drawLine(Offset(cx - w * 0.190, h * 0.248), Offset(cx - w * 0.180, h * 0.305), detailPaint);
-    // Left quad
-    canvas.drawLine(Offset(cx - w * 0.053, h * 0.560), Offset(cx - w * 0.047, h * 0.682), detailPaint);
-    // Left calf
-    canvas.drawLine(Offset(cx - w * 0.056, h * 0.720), Offset(cx - w * 0.054, h * 0.810), detailPaint);
+    // Head scan
+    canvas.save();
+    canvas.clipRect(Rect.fromCircle(center: headC, radius: headR));
+    double hy = headC.dy - headR;
+    while (hy < headC.dy + headR) {
+      canvas.drawLine(Offset(0, hy), Offset(w, hy), meshPaint);
+      hy += h * 0.022;
+    }
+    canvas.restore();
 
-    // ── HEAD HIGHLIGHT ──
-    canvas.drawCircle(
-      Offset(cx - headR * 0.32, headC.dy - headR * 0.32),
-      headR * 0.38,
-      Paint()..color = Colors.white.withValues(alpha: 0.10),
-    );
+    // ── STRUCTURAL POLYGON LINES ──
+    _drawStructuralLines(canvas, cx, w, h);
+
+    // ── GLOW OUTLINE (blurred wide stroke) ──
+    final glowPaint = Paint()
+      ..color = _cyanGlow.withValues(alpha: 0.28)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 9
+      ..strokeJoin = StrokeJoin.round
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 7);
+    for (final p in allPaths) { canvas.drawPath(p, glowPaint); }
+    canvas.drawCircle(headC, headR, glowPaint);
+
+    // ── SHARP OUTLINE ──
+    final sharpPaint = Paint()
+      ..color = _cyan.withValues(alpha: 0.82)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.3
+      ..strokeJoin = StrokeJoin.round
+      ..strokeCap = StrokeCap.round;
+    for (final p in allPaths) { canvas.drawPath(p, sharpPaint); }
+    canvas.drawCircle(headC, headR, sharpPaint);
+
+    // Head cross-hair detail
+    final headMesh = Paint()
+      ..color = _cyan.withValues(alpha: 0.18)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 0.55;
+    canvas.drawLine(Offset(cx - headR, headC.dy), Offset(cx + headR, headC.dy), headMesh);
+    canvas.drawLine(Offset(cx, headC.dy - headR), Offset(cx, headC.dy + headR), headMesh);
+
+    // ── POLYGON VERTEX NODES ──
+    _drawNodes(canvas, cx, w, h);
+  }
+
+  void _drawStructuralLines(Canvas canvas, double cx, double w, double h) {
+    final lp = Paint()
+      ..color = _cyan.withValues(alpha: 0.22)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 0.75;
+
+    // Vertical spine
+    canvas.drawLine(Offset(cx, h * 0.168), Offset(cx, h * 0.530), lp);
+    // Horizontal rings
+    canvas.drawLine(Offset(cx - w * 0.114, h * 0.175), Offset(cx + w * 0.114, h * 0.175), lp); // shoulder
+    canvas.drawLine(Offset(cx - w * 0.138, h * 0.257), Offset(cx + w * 0.138, h * 0.257), lp); // chest
+    canvas.drawLine(Offset(cx - w * 0.112, h * 0.375), Offset(cx + w * 0.112, h * 0.375), lp); // waist
+    canvas.drawLine(Offset(cx - w * 0.130, h * 0.480), Offset(cx + w * 0.130, h * 0.480), lp); // hip
+    canvas.drawLine(Offset(cx - w * 0.072, h * 0.706), Offset(cx - w * 0.028, h * 0.706), lp); // L knee
+    canvas.drawLine(Offset(cx + w * 0.028, h * 0.706), Offset(cx + w * 0.072, h * 0.706), lp); // R knee
+
+    // Diagonal polygon ribs (shoulder→chest→waist→hip)
+    canvas.drawLine(Offset(cx - w * 0.114, h * 0.175), Offset(cx - w * 0.138, h * 0.257), lp);
+    canvas.drawLine(Offset(cx + w * 0.114, h * 0.175), Offset(cx + w * 0.138, h * 0.257), lp);
+    canvas.drawLine(Offset(cx - w * 0.138, h * 0.257), Offset(cx - w * 0.112, h * 0.375), lp);
+    canvas.drawLine(Offset(cx + w * 0.138, h * 0.257), Offset(cx + w * 0.112, h * 0.375), lp);
+    canvas.drawLine(Offset(cx - w * 0.112, h * 0.375), Offset(cx - w * 0.130, h * 0.480), lp);
+    canvas.drawLine(Offset(cx + w * 0.112, h * 0.375), Offset(cx + w * 0.130, h * 0.480), lp);
+
+    // Arm mid-sections
+    canvas.drawLine(Offset(cx - w * 0.208, h * 0.310), Offset(cx - w * 0.165, h * 0.310), lp);
+    canvas.drawLine(Offset(cx + w * 0.165, h * 0.310), Offset(cx + w * 0.208, h * 0.310), lp);
+    canvas.drawLine(Offset(cx - w * 0.206, h * 0.420), Offset(cx - w * 0.170, h * 0.420), lp);
+    canvas.drawLine(Offset(cx + w * 0.170, h * 0.420), Offset(cx + w * 0.206, h * 0.420), lp);
+
+    // Leg mid-sections
+    canvas.drawLine(Offset(cx - w * 0.118, h * 0.620), Offset(cx - w * 0.034, h * 0.620), lp);
+    canvas.drawLine(Offset(cx + w * 0.034, h * 0.620), Offset(cx + w * 0.118, h * 0.620), lp);
+    canvas.drawLine(Offset(cx - w * 0.084, h * 0.800), Offset(cx - w * 0.036, h * 0.800), lp);
+    canvas.drawLine(Offset(cx + w * 0.036, h * 0.800), Offset(cx + w * 0.084, h * 0.800), lp);
+  }
+
+  void _drawNodes(Canvas canvas, double cx, double w, double h) {
+    final nodes = <Offset>[
+      Offset(cx - w * 0.114, h * 0.175), // L shoulder
+      Offset(cx + w * 0.114, h * 0.175), // R shoulder
+      Offset(cx - w * 0.138, h * 0.257), // L chest
+      Offset(cx + w * 0.138, h * 0.257), // R chest
+      Offset(cx - w * 0.112, h * 0.375), // L waist
+      Offset(cx + w * 0.112, h * 0.375), // R waist
+      Offset(cx - w * 0.130, h * 0.480), // L hip
+      Offset(cx + w * 0.130, h * 0.480), // R hip
+      Offset(cx, h * 0.132),             // neck base
+      Offset(cx - w * 0.186, h * 0.535), // L wrist
+      Offset(cx + w * 0.186, h * 0.535), // R wrist
+      Offset(cx - w * 0.051, h * 0.706), // L knee
+      Offset(cx + w * 0.051, h * 0.706), // R knee
+      Offset(cx - w * 0.051, h * 0.915), // L ankle
+      Offset(cx + w * 0.051, h * 0.915), // R ankle
+    ];
+
+    for (final node in nodes) {
+      // Outer glow blob
+      canvas.drawCircle(
+        node, 7,
+        Paint()
+          ..color = _cyan.withValues(alpha: 0.22)
+          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 5),
+      );
+      // Ring
+      canvas.drawCircle(
+        node, 4,
+        Paint()
+          ..color = _cyanBright.withValues(alpha: 0.75)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1.1,
+      );
+      // Core dot
+      canvas.drawCircle(node, 1.8, Paint()..color = Colors.white);
+    }
+  }
+
+  void _drawParticles(Canvas canvas, double w, double h) {
+    const positions = [
+      (0.07, 0.09), (0.91, 0.15), (0.04, 0.32), (0.96, 0.40),
+      (0.06, 0.58), (0.94, 0.62), (0.08, 0.78), (0.92, 0.85),
+      (0.14, 0.93), (0.87, 0.22), (0.03, 0.50), (0.97, 0.72),
+    ];
+    for (final (fx, fy) in positions) {
+      final pos = Offset(w * fx, h * fy);
+      canvas.drawCircle(pos, 3.5,
+        Paint()
+          ..color = _cyan.withValues(alpha: 0.10)
+          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2),
+      );
+      canvas.drawCircle(pos, 1.4, Paint()..color = _cyan.withValues(alpha: 0.28));
+    }
   }
 
   @override
-  bool shouldRepaint(_Body3DPainter old) => old.primaryColor != primaryColor;
+  bool shouldRepaint(_HolographicBodyPainter old) => false;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -734,8 +824,9 @@ class _Body3DPainter extends CustomPainter {
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _MeasLinePainter extends CustomPainter {
-  final Color color;
-  const _MeasLinePainter({required this.color});
+  const _MeasLinePainter();
+
+  static const _cyan = Color(0xFF00C8F0);
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -744,18 +835,22 @@ class _MeasLinePainter extends CustomPainter {
     const gap = 4.0;
 
     final linePaint = Paint()
-      ..color = color.withValues(alpha: 0.38)
-      ..strokeWidth = 1.0
+      ..color = _cyan.withValues(alpha: 0.45)
+      ..strokeWidth = 0.9
       ..style = PaintingStyle.stroke;
 
+    final dotGlow = Paint()
+      ..color = _cyan.withValues(alpha: 0.35)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4);
+
     final dotFill = Paint()
-      ..color = color
+      ..color = _cyan
       ..style = PaintingStyle.fill;
 
     final dotRing = Paint()
-      ..color = Colors.white.withValues(alpha: 0.88)
+      ..color = Colors.white.withValues(alpha: 0.90)
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.5;
+      ..strokeWidth = 1.4;
 
     for (final p in _kMeasPoints) {
       final dotX = p.fracX * size.width;
@@ -773,13 +868,14 @@ class _MeasLinePainter extends CustomPainter {
         canvas.drawLine(Offset(fromX, dotY), Offset(toX, dotY), linePaint);
       }
 
+      canvas.drawCircle(Offset(dotX, dotY), dotR + 3, dotGlow);
       canvas.drawCircle(Offset(dotX, dotY), dotR, dotFill);
       canvas.drawCircle(Offset(dotX, dotY), dotR, dotRing);
     }
   }
 
   @override
-  bool shouldRepaint(_MeasLinePainter old) => old.color != color;
+  bool shouldRepaint(_MeasLinePainter old) => false;
 }
 
 /// Dialog for adding a new measurement
