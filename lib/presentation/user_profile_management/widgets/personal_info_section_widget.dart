@@ -289,7 +289,7 @@ class _PersonalInfoSectionWidgetState extends State<PersonalInfoSectionWidget> {
                           // Weight Field
                           _buildTextField(
                             controller: _weightController,
-                            label: 'Greutate',
+                            label: 'Weight',
                             suffix: 'kg',
                             keyboardType: const TextInputType.numberWithOptions(
                               decimal: true,
