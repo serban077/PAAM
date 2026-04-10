@@ -12,11 +12,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Current Status
 
-**Last updated:** 2026-04-07
-**Last session:** UI polish — holographic wireframe body silhouette (progress screen: cyan mesh+glow+nodes on dark navy, pill labels dark glass) + nutrition screen gradient hero redesign (date stepper, CalorieGoalWidget glass-card onGradient mode, MacroProgressWidget compact 3-col row, Quick Add strip with 3 gradient cards); flutter analyze 0 issues
+**Last updated:** 2026-04-10
+**Last session:** UI polish — user profile screen full redesign: gradient hero (forest green/dark navy), orange-ring avatar, goal+activity badges, glass stats row, white rounded body card, section labels, gradient Recalibrate card, styled settings tiles; fixed 6 use_build_context_synchronously + Romanian 'Greutate'→'Weight'; 0 lint issues in profile folder
 **Next session starts with:** M11 — Testing & Quality (widget tests + unit tests + flutter analyze clean)
 **Active branches:** main
-**Blockers:** `pubspec.lock` is gitignored — run `flutter pub get` at every session start. DB enum values fully English. USDA_API_KEY in env.json only. `product_found_sheet.dart` unused untracked — safe to delete. Gemini 2.5 Flash needs `maxTokens ≥ 8192` for OCR. Exercise animations use free-exercise-db CDN. `Stack(fit: StackFit.expand)` required for IndexedStack overlay. `memCacheWidth` needs `.isFinite` guard. M20 manual config: "Confirm email" ✅ enabled; hCaptcha skipped (PAAM project, no paid tier needed). M19 deferred: pagination UI, streak RPC, lazy ProgressTrackingScreen, SharedPreferences layer, build/bundle (19.9), perf monitoring (19.10). `DropdownButtonFormField` uses `initialValue:` not deprecated `value:` (Flutter 3.33+).
+**Blockers:** `pubspec.lock` is gitignored — run `flutter pub get` at every session start. DB enum values fully English. USDA_API_KEY in env.json only. `product_found_sheet.dart` unused untracked — safe to delete. Gemini 2.5 Flash needs `maxTokens ≥ 8192` for OCR. Exercise animations use free-exercise-db CDN. `Stack(fit: StackFit.expand)` required for IndexedStack overlay. `memCacheWidth` needs `.isFinite` guard. M20 manual config: "Confirm email" ✅ enabled; hCaptcha skipped (PAAM project, no paid tier needed). M19 deferred: pagination UI, streak RPC, lazy ProgressTrackingScreen, SharedPreferences layer, build/bundle (19.9), perf monitoring (19.10). `DropdownButtonFormField` uses `initialValue:` not deprecated `value:` (Flutter 3.33+). 44 pre-existing project-wide lint warnings in gemini_ai_service.dart etc. — not blocking.
 
 ---
 

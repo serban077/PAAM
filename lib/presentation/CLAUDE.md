@@ -417,3 +417,16 @@ Shimmer is shown while `_isLoading == true`; replaced with real content on data 
 - Date stepper: left/right `IconButton` arrows + pill container with "Today" or `EEE, MMM d` label; right arrow disabled when `_isToday`
 - Quick Add strip: `_QuickActionCard` widgets in `Row` — gradient `Container` + icon + label + sublabel + color-matched `boxShadow`
 - Skeleton mirrors new layout: gradient header section + white sheet section with shimmer placeholders
+
+**Profile screen — gradient hero layout** (2026-04-10):
+- Same `Stack` + gradient behind SafeArea + white rounded body card pattern as nutrition/auth/dashboard
+- Light: `AppTheme.primaryVariantLight → AppTheme.primaryLight`; Dark: `#0A1628 → #1B3A5E`
+- Avatar: outer `Container(gradient: orange→amber ring)` + inner `Container(gradient: green / dark navy)` with initial letter
+- `_ProfileBadge(solid: true)` = orange pill (goal); `_ProfileBadge(solid: false)` = glass pill with white border (activity)
+- Stats glass pill: `Colors.white.withValues(alpha: 0.18/0.08 dark)` + `Border.all(white α0.15)` — 3 `_buildStatItem` columns separated by 1px dividers
+- Body: drag handle + `_buildSectionLabel` uppercase grey labels + existing 4 section widgets unchanged
+- `_buildRecalibrateCard`: gradient card + `Material(color: transparent)` + `InkWell` for ripple + `auto_awesome` icon
+- `_buildSettingsTile`: boxed `ListTile` with icon container + optional badge or chevron
+- Loading skeleton: gradient header (matching hero) + white body + white `CircularProgressIndicator`
+- `ScaffoldMessenger` captured before `await` gaps in all 3 `onUpdate` callbacks — fixes `use_build_context_synchronously`
+- `_goalDisplay` / `_activityDisplay` static const maps on the state class for badge labels
