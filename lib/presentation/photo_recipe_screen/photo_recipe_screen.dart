@@ -116,7 +116,6 @@ class _PhotoRecipeScreenState extends State<PhotoRecipeScreen> {
 
   void _onRetakePhoto() {
     setState(() {
-      _imageBytes = null;
       _ingredients = [];
       _recipes = [];
       _selectedRecipe = null;
