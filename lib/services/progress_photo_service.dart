@@ -24,7 +24,9 @@ class ProgressPhotoService {
     final file = File(localPath);
     final bytes = await file.readAsBytes().timeout(const Duration(seconds: 15));
 
-    final ext = localPath.toLowerCase().endsWith('.png') ? 'png' : 'jpg';
+    final isPng = localPath.toLowerCase().endsWith('.png');
+    final ext = isPng ? 'png' : 'jpg';
+    final contentType = isPng ? 'image/png' : 'image/jpeg'; // must match bucket allowed_mime_types
     final ts = DateTime.now().millisecondsSinceEpoch;
     final storagePath = '$_userId/${ts}_$label.$ext';
 
@@ -33,7 +35,7 @@ class ProgressPhotoService {
         .uploadBinary(
           storagePath,
           bytes,
-          fileOptions: FileOptions(contentType: 'image/$ext'),
+          fileOptions: FileOptions(contentType: contentType),
         )
         .timeout(const Duration(seconds: 30));
 

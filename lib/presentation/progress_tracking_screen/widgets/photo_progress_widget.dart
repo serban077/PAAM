@@ -86,7 +86,11 @@ class _PhotoProgressWidgetState extends State<PhotoProgressWidget> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to save: ${e.toString().replaceAll('Exception: ', '')}')),
+          SnackBar(
+            content: Text('Failed to save: ${e.toString().replaceAll('Exception: saveEntry failed: Exception: ', '')}'),
+            duration: const Duration(seconds: 6),
+            action: SnackBarAction(label: 'OK', onPressed: () {}),
+          ),
         );
       }
     } finally {
