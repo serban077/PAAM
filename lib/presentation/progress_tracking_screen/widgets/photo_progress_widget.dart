@@ -1,6 +1,5 @@
 import 'dart:io';
 
-import 'package:before_after/before_after.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
@@ -295,6 +294,7 @@ class _PhotoCard extends StatelessWidget {
       entry['afterPath'] != null &&
       (entry['afterPath'] as String).isNotEmpty;
 
+  // Builds a photo from a URL or local file path, always fills its parent.
   Widget _buildPhoto(String path, String label) {
     if (path.startsWith('http')) {
       return CustomImageWidget(
@@ -312,6 +312,8 @@ class _PhotoCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final date = entry['date'] as String;
+
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
@@ -329,9 +331,9 @@ class _PhotoCard extends StatelessWidget {
         ),
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Header
+          // ── Header row ────────────────────────────────────────────────
           Padding(
             padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 1.6.h),
             child: Row(
@@ -343,7 +345,7 @@ class _PhotoCard extends StatelessWidget {
                 ),
                 SizedBox(width: 2.w),
                 Text(
-                  entry['date'] as String,
+                  date,
                   style: theme.textTheme.titleSmall?.copyWith(
                     fontWeight: FontWeight.w700,
                   ),
@@ -370,58 +372,105 @@ class _PhotoCard extends StatelessWidget {
             ),
           ),
 
-          // Before/After comparison or single Before photo
+          // ── Photo section ─────────────────────────────────────────────
+          // Row → Expanded → Stack(expand) gives each image tight,
+          // bounded constraints — always renders correctly.
           ClipRRect(
             borderRadius: const BorderRadius.vertical(
               bottom: Radius.circular(16),
             ),
             child: _hasAfter
-                ? SizedBox(
-                    height: 38.h,
-                    child: BeforeAfter(
-                      before: _buildPhoto(
-                        entry['beforePath'] as String,
-                        'Before photo — ${entry['date']}',
-                      ),
-                      after: _buildPhoto(
-                        entry['afterPath'] as String,
-                        'After photo — ${entry['date']}',
-                      ),
-                      thumbColor: theme.colorScheme.primary,
-                    ),
-                  )
-                : Column(
-                    children: [
-                      // Labels row
-                      Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 4.w),
-                        child: Row(
-                          children: [
-                            _LabelChip(
-                              label: 'Before',
-                              color: theme.colorScheme.error,
-                              theme: theme,
-                            ),
-                            const Spacer(),
-                            _LabelChip(
-                              label: 'After — not added yet',
-                              color: theme.colorScheme.onSurfaceVariant,
-                              theme: theme,
-                            ),
-                          ],
-                        ),
-                      ),
-                      SizedBox(height: 1.h),
-                      SizedBox(
-                        height: 34.h,
-                        width: double.infinity,
-                        child: _buildPhoto(
-                          entry['beforePath'] as String,
-                          'Before photo — ${entry['date']}',
-                        ),
-                      ),
-                    ],
+                ? _buildSplitView(date)
+                : _buildSingleView(date),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Side-by-side before | divider | after
+  Widget _buildSplitView(String date) {
+    return SizedBox(
+      height: 36.h,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Before half
+          Expanded(
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                _buildPhoto(
+                  entry['beforePath'] as String,
+                  'Before — $date',
+                ),
+                Positioned(
+                  top: 8,
+                  left: 8,
+                  child: _LabelChip(
+                    label: 'BEFORE',
+                    color: theme.colorScheme.error,
+                    theme: theme,
                   ),
+                ),
+              ],
+            ),
+          ),
+          // White divider
+          Container(width: 2, color: Colors.white),
+          // After half
+          Expanded(
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                _buildPhoto(
+                  entry['afterPath'] as String,
+                  'After — $date',
+                ),
+                Positioned(
+                  top: 8,
+                  right: 8,
+                  child: _LabelChip(
+                    label: 'AFTER',
+                    color: theme.colorScheme.primary,
+                    theme: theme,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Full-width before + "Add After" hint
+  Widget _buildSingleView(String date) {
+    return SizedBox(
+      height: 32.h,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          _buildPhoto(entry['beforePath'] as String, 'Before — $date'),
+          // Before chip (top-left)
+          Positioned(
+            top: 8,
+            left: 8,
+            child: _LabelChip(
+              label: 'BEFORE',
+              color: theme.colorScheme.error,
+              theme: theme,
+            ),
+          ),
+          // Add After hint (top-right)
+          Positioned(
+            top: 8,
+            right: 8,
+            child: _LabelChip(
+              label: '+ Add After',
+              color: theme.colorScheme.onSurfaceVariant,
+              theme: theme,
+            ),
           ),
         ],
       ),
