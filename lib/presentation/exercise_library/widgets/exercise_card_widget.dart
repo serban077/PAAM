@@ -28,11 +28,33 @@ class ExerciseCardWidget extends StatelessWidget {
     }
   }
 
+  String _bodyPartIcon(String bodyPart) {
+    switch (bodyPart) {
+      case 'Chest':       return 'fitness_center';
+      case 'Back':        return 'accessibility_new';
+      case 'Legs':        return 'directions_run';
+      case 'Glutes':      return 'airline_seat_recline_extra';
+      case 'Calves':      return 'directions_walk';
+      case 'Shoulders':   return 'sports';
+      case 'Arms':        return 'pan_tool';
+      case 'Forearms':    return 'back_hand';
+      case 'Abs':         return 'adjust';
+      case 'Full Body':   return 'boy';
+      case 'Stretching':  return 'self_improvement';
+      case 'Plyometrics': return 'flash_on';
+      case 'Cardio':      return 'favorite';
+      default:            return 'fitness_center';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final difficulty = exercise['difficulty'] as String? ?? '';
+    final bodyPart = exercise['bodyPart'] as String? ?? '';
     final diffColor = _getDifficultyColor(difficulty, theme);
+    final imageUrl = exercise['image'] as String?;
+    final hasImage = imageUrl != null && imageUrl.isNotEmpty;
 
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 0.6.h),
@@ -48,7 +70,7 @@ class ExerciseCardWidget extends StatelessWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              // Left: exercise image (fixed square)
+              // Left: exercise image or body-part placeholder
               ClipRRect(
                 borderRadius: const BorderRadius.only(
                   topLeft: Radius.circular(16),
@@ -57,12 +79,23 @@ class ExerciseCardWidget extends StatelessWidget {
                 child: SizedBox(
                   width: 24.w,
                   height: 22.w,
-                  child: CustomImageWidget(
-                    imageUrl: exercise['image'],
-                    fit: BoxFit.cover,
-                    semanticLabel:
-                        exercise['semanticLabel'] ?? exercise['name'],
-                  ),
+                  child: hasImage
+                      ? CustomImageWidget(
+                          imageUrl: imageUrl,
+                          fit: BoxFit.cover,
+                          semanticLabel:
+                              exercise['semanticLabel'] ?? exercise['name'],
+                        )
+                      : Container(
+                          color: diffColor.withAlpha(22),
+                          child: Center(
+                            child: CustomIconWidget(
+                              iconName: _bodyPartIcon(bodyPart),
+                              color: diffColor.withAlpha(120),
+                              size: 36,
+                            ),
+                          ),
+                        ),
                 ),
               ),
               // Difficulty accent strip

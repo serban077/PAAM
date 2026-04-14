@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:sizer/sizer.dart';
 
 import '../../../core/app_export.dart';
-import '../../../services/app_cache_service.dart';
+import '../../../data/verified_exercises_data.dart';
 import '../../widgets/custom_icon_widget.dart';
 import './widgets/exercise_card_widget.dart';
 import './widgets/exercise_detail_sheet.dart';
@@ -37,13 +37,20 @@ class _ExerciseLibraryState extends State<ExerciseLibrary> {
   final int _itemsPerPage = 20;
 
   static const List<Map<String, String>> _categories = [
-    {'label': 'All', 'icon': 'apps'},
-    {'label': 'Chest', 'icon': 'fitness_center'},
-    {'label': 'Back', 'icon': 'accessibility_new'},
-    {'label': 'Legs', 'icon': 'directions_run'},
-    {'label': 'Shoulders', 'icon': 'sports'},
-    {'label': 'Arms', 'icon': 'pan_tool'},
-    {'label': 'Core', 'icon': 'adjust'},
+    {'label': 'All',         'icon': 'apps'},
+    {'label': 'Chest',       'icon': 'fitness_center'},
+    {'label': 'Back',        'icon': 'accessibility_new'},
+    {'label': 'Legs',        'icon': 'directions_run'},
+    {'label': 'Glutes',      'icon': 'airline_seat_recline_extra'},
+    {'label': 'Calves',      'icon': 'directions_walk'},
+    {'label': 'Shoulders',   'icon': 'sports'},
+    {'label': 'Arms',        'icon': 'pan_tool'},
+    {'label': 'Forearms',    'icon': 'back_hand'},
+    {'label': 'Abs',         'icon': 'adjust'},
+    {'label': 'Full Body',   'icon': 'boy'},
+    {'label': 'Stretching',  'icon': 'self_improvement'},
+    {'label': 'Plyometrics', 'icon': 'flash_on'},
+    {'label': 'Cardio',      'icon': 'favorite'},
   ];
 
   @override
@@ -69,21 +76,10 @@ class _ExerciseLibraryState extends State<ExerciseLibrary> {
   }
 
   Future<void> _loadExercises() async {
-    final cached = AppCacheService.instance.getExerciseLibrary();
-    if (cached != null) {
-      setState(() {
-        _exercises = cached;
-        _filteredExercises = cached.take(_itemsPerPage).toList();
-        _currentPage = 1;
-        _isLoading = false;
-      });
-      return;
-    }
-
     setState(() => _isLoading = true);
-    await Future.delayed(const Duration(milliseconds: 500));
-    final exercises = _generateMockExercises();
-    AppCacheService.instance.setExerciseLibrary(exercises);
+    // Short delay so the shimmer skeleton is visible for a polished feel
+    await Future.delayed(const Duration(milliseconds: 350));
+    final exercises = VerifiedExercisesData.getAllExercises();
     setState(() {
       _exercises = exercises;
       _filteredExercises = exercises.take(_itemsPerPage).toList();
@@ -109,6 +105,12 @@ class _ExerciseLibraryState extends State<ExerciseLibrary> {
 
   Future<void> _refreshExercises() async {
     HapticFeedback.mediumImpact();
+    // Force a clean reload from the static database
+    setState(() {
+      _exercises = [];
+      _filteredExercises = [];
+      _currentPage = 0;
+    });
     await _loadExercises();
   }
 
@@ -747,270 +749,4 @@ class _ExerciseLibraryState extends State<ExerciseLibrary> {
     );
   }
 
-  List<Map<String, dynamic>> _generateMockExercises() {
-    return [
-      {
-        "id": 1,
-        "name": "Barbell Squat",
-        "bodyPart": "Legs",
-        "targetMuscles": "Quadriceps, Glutes, Hamstrings",
-        "equipment": "Barbell",
-        "difficulty": "Intermediate",
-        "videoId": "U3HlEF_E9fo",
-        "image":
-            "https://img.rocket.new/generatedImages/rocket_gen_img_11751f112-1764780890698.png",
-        "semanticLabel": "Person performing barbell squat in gym",
-        "restrictions": [],
-      },
-      {
-        "id": 2,
-        "name": "Bench Press",
-        "bodyPart": "Chest",
-        "targetMuscles": "Pectorals, Triceps, Anterior Deltoid",
-        "equipment": "Barbell",
-        "difficulty": "Intermediate",
-        "videoId": "rT7DgCr-3pg",
-        "image":
-            "https://img.rocket.new/generatedImages/rocket_gen_img_157fe155b-1767766857700.png",
-        "semanticLabel": "Athlete performing bench press with barbell",
-        "restrictions": [],
-      },
-      {
-        "id": 3,
-        "name": "Deadlift",
-        "bodyPart": "Back",
-        "targetMuscles": "Lower Back, Glutes, Hamstrings",
-        "equipment": "Barbell",
-        "difficulty": "Advanced",
-        "videoId": "op9kVnSso6Q",
-        "image": "https://images.unsplash.com/photo-1674748596342-8fd299450a71",
-        "semanticLabel": "Athlete lifting heavy barbell in deadlift position",
-        "restrictions": ["Cardiovascular Issues"],
-      },
-      {
-        "id": 4,
-        "name": "Push-Ups",
-        "bodyPart": "Chest",
-        "targetMuscles": "Pectorals, Triceps, Shoulders",
-        "equipment": "Bodyweight",
-        "difficulty": "Beginner",
-        "videoId": "IODxDxX7oi4",
-        "image":
-            "https://img.rocket.new/generatedImages/rocket_gen_img_188114a93-1766957011899.png",
-        "semanticLabel": "Person performing push-ups on yoga mat",
-        "restrictions": [],
-      },
-      {
-        "id": 5,
-        "name": "Pull-Ups",
-        "bodyPart": "Back",
-        "targetMuscles": "Latissimus Dorsi, Biceps",
-        "equipment": "Pull-up Bar",
-        "difficulty": "Intermediate",
-        "videoId": "eGo4IYlbE5g",
-        "image":
-            "https://images.unsplash.com/photo-1646743934945-df7b66e28b7d",
-        "semanticLabel": "Athlete performing pull-ups on bar in park",
-        "restrictions": ["Joint Issues"],
-      },
-      {
-        "id": 6,
-        "name": "Dumbbell Shoulder Press",
-        "bodyPart": "Shoulders",
-        "targetMuscles": "Deltoids, Triceps",
-        "equipment": "Dumbbells",
-        "difficulty": "Intermediate",
-        "videoId": "qEwKCR5JCog",
-        "image":
-            "https://images.unsplash.com/photo-1639653818637-d061a28959ad",
-        "semanticLabel": "Athlete pressing dumbbells overhead",
-        "restrictions": [],
-      },
-      {
-        "id": 7,
-        "name": "Lunges",
-        "bodyPart": "Legs",
-        "targetMuscles": "Quadriceps, Glutes",
-        "equipment": "Bodyweight",
-        "difficulty": "Beginner",
-        "videoId": "L8fvwPVQovQ",
-        "image":
-            "https://images.unsplash.com/photo-1732127836278-edb32d6e5044",
-        "semanticLabel": "Person performing lunges in fitness studio",
-        "restrictions": ["Joint Issues"],
-      },
-      {
-        "id": 8,
-        "name": "Barbell Bicep Curl",
-        "bodyPart": "Arms",
-        "targetMuscles": "Biceps",
-        "equipment": "Barbell",
-        "difficulty": "Beginner",
-        "videoId": "ykJmrZ5v0Oo",
-        "image":
-            "https://img.rocket.new/generatedImages/rocket_gen_img_1498d38fc-1766707658426.png",
-        "semanticLabel": "Athlete performing bicep curl with EZ bar",
-        "restrictions": [],
-      },
-      {
-        "id": 9,
-        "name": "Plank",
-        "bodyPart": "Core",
-        "targetMuscles": "Core, Abs, Shoulders",
-        "equipment": "Bodyweight",
-        "difficulty": "Beginner",
-        "videoId": "pSHjTRCQxIw",
-        "image":
-            "https://img.rocket.new/generatedImages/rocket_gen_img_128b7af95-1766522935960.png",
-        "semanticLabel": "Person holding plank position on mat",
-        "restrictions": [],
-      },
-      {
-        "id": 10,
-        "name": "Tricep Pushdown",
-        "bodyPart": "Arms",
-        "targetMuscles": "Triceps",
-        "equipment": "Cable",
-        "difficulty": "Beginner",
-        "videoId": "2-LAMcpzODU",
-        "image":
-            "https://img.rocket.new/generatedImages/rocket_gen_img_13f7b5f5c-1767766857617.png",
-        "semanticLabel":
-            "Athlete performing tricep pushdown at cable machine",
-        "restrictions": [],
-      },
-      {
-        "id": 11,
-        "name": "Barbell Row",
-        "bodyPart": "Back",
-        "targetMuscles": "Latissimus Dorsi, Trapezius, Rhomboids",
-        "equipment": "Barbell",
-        "difficulty": "Intermediate",
-        "videoId": "G8l_8chR5BE",
-        "image":
-            "https://img.rocket.new/generatedImages/rocket_gen_img_1d6fb5c8f-1764636197383.png",
-        "semanticLabel": "Athlete performing bent-over barbell row",
-        "restrictions": [],
-      },
-      {
-        "id": 12,
-        "name": "Leg Press",
-        "bodyPart": "Legs",
-        "targetMuscles": "Quadriceps, Glutes",
-        "equipment": "Machine",
-        "difficulty": "Beginner",
-        "videoId": "IZxyjW7MPJQ",
-        "image":
-            "https://img.rocket.new/generatedImages/rocket_gen_img_1d21818c8-1764678265894.png",
-        "semanticLabel": "Person using leg press machine in gym",
-        "restrictions": ["Cardiovascular Issues"],
-      },
-      {
-        "id": 13,
-        "name": "Lateral Raises",
-        "bodyPart": "Shoulders",
-        "targetMuscles": "Lateral Deltoids",
-        "equipment": "Dumbbells",
-        "difficulty": "Beginner",
-        "videoId": "3VcKaXpzqRo",
-        "image":
-            "https://img.rocket.new/generatedImages/rocket_gen_img_16dcdcec5-1767041840073.png",
-        "semanticLabel": "Athlete performing lateral raises with dumbbells",
-        "restrictions": [],
-      },
-      {
-        "id": 14,
-        "name": "Crunch",
-        "bodyPart": "Core",
-        "targetMuscles": "Abs",
-        "equipment": "Bodyweight",
-        "difficulty": "Beginner",
-        "videoId": "Xyd_fa5zoEU",
-        "image":
-            "https://images.unsplash.com/photo-1593204108461-60094c677448",
-        "semanticLabel": "Person performing crunches on yoga mat",
-        "restrictions": [],
-      },
-      {
-        "id": 15,
-        "name": "Hammer Curl",
-        "bodyPart": "Arms",
-        "targetMuscles": "Biceps, Forearms",
-        "equipment": "Dumbbells",
-        "difficulty": "Beginner",
-        "videoId": "zC3nLlEvin4",
-        "image":
-            "https://img.rocket.new/generatedImages/rocket_gen_img_1498d38fc-1766707658426.png",
-        "semanticLabel": "Athlete performing hammer curls with dumbbells",
-        "restrictions": [],
-      },
-      {
-        "id": 16,
-        "name": "Dumbbell Chest Press",
-        "bodyPart": "Chest",
-        "targetMuscles": "Pectorals, Triceps",
-        "equipment": "Dumbbells",
-        "difficulty": "Intermediate",
-        "videoId": "8iPEnn-ltC8",
-        "image":
-            "https://img.rocket.new/generatedImages/rocket_gen_img_157fe155b-1767766857700.png",
-        "semanticLabel":
-            "Athlete performing dumbbell chest press on bench",
-        "restrictions": [],
-      },
-      {
-        "id": 17,
-        "name": "Bulgarian Split Squat",
-        "bodyPart": "Legs",
-        "targetMuscles": "Quadriceps, Glutes",
-        "equipment": "Dumbbells",
-        "difficulty": "Intermediate",
-        "videoId": "2C-uNgKwPLE",
-        "image":
-            "https://img.rocket.new/generatedImages/rocket_gen_img_1547b077e-1764914416872.png",
-        "semanticLabel":
-            "Person performing Bulgarian split squat with rear foot elevated",
-        "restrictions": ["Joint Issues"],
-      },
-      {
-        "id": 18,
-        "name": "Face Pull",
-        "bodyPart": "Back",
-        "targetMuscles": "Rear Deltoids, Trapezius, Rotator Cuff",
-        "equipment": "Cable",
-        "difficulty": "Intermediate",
-        "videoId": "HSoHeSt2o7A",
-        "image":
-            "https://img.rocket.new/generatedImages/rocket_gen_img_18811f704-1767016553350.png",
-        "semanticLabel": "Athlete performing face pull at cable machine",
-        "restrictions": [],
-      },
-      {
-        "id": 19,
-        "name": "Dips",
-        "bodyPart": "Chest",
-        "targetMuscles": "Pectorals, Triceps",
-        "equipment": "Parallel Bars",
-        "difficulty": "Intermediate",
-        "videoId": "2z8JmcrW-As",
-        "image":
-            "https://images.unsplash.com/photo-1666961184601-9088aab7bd75",
-        "semanticLabel": "Athlete performing dips on parallel bars",
-        "restrictions": ["Joint Issues"],
-      },
-      {
-        "id": 20,
-        "name": "Leg Curl",
-        "bodyPart": "Legs",
-        "targetMuscles": "Hamstrings",
-        "equipment": "Machine",
-        "difficulty": "Beginner",
-        "videoId": "Orxoeast-AF",
-        "image":
-            "https://img.rocket.new/generatedImages/rocket_gen_img_1b08e5e60-1766503707279.png",
-        "semanticLabel": "Person using leg curl machine in gym",
-        "restrictions": [],
-      },
-    ];
-  }
 }

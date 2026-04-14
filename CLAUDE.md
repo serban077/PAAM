@@ -12,11 +12,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Current Status
 
-**Last updated:** 2026-04-10
-**Last session:** UI polish — user profile screen full redesign: gradient hero (forest green/dark navy), orange-ring avatar, goal+activity badges, glass stats row, white rounded body card, section labels, gradient Recalibrate card, styled settings tiles; fixed 6 use_build_context_synchronously + Romanian 'Greutate'→'Weight'; 0 lint issues in profile folder
+**Last updated:** 2026-04-15
+**Last session:** M21 complete — Exercise Library Expansion: 100+ exercises across 13 categories with Unsplash photos; full GIF animation mapping in exercise_gif_utils.dart; 13-category chip bar + updated filter sheet (Kettlebell/Resistance Band/Box equipment); scroll-driven pagination (20/page); styled body-part placeholder when no image; `getExerciseListForPrompt()` helper for Gemini prompts; fixed 2 warnings in photo_recipe_screen.dart (unused `_imageBytes` field + unused `theme` var)
 **Next session starts with:** M11 — Testing & Quality (widget tests + unit tests + flutter analyze clean)
 **Active branches:** main
-**Blockers:** `pubspec.lock` is gitignored — run `flutter pub get` at every session start. DB enum values fully English. USDA_API_KEY in env.json only. `product_found_sheet.dart` unused untracked — safe to delete. Gemini 2.5 Flash needs `maxTokens ≥ 8192` for OCR. Exercise animations use free-exercise-db CDN. `Stack(fit: StackFit.expand)` required for IndexedStack overlay. `memCacheWidth` needs `.isFinite` guard. M20 manual config: "Confirm email" ✅ enabled; hCaptcha skipped (PAAM project, no paid tier needed). M19 deferred: pagination UI, streak RPC, lazy ProgressTrackingScreen, SharedPreferences layer, build/bundle (19.9), perf monitoring (19.10). `DropdownButtonFormField` uses `initialValue:` not deprecated `value:` (Flutter 3.33+). 44 pre-existing project-wide lint warnings in gemini_ai_service.dart etc. — not blocking.
+**Blockers:** `pubspec.lock` is gitignored — run `flutter pub get` at every session start. DB enum values fully English. USDA_API_KEY in env.json only. `product_found_sheet.dart` unused untracked — safe to delete. Gemini 2.5 Flash needs `maxTokens ≥ 8192` for OCR. Exercise animations use free-exercise-db CDN. `Stack(fit: StackFit.expand)` required for IndexedStack overlay. `memCacheWidth` needs `.isFinite` guard. M20 manual config: "Confirm email" ✅ enabled; hCaptcha skipped (PAAM project, no paid tier needed). M19 deferred: pagination UI, streak RPC, lazy ProgressTrackingScreen, SharedPreferences layer, build/bundle (19.9), perf monitoring (19.10). `DropdownButtonFormField` uses `initialValue:` not deprecated `value:` (Flutter 3.33+). Pre-existing project-wide lint warnings in gemini_ai_service.dart, body_measurements_card.dart etc. — not blocking.
 
 ---
 

@@ -1,5 +1,3 @@
-import 'dart:typed_data';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:sizer/sizer.dart';
@@ -30,7 +28,6 @@ class _PhotoRecipeScreenState extends State<PhotoRecipeScreen> {
   static const _totalSteps = 4;
 
   // Step 1 → 2 data
-  Uint8List? _imageBytes;
   bool _isRecognizing = false;
   List<DetectedIngredient> _ingredients = [];
 
@@ -54,7 +51,6 @@ class _PhotoRecipeScreenState extends State<PhotoRecipeScreen> {
 
   Future<void> _onPhotoCaptured(Uint8List bytes) async {
     setState(() {
-      _imageBytes = bytes;
       _isRecognizing = true;
     });
     _goToStep(1);
@@ -149,8 +145,6 @@ class _PhotoRecipeScreenState extends State<PhotoRecipeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return Scaffold(
       appBar: const CustomAppBar(title: 'Photo Recipe'),
       body: Column(

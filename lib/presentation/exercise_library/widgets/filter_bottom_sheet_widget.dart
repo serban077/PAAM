@@ -29,7 +29,21 @@ class _FilterBottomSheetWidgetState extends State<FilterBottomSheetWidget> {
   };
 
   final Map<String, List<String>> _filterOptions = {
-    'bodyPart': ['Chest', 'Back', 'Legs', 'Shoulders', 'Arms', 'Abs'],
+    'bodyPart': [
+      'Chest',
+      'Back',
+      'Legs',
+      'Glutes',
+      'Calves',
+      'Shoulders',
+      'Arms',
+      'Forearms',
+      'Abs',
+      'Full Body',
+      'Stretching',
+      'Plyometrics',
+      'Cardio',
+    ],
     'equipment': [
       'Barbell',
       'Dumbbells',
@@ -38,12 +52,18 @@ class _FilterBottomSheetWidgetState extends State<FilterBottomSheetWidget> {
       'Bodyweight',
       'Pull-up Bar',
       'Parallel Bars',
+      'Kettlebell',
+      'Resistance Band',
+      'Box',
     ],
     'difficulty': ['Beginner', 'Intermediate', 'Advanced'],
     'restrictions': [
       'Cardiovascular Issues',
-      'Diabetes',
-      'Joint Problems',
+      'Joint Issues',
+      'Back Problems',
+      'Shoulder Issues',
+      'Wrist Issues',
+      'Elbow Issues',
     ],
   };
 

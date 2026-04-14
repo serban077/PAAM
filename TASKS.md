@@ -7,11 +7,11 @@ Update `## Current Status` in `CLAUDE.md` at the end of every session.
 
 ## Current Status
 
-**Last updated:** 2026-04-10
-**Last session completed:** UI polish — user profile screen full redesign (gradient hero + stats row + section labels + modern card layout)
+**Last updated:** 2026-04-15
+**Last session completed:** M21 — Exercise Library Expansion: 100+ exercises across 13 categories, Unsplash photos, GIF animation mappings extended, filter/chip UI updated; fixed 2 warnings in photo_recipe_screen.dart (unused _imageBytes field + unused theme variable)
 **Next session starts with:** M11 — Testing & Quality (widget tests + unit tests + flutter analyze clean)
 **Active branches:** main
-**Blockers / notes:** `pubspec.lock` gitignored — run `flutter pub get` at session start. `product_found_sheet.dart` unused untracked — safe to delete. USDA_API_KEY in env.json. Gemini 2.5 Flash needs maxTokens ≥ 8192. M20 manual config: "Confirm email" enabled in Supabase ✅; hCaptcha skipped (no free tier needed for PAAM). M19 deferred: pagination UI, streak RPC, lazy ProgressTrackingScreen, SharedPreferences layer, build/bundle (19.9), perf monitoring (19.10). Profile screen 0 lint warnings — pre-existing 44 project-wide warnings remain in gemini_ai_service.dart etc.
+**Blockers / notes:** `pubspec.lock` gitignored — run `flutter pub get` at session start. `product_found_sheet.dart` unused untracked — safe to delete. USDA_API_KEY in env.json. Gemini 2.5 Flash needs maxTokens ≥ 8192. M20 manual config: "Confirm email" enabled in Supabase ✅; hCaptcha skipped (no free tier needed for PAAM). M19 deferred: pagination UI, streak RPC, lazy ProgressTrackingScreen, SharedPreferences layer, build/bundle (19.9), perf monitoring (19.10). Pre-existing 44 project-wide info/warnings in gemini_ai_service.dart, body_measurements_card.dart etc. — not blocking.
 
 ---
 
@@ -600,6 +600,27 @@ Update `## Current Status` in `CLAUDE.md` at the end of every session.
 
 ---
 
+## Milestone 21 — Exercise Library Expansion
+
+> Massively expand the exercise database from ~20 mock entries to 100+ real exercises across 13 muscle-group categories. Remove all YouTube videoId/videoUrl fields (Exercise3DWidget + MuscleBodyWidget already handle the visual). Unify the two exercise databases into a single source of truth.
+
+### 21.1 — Unified Exercise Database ✅
+- [x] Rewrite `verified_exercises_data.dart` — 100+ exercises, 13 categories (Chest, Back, Legs, Glutes, Calves, Shoulders, Arms, Forearms, Abs, Full Body, Stretching, Plyometrics, Cardio)
+- [x] Remove `videoId` / `videoUrl` fields from all exercise entries
+- [x] Unified schema: `id`, `name` (English), `bodyPart`, `targetMuscles`, `equipment`, `difficulty`, `image`?, `semanticLabel`, `restrictions`, `instructions`, `safetyTips`, `sets`, `reps`, `restSeconds`
+
+### 21.2 — Exercise Library Screen Update ✅
+- [x] Replace `_generateMockExercises()` with `VerifiedExercisesData.getAllExercises()` in `exercise_library.dart`
+- [x] Update category chips to include all 13 new categories
+- [x] Update `filter_bottom_sheet_widget.dart` bodyPart filter options
+- [x] Add new equipment types: Kettlebell, Resistance Band, Box
+
+### 21.3 — Card & Animation Polish ✅
+- [x] Update `exercise_card_widget.dart` — styled body-part placeholder when no image URL
+- [x] Extend `exercise_gif_utils.dart` with mappings for all new exercises
+
+---
+
 ## Backlog (Nice to Have)
 
 - [ ] Push notifications for workout reminders (daily reminder at user-set time)
@@ -635,3 +656,4 @@ Update `## Current Status` in `CLAUDE.md` at the end of every session.
 | 2026-04-02 | M20 complete | Email verification screen + forgot/reset password + biometric lock (local_auth) + TOTP 2FA (Supabase MFA + qr_flutter) + password strength indicator + security settings screen + session persistence (flutter_secure_storage) + "remember me" + CAPTCHA-ready signup; 4 new packages, 2 DB migrations, 11 new files, 7 modified; flutter analyze 0 errors | M11 — Testing & Quality |
 | 2026-04-05 | M20 hotfixes | fix: Kotlin incremental cache cross-drive crash (flutter clean); fix: TOTP enrollment missing issuer param; fix: totp.qrCode→totp.uri (SVG 2MB caused QrInputTooLongException); fix: QrImageView infinite height (SizedBox wrapper); fix: LoginScreen session restore on cold start + biometric gate; redesign: AppLockScreen with pulse animation + fade-to-dashboard transition; fix: appLock route slide-from-bottom→fade (PageRouteBuilder) | M11 — Testing & Quality |
 | 2026-04-07 | Progress screen UI overhaul | SliverAppBar + parallax header; shimmer skeleton; animated weekly calendar (AnimatedContainer + HapticFeedback + progress bar); arc weight progress card (CustomPaint, bidirectional goal logic, count-up animation); 2×2 stat grid with staggered entrance animations; 3D body silhouette (bezier + LinearGradient depth) with diagram-style measurement pins (LayoutBuilder, dots + connector lines + pill labels); flutter analyze 0 issues | M11 — Testing & Quality |
+| 2026-04-15 | M21 complete | Exercise library expansion: 100+ exercises across 13 categories (Chest/Back/Legs/Glutes/Calves/Shoulders/Arms/Forearms/Abs/Full Body/Stretching/Plyometrics/Cardio); Unsplash photos per exercise; full GIF animation mapping in exercise_gif_utils.dart; new equipment types (Kettlebell/Resistance Band/Box); pagination + scroll-driven load-more; styled body-part placeholder cards; getExerciseListForPrompt() helper for Gemini prompts; fixed 2 warnings in photo_recipe_screen.dart | M11 — Testing & Quality |
