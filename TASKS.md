@@ -7,9 +7,9 @@ Update `## Current Status` in `CLAUDE.md` at the end of every session.
 
 ## Current Status
 
-**Last updated:** 2026-04-15
-**Last session completed:** M21 — Exercise Library Expansion: 100+ exercises across 13 categories, Unsplash photos, GIF animation mappings extended, filter/chip UI updated; fixed 2 warnings in photo_recipe_screen.dart (unused _imageBytes field + unused theme variable)
-**Next session starts with:** M11 — Testing & Quality (widget tests + unit tests + flutter analyze clean)
+**Last updated:** 2026-04-16
+**Last session completed:** M22 — Audit Baseline (static slice): flutter analyze (125 issues — 0 errors in main app), 4 unused packages confirmed (camera/youtube/universal_html/before_after), APK build FAILED (R8 — ProGuard fix ready), 72 DB performance + 13 security advisors logged, postgres logs clean; full report in docs/AUDIT_BASELINE.md
+**Next session starts with:** M23 — High Refresh Rate & UI Fluidity (flutter_displaymode, flutter_animate, animations pkg, skeletonizer, widget rebuild reduction)
 **Active branches:** main
 **Blockers / notes:** `pubspec.lock` gitignored — run `flutter pub get` at session start. `product_found_sheet.dart` unused untracked — safe to delete. USDA_API_KEY in env.json. Gemini 2.5 Flash needs maxTokens ≥ 8192. M20 manual config: "Confirm email" enabled in Supabase ✅; hCaptcha skipped (no free tier needed for PAAM). M19 deferred: pagination UI, streak RPC, lazy ProgressTrackingScreen, SharedPreferences layer, build/bundle (19.9), perf monitoring (19.10). Pre-existing 44 project-wide info/warnings in gemini_ai_service.dart, body_measurements_card.dart etc. — not blocking.
 
@@ -621,6 +621,424 @@ Update `## Current Status` in `CLAUDE.md` at the end of every session.
 
 ---
 
+## Milestone 22 — App Health Audit & Baseline Metrics
+
+> Measure before optimizing. Establish hard numbers for every perf metric so later milestones have a reference point. All baseline values go into `docs/AUDIT_BASELINE.md`.
+
+### 22.1 — Static Analysis & Lint Baseline
+- [x] Run `flutter analyze` and record exact warning/info count per file — **125 issues: 0 errors (main app), ~10 warnings, ~100 infos, 7 errors in PAAM subfolder**
+- [ ] Fix remaining pre-existing lints in `gemini_ai_service.dart`, `body_measurements_card.dart` (and any others flagged in M19.9)
+- [ ] Audit and delete `lib/presentation/nutrition_planning_screen/widgets/product_found_sheet.dart` (confirmed unused per CLAUDE.md)
+- [x] Grep for leftover `print(` / `TODO` / `FIXME` in `lib/` — **2 raw print() in gemini_ai_service.dart; 1 TODO in onboarding_survey_widget.dart; 0 FIXME/HACK**
+- [ ] Add stricter lint ruleset via `very_good_analysis` or custom `analysis_options.yaml` (optional — pending user decision)
+
+### 22.2 — Dependency Audit
+- [x] Run `flutter pub outdated` — **16 direct deps upgradable: 8 major (sizer/camera/fl_chart/connectivity_plus/flutter_secure_storage/fluttertoast/google_fonts/intl/local_auth/permission_handler), 8 minor (dio/flutter_svg/mobile_scanner/shared_preferences/supabase_flutter/google_mlkit_text_recognition)**
+- [x] Identify unused dependencies — **4 confirmed unused (zero imports in lib/): camera, youtube_player_flutter, universal_html, before_after**
+- [x] `js` package flagged as **DISCONTINUED** by Dart team (transitive dep)
+- [ ] Verify each package is still maintained (last commit < 12 months)
+
+### 22.3 — Performance Baseline Measurement
+- [ ] Cold start time (`flutter run --trace-startup --profile`) — record for each of the 3 primary flows: login, dashboard, exercise library **[DEFERRED — needs device]**
+- [~] APK size (`flutter build apk --analyze-size`) — **BUILD FAILED: R8 missing ProGuard rules for google_mlkit_text_recognition. Fix ready in docs/AUDIT_BASELINE.md §3a. Re-run after M31.1.**
+- [ ] Frame rendering per screen (`flutter run --profile` + DevTools Performance) **[DEFERRED — needs device]**
+- [ ] Memory footprint idle + after 5 min navigation loop (DevTools Memory) **[DEFERRED — needs device]**
+- [ ] Count total widget rebuilds on dashboard using DevTools "Track Widget Builds" **[DEFERRED — needs device]**
+
+### 22.4 — DB Advisor Reports
+- [x] Run `mcp__supabase__get_advisors` security — **13 WARN: 10 mutable search_path functions, 2 permissive food_database policies, 1 leaked password protection disabled**
+- [x] Run `mcp__supabase__get_advisors` performance — **72 issues: 28 WARN auth_rls_initplan (auth.uid() re-evaluated per row), 14 WARN multiple_permissive_policies, 13 INFO unindexed FKs, 17 INFO unused indexes**
+- [x] Run `mcp__supabase__get_logs` postgres — **CLEAN: 0 errors, only connection + checkpoint events**
+- [x] All findings documented in `docs/AUDIT_BASELINE.md`
+
+### 22.5 — Baseline Document
+- [x] Created `docs/AUDIT_BASELINE.md` — full report with static analysis, deps, build, DB health, priority fix queue
+- [ ] Runtime section (§5 of baseline doc) — fill in with device measurements before starting M33
+
+---
+
+## Milestone 23 — High Refresh Rate & UI Fluidity
+
+> Make the app feel buttery-smooth. Unlock 90/120Hz displays, eliminate jank frames, cut widget rebuilds, upgrade animations to a declarative system. Biggest perceived-fluency win.
+
+### 23.1 — High Refresh Rate Display Support
+- [ ] Add `flutter_displaymode: ^0.6.0` to `pubspec.yaml`
+- [ ] In `main.dart`, call `FlutterDisplayMode.setHighRefreshRate()` after `WidgetsFlutterBinding.ensureInitialized()`
+- [ ] Test on a 90/120Hz Android device — record before/after FPS on a scroll-heavy screen
+- [ ] Guard call with `Platform.isAndroid` (iOS handles automatically)
+
+### 23.2 — Animation System Upgrade
+- [ ] Add `flutter_animate: ^4.5.0` to `pubspec.yaml` — declarative, performant, replaces hand-rolled `AnimationController` boilerplate
+- [ ] Add `animations: ^2.0.11` (official Flutter team) — for `OpenContainer` / `SharedAxisTransition` / `FadeThroughTransition` between screens
+- [ ] Replace at least 3 hand-rolled `AnimationController` setups with `.animate()` chains (measure LOC reduction)
+- [ ] Add `OpenContainer` Hero-style transition from exercise cards → exercise detail
+- [ ] Add `SharedAxisTransition` between bottom-nav tabs (opt-in via `PageTransitionsTheme`)
+
+### 23.3 — Skeleton Loading Modernization
+- [ ] Add `skeletonizer: ^1.4.2` — modern replacement for `shimmer` package, wraps any widget tree
+- [ ] Replace existing `shimmer` usages where skeletonizer's auto-detection is cleaner (exercise library cards, meal cards, contributions list)
+- [ ] Keep `shimmer` only where custom shimmer shapes are needed
+
+### 23.4 — Widget Rebuild Reduction
+- [ ] DevTools "Track Widget Builds" on dashboard + nutrition + progress — record top 10 rebuild hotspots
+- [ ] Add `const` to every eligible widget constructor (scripted fix with `dart fix --apply`)
+- [ ] Wrap frequently-repainting widgets in `RepaintBoundary` (ring/arc progress, animated streak card)
+- [ ] Extract large inline widgets inside `build()` into top-level stateless widgets with `const` constructors
+
+### 23.5 — Scroll Performance
+- [ ] Audit every `ListView` / `Column` with `.map()` — convert to `ListView.builder` where item count > 10
+- [ ] Add `cacheExtent` tuning to long lists (exercise library, contributions, meal list)
+- [ ] Add `AutomaticKeepAliveClientMixin` where tab switches cause expensive rebuilds (if any remain after M19)
+
+### 23.6 — Motion & Micro-interactions
+- [ ] Add subtle press animations on cards (`Tween<double> scale 1.0 → 0.97`) via `flutter_animate`
+- [ ] Add staggered entrance animations on list items (`.animate(interval: 40.ms).fadeIn().slideY()`)
+- [ ] Add loading → success checkmark animation on "Log Meal" / "Mark Eaten" buttons
+
+---
+
+## Milestone 24 — Image & Asset Optimization
+
+> Images are the heaviest asset class. Compress, cache smarter, strip metadata, and pre-resolve sizes so memory stays low and scroll stays smooth.
+
+### 24.1 — Bundled Asset Compression
+- [ ] Audit every file in `assets/images/` — record current size + format
+- [ ] Convert PNG/JPG to WebP where visual quality allows (typically 40-60% smaller)
+- [ ] For photos: quality 80; for UI graphics: lossless WebP
+- [ ] Re-verify paths in code after any rename
+
+### 24.2 — Remote Image Pipeline
+- [ ] Verify every `Image.network(` call is replaced with `CustomImageWidget` (grep)
+- [ ] Confirm `CachedNetworkImage` has `memCacheWidth`, `memCacheHeight`, `maxWidthDiskCache`, `maxHeightDiskCache` on every usage (with `.isFinite` guard per CLAUDE.md)
+- [ ] Add `errorWidget` + `placeholder` to every `CustomImageWidget` call site that doesn't have one
+- [ ] Pre-fetch exercise images on `ExerciseLibrary` initial load using `precacheImage`
+
+### 24.3 — Camera Capture Compression
+- [ ] Add `flutter_image_compress: ^2.3.0` — run compression **before** base64 encoding for Gemini Vision
+- [ ] Target: photos sent to Gemini Vision ≤ 500KB (quality 75, max 1024px)
+- [ ] Apply in `capture_step.dart`, `user_food_submission_screen.dart`, any nutrition label flow
+
+### 24.4 — SVG Optimization
+- [ ] Audit every `.svg` in `assets/` — run through `svgo` (or manual cleanup) to strip metadata, whitespace, unnecessary groups
+- [ ] Verify `flutter_svg` is only imported where actually needed
+
+### 24.5 — App Icon & Splash Screen
+- [ ] Add `flutter_launcher_icons: ^0.14.1` (dev dep) — single source of truth for all icon sizes (Android + iOS)
+- [ ] Add `flutter_native_splash: ^2.4.1` (dev dep) — native splash, no Flutter widget flash on cold start
+- [ ] Generate assets for both; replace existing splash screen widget with native handoff
+- [ ] Measure cold start time change vs M22.3 baseline
+
+---
+
+## Milestone 25 — Memory Management & Leak Audit
+
+> Go through every stateful widget and every service, confirm `dispose()` cleans up, catch leaks via DevTools Memory tab.
+
+### 25.1 — Controller Disposal Audit
+- [ ] Grep every `TextEditingController()` instantiation → verify `dispose()` in paired `State.dispose()`
+- [ ] Grep every `AnimationController(` → same
+- [ ] Grep every `ScrollController(` → same
+- [ ] Grep every `PageController(` → same
+- [ ] Grep every `FocusNode(` → same
+- [ ] Fix any missing dispose (continuation of M19.8 full audit)
+
+### 25.2 — Stream & Subscription Cleanup
+- [ ] Audit every `StreamSubscription` → verify `cancel()` in dispose
+- [ ] Audit Supabase realtime listeners → verify `removeChannel` / `unsubscribe`
+- [ ] Audit `connectivity_plus` listener in `MainDashboard` → verify cleanup
+
+### 25.3 — DevTools Memory Profiling
+- [ ] Record heap snapshot before and after navigating: dashboard → exercise library → scroll 100 items → back (repeat 5 times)
+- [ ] Identify any class with unexpected retained instances
+- [ ] Compare `ImageCache` size before/after the M19.8 `imageCache.clear()` on background
+- [ ] Document results in `docs/AUDIT_BASELINE.md`
+
+### 25.4 — Isolate Heavy Work
+- [ ] Identify heavy JSON parse / data transform on main thread (Gemini response parsing, food search merge)
+- [ ] Move to `compute()` isolates where payload > 50KB
+- [ ] Benchmark main-thread blocking before/after
+
+---
+
+## Milestone 26 — Network Layer Hardening & Offline Resilience
+
+> Every external call should be resilient, timed-out, retry-aware, and survive brief connectivity loss. Offline banner already exists (M19.7) — next step is graceful degradation.
+
+### 26.1 — Dio Interceptor Centralization
+- [ ] Create `lib/services/_dio_interceptors.dart` — shared interceptors: logging (debug only), timeout, retry, error normalization
+- [ ] Apply to all Dio instances: `GeminiAiService`, `GeminiNutritionLabelService`, `OpenFoodFactsService`, `UsdaFoodService`, `FoodRecognitionService`, `SmartRecipeService`
+
+### 26.2 — Retry with Exponential Backoff
+- [ ] Add `dio_smart_retry: ^7.0.1` OR implement custom `RetryInterceptor` (3 retries, exponential backoff 500ms → 1s → 2s)
+- [ ] Apply only on 5xx and timeout — NOT on 4xx
+- [ ] Gemini calls: max 2 retries (expensive), OFF/USDA: max 3
+
+### 26.3 — Request Cancellation
+- [ ] Add `CancelToken` to food search: cancel previous in-flight request when user types new query
+- [ ] Add `CancelToken` to Gemini Vision: cancel if user pops `CaptureStep` before response arrives
+
+### 26.4 — External Search Cache
+- [ ] Cache OFF + USDA search results for 10 min (deferred from M19.6) — LRU map in `AppCacheService`, key = normalized query
+- [ ] Cache Gemini Vision result for same `imageBytes` hash (10 min) — avoid re-billing on retry
+
+### 26.5 — Offline Mode Stub (partial)
+- [ ] When `connectivity_plus` reports offline, Gemini/OFF/USDA calls fail fast with clear error toast (not 15s timeout)
+- [ ] Saved AI plans / cached exercises remain readable from `AppCacheService`
+- [ ] Record action queue for later sync (DEFERRED to full offline mode if time permits)
+
+---
+
+## Milestone 27 — Supabase Query & Index Optimization
+
+> Use Supabase advisors + log analysis to catch slow queries, missing indexes, and RLS overhead before they bite in production.
+
+### 27.1 — Index Audit
+- [ ] Run `mcp__supabase__list_tables` — for every table, identify columns used in WHERE / ORDER BY in Dart code
+- [ ] Create migration adding missing indexes: `nutrition_logs(user_id, date)`, `workout_logs(user_id, created_at DESC)`, `food_database(name, brand)` if missing, `progress_photos(user_id, created_at DESC)`, `body_measurements(user_id, measured_at DESC)`, `workout_set_logs(session_id, exercise_id)`
+- [ ] Verify no duplicate indexes
+
+### 27.2 — Query Projection
+- [ ] Every `.select()` call must list explicit columns — no implicit `*` on wide tables (continuation of M19.2)
+- [ ] Audit WorkoutService, NutritionService, BodyMeasurementsService, ProgressPhotoService
+
+### 27.3 — N+1 Query Audit
+- [ ] Identify any `for (...) { await supabase.from(...).select(...) }` patterns → replace with a single join or `in_` batch call
+
+### 27.4 — Streak RPC (deferred from M19.2)
+- [ ] Create Postgres RPC `calculate_user_streak(user_id uuid) RETURNS int`
+- [ ] Replace client-side `_fetchWorkoutStreak()` calculation with RPC call
+- [ ] Index `workout_logs(user_id, completed_at DESC)` if not already present
+
+### 27.5 — RLS Policy Audit
+- [ ] For every table, run `mcp__supabase__execute_sql` `SELECT * FROM pg_policies WHERE tablename = '...'`
+- [ ] Verify each user-scoped table has `auth.uid() = user_id` check
+- [ ] Verify `food_database` has the M17 contribution-level policies intact
+
+### 27.6 — Advisor Follow-ups
+- [ ] Re-run `mcp__supabase__get_advisors` after 27.1–27.5 — target 0 critical findings
+
+---
+
+## Milestone 28 — AI Pipeline Optimization (Gemini)
+
+> Cut token cost, cut latency, improve reliability on every AI call: workout plan, nutrition plan, vision OCR, photo recipe.
+
+### 28.1 — Prompt Token Audit
+- [ ] For each of the 5 Gemini prompts (workout plan, nutrition plan, OCR, food recognition, recipe generation), count token size before call
+- [ ] Trim redundant instructions, move large static lists to structured output schema where possible
+- [ ] Record baseline input + output tokens per call
+
+### 28.2 — Structured Output Schema
+- [ ] Migrate from free-text JSON to Gemini's `response_mime_type: "application/json"` + `response_schema`
+- [ ] Eliminates "extract JSON from markdown" fragility; reduces parse failures to ~0
+- [ ] Apply to: workout plan, nutrition plan, food recognition, recipe generation
+
+### 28.3 — Native SDK Migration Consideration
+- [ ] Evaluate replacing custom Dio + REST calls with `google_generative_ai: ^0.4.6` (official Dart SDK)
+- [ ] Benefits: automatic retry, structured output helpers, streaming support, safer type boundaries
+- [ ] Cost: migration effort. Decide go/no-go after spike on 1 service
+
+### 28.4 — Response Streaming
+- [ ] Where UX allows (workout plan generation screen), switch to streaming response → show tokens as they arrive
+- [ ] Perceived latency cut by >50% even if total time unchanged
+
+### 28.5 — Model Selection per Task
+- [ ] Evaluate Gemini 2.5 Flash-Lite for cheaper short tasks (food search disambiguation, meal type suggestion)
+- [ ] Keep Gemini 2.5 Flash for vision + plan generation (quality required)
+- [ ] Document decision in `lib/services/CLAUDE.md`
+
+### 28.6 — Prompt Result Caching
+- [ ] Hash `(prompt + user TDEE + preferences)` → cache generated plan for 24h
+- [ ] Users regenerating without profile change get instant result + $0 cost
+
+---
+
+## Milestone 29 — Crash Reporting, Analytics & Observability
+
+> You can't fix what you can't see. Integrate a free-tier crash + analytics stack so real-world issues surface before users complain.
+
+### 29.1 — Sentry Integration
+- [ ] Register free project at sentry.io (5k events/month free)
+- [ ] Add `sentry_flutter: ^8.9.0` + `SENTRY_DSN` in `env.json`
+- [ ] Wrap `runApp` in `SentryFlutter.init` — auto-captures uncaught exceptions + frame drops
+- [ ] Add manual `Sentry.captureException` in every `catch` block of critical flows (auth, Gemini, payment)
+- [ ] Verify PII scrubbing — no user email in stack traces
+
+### 29.2 — Performance Tracing
+- [ ] Enable Sentry's `tracesSampleRate: 0.2` — 20% of transactions traced
+- [ ] Add manual transactions on: AI plan generation, barcode scan, food search, photo recipe end-to-end
+- [ ] Monitor dashboard for slow transactions > 3s
+
+### 29.3 — Product Analytics (PostHog)
+- [ ] Register free project at posthog.com (1M events/month free, EU-hosted option)
+- [ ] Add `posthog_flutter: ^4.8.0` + `POSTHOG_API_KEY` in `env.json`
+- [ ] Track key funnel events: `signup_started`, `onboarding_completed`, `first_ai_plan_generated`, `first_workout_logged`, `first_meal_logged`, `photo_recipe_generated`, `barcode_scanned`
+- [ ] Privacy: opt-in toggle in Security Settings (GDPR-aware)
+
+### 29.4 — In-App Review Prompt
+- [ ] Add `in_app_review: ^2.0.9`
+- [ ] Trigger review request after: 3rd completed workout session AND 7 days since signup AND never asked before
+- [ ] Store "asked" flag in `SharedPreferences`
+
+### 29.5 — Version Update Checker
+- [ ] Add `upgrader: ^11.0.0` OR custom check against a Supabase `app_config` table
+- [ ] On cold start, if server version > local version, show non-blocking banner with "Update" link
+
+---
+
+## Milestone 30 — Testing, CI & Quality Gate (expands M11)
+
+> Replace M11's small scope with a comprehensive quality gate. Target: 40% coverage on services, smoke test every screen, golden tests for reusable widgets, CI that runs on every commit.
+
+### 30.1 — Test Infrastructure
+- [ ] Create `test/` directory with folders `unit/`, `widget/`, `golden/`, `integration/`
+- [ ] Add dev deps: `mocktail: ^1.0.4`, `golden_toolkit: ^0.15.0`, `patrol: ^3.11.0` (real-device integration), `coverage: ^1.9.2`
+- [ ] Create `test/helpers/test_app_wrapper.dart` — reusable MaterialApp wrapper for widget tests
+
+### 30.2 — Unit Tests (Services)
+- [ ] `CalorieCalculatorService` — TDEE formula, macro splits, edge cases (extreme weight, 0 activity)
+- [ ] `AuthService` — mocked Supabase, cover signIn/signUp/signOut/currentUser
+- [ ] `NutritionService` — mocked, cover logMeal, getUserMeals, cacheExternalFood, submitUserFood
+- [ ] `BiometricService` — mocked `local_auth`, cover isAvailable/authenticate/denied
+- [ ] `SessionService` — mocked `flutter_secure_storage`
+- [ ] `AppCacheService` — TTL expiry, invalidation, LRU eviction
+
+### 30.3 — Widget Tests (Screens)
+- [ ] `LoginScreen` — form validation, error state, successful navigation
+- [ ] `SignupScreen` — password strength indicator, CAPTCHA placeholder
+- [ ] `OnboardingSurveyScreen` — step navigation, enum value submission
+- [ ] `MainDashboard` — bottom nav switches tabs, offline banner appears
+- [ ] `ExerciseLibrary` — filter chips work, scroll pagination triggers
+- [ ] `NutritionPlanningScreen` — add food modal, meal type picker
+- [ ] `AddFoodModalWidget` — 3-tier search merge, source badges, debounce
+
+### 30.4 — Golden Tests (Reusable Widgets)
+- [ ] `CustomBottomBar`, `CustomAppBar`, `CustomIconWidget`, `CustomImageWidget` (error/loading states)
+- [ ] `ExerciseCardWidget`, `SimpleMealCard`, `BodyMeasurementsCard`, `PhotoProgressWidget`
+- [ ] Test in light + dark theme
+
+### 30.5 — Integration Smoke Tests (Patrol)
+- [ ] Happy path: launch → login → dashboard → exercise library → back
+- [ ] Happy path: dashboard → nutrition → add food (search) → log meal
+- [ ] Happy path: dashboard → progress → body measurements entry
+
+### 30.6 — Coverage Gate
+- [ ] Run `flutter test --coverage` — generate `coverage/lcov.info`
+- [ ] Target: services ≥ 40%, overall ≥ 25%
+- [ ] Add `lcov` HTML report to `.gitignore`, generate on demand
+
+### 30.7 — CI Pipeline (GitHub Actions)
+- [ ] Create `.github/workflows/ci.yml`
+- [ ] Jobs: `flutter pub get` → `flutter analyze` (must pass) → `flutter test` (must pass) → coverage upload
+- [ ] Cache pub + Gradle
+- [ ] Trigger on push + PR to `main`
+
+### 30.8 — Pre-commit Hook
+- [ ] Add `.git/hooks/pre-commit` (script, not a package) — runs `flutter analyze` + `dart format --set-exit-if-changed`
+- [ ] Document in `SESSION_WORKFLOW.md`
+
+---
+
+## Milestone 31 — Build, Bundle & Startup Optimization
+
+> Reduce APK size and time-to-interactive. The user-visible result: faster install, faster launch, less RAM on entry.
+
+### 31.1 — Build Flags
+- [ ] Add to release build: `--split-debug-info=build/symbols --obfuscate`
+- [ ] Enable R8 shrinking + resource shrinking in `android/app/build.gradle.kts`
+- [ ] Enable `minifyEnabled true` + `shrinkResources true` for release
+- [ ] Add ProGuard rules for Supabase, Gemini, mobile_scanner, local_auth (to prevent over-aggressive removal)
+
+### 31.2 — Tree Shaking
+- [ ] Tree-shake Material icons (`--tree-shake-icons` — usually on by default, verify)
+- [ ] Remove unused Google Fonts — lock to 1-2 families via `google_fonts` (each family adds ~200KB)
+- [ ] Audit unused packages from M22.2 and remove
+
+### 31.3 — ABI Split
+- [ ] Build `--split-per-abi` APKs — users download only their arch (typically arm64-v8a), cuts ~40% size
+- [ ] Document in `SESSION_WORKFLOW.md`
+
+### 31.4 — Deferred Component Loading (optional, advanced)
+- [ ] Evaluate Flutter's `deferred as` for heavy screens (PhotoRecipeScreen, ActiveWorkoutSession) — only loaded on first navigation
+- [ ] Measure APK split before/after
+
+### 31.5 — Startup Trace
+- [ ] Run `flutter run --trace-startup --profile` → compare to M22.3 baseline
+- [ ] Defer non-critical service init: `BiometricService.isAvailable()`, `SessionService.restore()`, `AppCacheService` warmup happen in parallel via `Future.wait` after first frame
+- [ ] Target: cold start < 2.5s on mid-range Android (Redmi Note / Moto G class)
+
+### 31.6 — First Frame Optimization
+- [ ] `main()` runs absolute minimum work before `runApp`
+- [ ] Heavy Supabase session restore happens in `AuthenticationOnboardingFlow` with splash, not in `main()`
+- [ ] Native splash from M24.5 covers the entire boot until first real frame
+
+---
+
+## Milestone 32 — Accessibility & Final Polish
+
+> Make the app usable by everyone (TalkBack, VoiceOver, larger touch targets, sufficient contrast) and apply the last round of visual polish before regression.
+
+### 32.1 — Semantics Labels
+- [ ] Every icon-only `IconButton` → add `tooltip` + `Semantics(label: ...)`
+- [ ] Every `GestureDetector` with no visible text → add semantic label
+- [ ] Run with screen reader on 1 happy path (login → dashboard → add meal)
+
+### 32.2 — Touch Target Audit
+- [ ] Verify every tappable region ≥ 48×48 logical pixels (Material guideline)
+- [ ] Automated check via `flutter_test` semantics assertions
+
+### 32.3 — Contrast & Color
+- [ ] Run every text + background combo through WCAG AA checker (4.5:1 normal text, 3:1 large text)
+- [ ] Fix any failure in `app_theme.dart` (both light + dark per CLAUDE.md rule)
+
+### 32.4 — Dynamic Text Scale (selective)
+- [ ] CLAUDE.md locks `textScaler: 1.0` — confirmed correct for this project
+- [ ] But: allow scale **only inside specific screens** where layout can handle it (ExerciseDetail, Settings) via localized `MediaQuery` override — evaluate per screen
+
+### 32.5 — Haptic Consistency
+- [ ] Audit every primary action → ensure `HapticFeedback.lightImpact()` on success, `mediumImpact()` on destructive confirm
+
+### 32.6 — Dark Mode Visual Pass
+- [ ] Screenshot every screen in dark mode → fix any hardcoded color that slipped through
+- [ ] Fix any `Colors.white` / `Colors.black` literal — use theme tokens
+
+---
+
+## Milestone 33 — Regression, Smoke Test & Release Readiness
+
+> The final milestone before release. Re-run every measurement from M22, walk through every user flow manually, sign a checklist.
+
+### 33.1 — Baseline Re-measurement
+- [ ] Re-run all metrics from M22.1–M22.4
+- [ ] Produce `docs/AUDIT_RESULTS.md` — side-by-side: baseline → final. Commit only if every metric is better or unchanged.
+
+### 33.2 — End-to-End Manual Walkthrough
+- [ ] Signup → email verification → onboarding → first AI plan → first workout → first meal → progress photo → security settings → signout
+- [ ] Record any UX rough edge in `docs/SMOKE_TEST.md` (table format: screen / issue / severity / fixed?)
+
+### 33.3 — Device Matrix
+- [ ] Test on 1 low-end Android (< 3GB RAM)
+- [ ] Test on 1 mid-range Android (90/120Hz display)
+- [ ] Test on 1 iOS device or simulator
+- [ ] Test on a small screen (375px width)
+
+### 33.4 — Network Condition Matrix
+- [ ] Offline: correct banner + graceful degradation
+- [ ] Slow 3G (Chrome DevTools network throttling via dev menu): all flows still complete without crash
+- [ ] Airplane mode mid-workout: local logs survive
+
+### 33.5 — Release Build Verification
+- [ ] `flutter build apk --release` → install → happy path works
+- [ ] Verify `env.json` secrets NOT leaked in `strings.xml` / `Info.plist`
+- [ ] Verify Sentry DSN is scoped to release project, not dev
+
+### 33.6 — Sign-off
+- [ ] Update `CLAUDE.md` current status with final metrics
+- [ ] Tag release commit
+- [ ] Archive audit docs in `docs/`
+
+---
+
 ## Backlog (Nice to Have)
 
 - [ ] Push notifications for workout reminders (daily reminder at user-set time)
@@ -657,3 +1075,4 @@ Update `## Current Status` in `CLAUDE.md` at the end of every session.
 | 2026-04-05 | M20 hotfixes | fix: Kotlin incremental cache cross-drive crash (flutter clean); fix: TOTP enrollment missing issuer param; fix: totp.qrCode→totp.uri (SVG 2MB caused QrInputTooLongException); fix: QrImageView infinite height (SizedBox wrapper); fix: LoginScreen session restore on cold start + biometric gate; redesign: AppLockScreen with pulse animation + fade-to-dashboard transition; fix: appLock route slide-from-bottom→fade (PageRouteBuilder) | M11 — Testing & Quality |
 | 2026-04-07 | Progress screen UI overhaul | SliverAppBar + parallax header; shimmer skeleton; animated weekly calendar (AnimatedContainer + HapticFeedback + progress bar); arc weight progress card (CustomPaint, bidirectional goal logic, count-up animation); 2×2 stat grid with staggered entrance animations; 3D body silhouette (bezier + LinearGradient depth) with diagram-style measurement pins (LayoutBuilder, dots + connector lines + pill labels); flutter analyze 0 issues | M11 — Testing & Quality |
 | 2026-04-15 | M21 complete | Exercise library expansion: 100+ exercises across 13 categories (Chest/Back/Legs/Glutes/Calves/Shoulders/Arms/Forearms/Abs/Full Body/Stretching/Plyometrics/Cardio); Unsplash photos per exercise; full GIF animation mapping in exercise_gif_utils.dart; new equipment types (Kettlebell/Resistance Band/Box); pagination + scroll-driven load-more; styled body-part placeholder cards; getExerciseListForPrompt() helper for Gemini prompts; fixed 2 warnings in photo_recipe_screen.dart | M11 — Testing & Quality |
+| 2026-04-16 | M22 baseline (static) | flutter analyze: 125 issues (0 errors main app, 7 PAAM subfolder, ~10 warn, ~100 info); 4 unused packages confirmed (camera/youtube_player_flutter/universal_html/before_after); APK build FAILED (R8 ProGuard — fix documented); flutter pub outdated: 8 major + 8 minor upgrades; js package discontinued; Supabase: 13 security WARN + 72 perf issues (28 auth_rls_initplan WARN, 14 multiple_permissive_policies, 13 unindexed FKs, 17 unused indexes); postgres logs clean; docs/AUDIT_BASELINE.md created | M23 — High Refresh Rate & UI Fluidity |
