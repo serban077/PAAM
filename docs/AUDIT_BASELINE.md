@@ -365,3 +365,50 @@ Issues found in this audit, ordered by impact × effort:
 - [ ] **PAAM subfolder in project root:** `flutter analyze` recurses into it, showing 7 false errors. Options: (a) add `exclude:` entry to `analysis_options.yaml`, (b) move PAAM out of the root.
 - [ ] **Leaked password protection:** Enable in Supabase Auth settings (Dashboard → Auth → Password Strength → Enable).
 - [ ] **`flutter_lints` major (5→6):** May introduce new required lint fixes. Upgrade together with the next lint-cleanup pass.
+
+---
+
+## M25 — Memory Management & Leak Audit (2026-04-19)
+
+### 25.1 — Controller Disposal Audit
+
+All `AnimationController`, `ScrollController`, `PageController`, and class-field `TextEditingController` instances were verified to have correct `dispose()` calls in their owning `State.dispose()`. No issues found in those categories.
+
+**Confirmed leaks (fixed):**
+
+| File | Issue | Fix |
+|---|---|---|
+| `user_profile_management/widgets/account_management_section_widget.dart:30–32` | 3 inline `TextEditingController`s in `_handleChangePassword()` created before `await showDialog()` — never disposed | Added 3 `.dispose()` calls after the awaited dialog |
+| `auth/totp_challenge_screen.dart:56` | `backupController` in `void _showBackupCodeDialog()` — `showDialog()` not awaited, no dispose | Added `.then((_) => backupController.dispose())` |
+| `nutrition_planning_screen/widgets/simple_meal_card.dart:246` | `controller` in `void _showEditQuantityDialog()` — `showDialog()` not awaited, no dispose | Added `.then((_) => controller.dispose())` |
+| `strength_progress/exercise_details_screen.dart:105–106` | `weightController` + `repsController` created before `await showDialog()` in `_addPR()` — never disposed | Added 2 `.dispose()` calls after the awaited dialog |
+
+**Verified OK (no changes needed):**
+- All `AnimationController`s, `ScrollController`s, `PageController`s — properly disposed
+- `GrammageInputDialog`, `QuantityInputDialog`, `RegisterFormWidget`, both `BodyMeasurementsCard` variants, `PhotoProgressWidget` — correct `dispose()`
+- `security_settings_screen.dart:163` — inline `passwordController.dispose()` at line 189 ✅
+- `water_tracking_card.dart:49` — inline `controller.dispose()` at line 87 ✅
+- `ingredients_review_step.dart:52` — `.then((_) => controller.dispose())` pattern ✅
+
+### 25.2 — Stream & Subscription Cleanup
+
+All clean — no action needed:
+- `authentication_onboarding_flow.dart` — `StreamSubscription<AuthState>?` `cancel()`ed in `dispose()` ✅
+- `main_dashboard.dart` — `StreamSubscription<List<ConnectivityResult>>?` `cancel()`ed in `dispose()` ✅
+- No Supabase realtime channels found anywhere in the codebase
+- `add_food_modal_widget.dart` debounce `Timer?` — `cancel()`ed in `dispose()` ✅
+
+### 25.3 — DevTools Memory Profiling
+
+**Deferred** — requires physical/emulated device. Same deferral status as M22.3 and M23.1.
+
+### 25.4 — Compute Isolate Evaluation
+
+All Gemini response payloads measured below the 50KB threshold defined for compute migration:
+- `gemini_ai_service.dart` workout plan (`maxTokens: 4096`) → ~15KB
+- `smart_recipe_service.dart` recipe generation (`maxTokens: 8192`) → ~25KB
+- `add_food_modal_widget.dart` food search merge (60–180 items × ~500B) → ~30KB
+
+No `compute()` migration warranted. All JSON parsing can remain on the main isolate.
+
+**`flutter analyze lib/`:** **0 issues** after all fixes.

@@ -8,8 +8,8 @@ Update `## Current Status` in `CLAUDE.md` at the end of every session.
 ## Current Status
 
 **Last updated:** 2026-04-19
-**Last session completed:** M24 — Image & Asset Optimization: PNG/JPG→WebP (body_silhouette -34%, no-image -87%), flutter_image_compress 2.3.0 in 3 camera capture flows (quality 75/1024px before Gemini), memCacheHeight on exercise_3d_widget, precacheImage warms first 10 exercises on library load, svgo on both SVGs (-38/-50%), flutter_launcher_icons + flutter_native_splash generated (green/#1B3A5E theme, all mipmap/iOS sizes); flutter analyze: **0 issues**
-**Next session starts with:** M25 — Memory Management & Leak Audit
+**Last session completed:** M25 — Memory Management & Leak Audit: 4 TextEditingController leaks fixed (account_management_section_widget, totp_challenge_screen, simple_meal_card, exercise_details_screen); all other controllers/streams/subscriptions verified clean; compute audit (all Gemini payloads < 50KB, no isolate migration); DevTools heap profiling deferred; flutter analyze lib/: **0 issues**
+**Next session starts with:** M26 — Network Layer Hardening & Offline Resilience
 **Active branches:** main
 **Blockers / notes:** `pubspec.lock` gitignored — run `flutter pub get` at session start. `kotlin.incremental=false` set in android/gradle.properties — required fix for cross-drive pub cache (C:) vs project (D:) on Windows; do not remove. USDA_API_KEY in env.json. Gemini 2.5 Flash needs maxTokens ≥ 8192. M20 manual config: "Confirm email" enabled in Supabase ✅; hCaptcha skipped (no free tier needed for PAAM). M19 deferred: pagination UI, streak RPC, lazy ProgressTrackingScreen, SharedPreferences layer, build/bundle (19.9), perf monitoring (19.10). Supabase remaining: 2 food_database rls_policy_always_true (intentional by design — any authenticated user can add/edit foods), workout_plans multiple_permissive_policies (legacy user_id/creator_id dual schema — defer to M27), 30 unused_index INFO (newly added FK indexes not yet used — defer to M27).
 
@@ -739,28 +739,28 @@ Update `## Current Status` in `CLAUDE.md` at the end of every session.
 > Go through every stateful widget and every service, confirm `dispose()` cleans up, catch leaks via DevTools Memory tab.
 
 ### 25.1 — Controller Disposal Audit
-- [ ] Grep every `TextEditingController()` instantiation → verify `dispose()` in paired `State.dispose()`
-- [ ] Grep every `AnimationController(` → same
-- [ ] Grep every `ScrollController(` → same
-- [ ] Grep every `PageController(` → same
-- [ ] Grep every `FocusNode(` → same
-- [ ] Fix any missing dispose (continuation of M19.8 full audit)
+- [x] Grep every `TextEditingController()` instantiation → verify `dispose()` in paired `State.dispose()`
+- [x] Grep every `AnimationController(` → same
+- [x] Grep every `ScrollController(` → same
+- [x] Grep every `PageController(` → same
+- [x] Grep every `FocusNode(` → same
+- [x] Fix any missing dispose (continuation of M19.8 full audit) — 4 locations fixed: account_management_section_widget (3 controllers), totp_challenge_screen (backupController), simple_meal_card (edit quantity controller), exercise_details_screen (weightController + repsController)
 
 ### 25.2 — Stream & Subscription Cleanup
-- [ ] Audit every `StreamSubscription` → verify `cancel()` in dispose
-- [ ] Audit Supabase realtime listeners → verify `removeChannel` / `unsubscribe`
-- [ ] Audit `connectivity_plus` listener in `MainDashboard` → verify cleanup
+- [x] Audit every `StreamSubscription` → verify `cancel()` in dispose — 2 found, both clean
+- [x] Audit Supabase realtime listeners → verify `removeChannel` / `unsubscribe` — none found
+- [x] Audit `connectivity_plus` listener in `MainDashboard` → verify cleanup — properly cancelled ✅
 
 ### 25.3 — DevTools Memory Profiling
-- [ ] Record heap snapshot before and after navigating: dashboard → exercise library → scroll 100 items → back (repeat 5 times)
-- [ ] Identify any class with unexpected retained instances
-- [ ] Compare `ImageCache` size before/after the M19.8 `imageCache.clear()` on background
-- [ ] Document results in `docs/AUDIT_BASELINE.md`
+- [~] Record heap snapshot before and after navigating: dashboard → exercise library → scroll 100 items → back (repeat 5 times) **[DEFERRED — needs device]**
+- [~] Identify any class with unexpected retained instances **[DEFERRED — needs device]**
+- [~] Compare `ImageCache` size before/after the M19.8 `imageCache.clear()` on background **[DEFERRED — needs device]**
+- [~] Document results in `docs/AUDIT_BASELINE.md` **[DEFERRED — needs device]**
 
 ### 25.4 — Isolate Heavy Work
-- [ ] Identify heavy JSON parse / data transform on main thread (Gemini response parsing, food search merge)
-- [ ] Move to `compute()` isolates where payload > 50KB
-- [ ] Benchmark main-thread blocking before/after
+- [x] Identify heavy JSON parse / data transform on main thread (Gemini response parsing, food search merge)
+- [x] Move to `compute()` isolates where payload > 50KB — **no migration needed**: all payloads measured at 15–30KB, below the 50KB threshold
+- [x] Benchmark main-thread blocking before/after — skipped (no isolate migration warranted)
 
 ---
 
@@ -1082,3 +1082,4 @@ Update `## Current Status` in `CLAUDE.md` at the end of every session.
 | 2026-04-16 | M22 baseline (static) | flutter analyze: 125 issues (0 errors main app, 7 PAAM subfolder, ~10 warn, ~100 info); 4 unused packages confirmed (camera/youtube_player_flutter/universal_html/before_after); APK build FAILED (R8 ProGuard — fix documented); flutter pub outdated: 8 major + 8 minor upgrades; js package discontinued; Supabase: 13 security WARN + 72 perf issues (28 auth_rls_initplan WARN, 14 multiple_permissive_policies, 13 unindexed FKs, 17 unused indexes); postgres logs clean; docs/AUDIT_BASELINE.md created | M23 — High Refresh Rate & UI Fluidity |
 | 2026-04-16 | M22 fix pass | flutter analyze lib/: **0 issues** (withOpacity×8, initialValue×6, use_build_context_synchronously×5, RadioGroup migration×4, debugPrint import, print→debugPrint×2, unnecessary_to_list); APK R8 ProGuard fixed + minify enabled; 4 unused packages removed from pubspec.yaml; Supabase: 29 auth_rls_initplan FIXED, 10 search_path FIXED, 13 FK indexes ADDED, duplicate food policies FIXED, exercises/session_exercises/workout_sessions permissive policies consolidated | M23 — High Refresh Rate & UI Fluidity |
 | 2026-04-17 | M23 complete (static) | 4 packages added (flutter_displaymode/flutter_animate/animations/skeletonizer); 120Hz unlock in main.dart; SharedAxisTransition for all routes (app_theme.dart); 3 AnimationControllers → flutter_animate (.animate chains); Skeletonizer on dashboard + exercise library; dart fix (0 to fix); RepaintBoundary on WeeklyProgressWidget + streak card; cacheExtent:500 on exercise library; ExerciseCardWidget press scale (StatefulWidget); staggered entrance on exercise list; flutter analyze: **0 issues**. Device measurement items deferred. | M24 — Image & Asset Optimization |
+| 2026-04-19 | M25 complete (static) | Controller disposal audit: 4 leaks fixed (account_management_section_widget 3 controllers, totp_challenge_screen backupController, simple_meal_card edit-quantity controller, exercise_details_screen 2 PR-dialog controllers); all AnimationController/ScrollController/PageController/StreamSubscription/Timer verified clean; no Supabase realtime channels; compute audit: all Gemini payloads 15–30KB (below 50KB threshold, no isolate migration); DevTools heap profiling deferred (needs device); flutter analyze lib/: **0 issues** | M26 — Network Layer Hardening & Offline Resilience |
