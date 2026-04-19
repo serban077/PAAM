@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:sizer/sizer.dart';
 
@@ -20,33 +21,15 @@ class ProgressTrackingScreen extends StatefulWidget {
   State<ProgressTrackingScreen> createState() => _ProgressTrackingScreenState();
 }
 
-class _ProgressTrackingScreenState extends State<ProgressTrackingScreen>
-    with SingleTickerProviderStateMixin {
+class _ProgressTrackingScreenState extends State<ProgressTrackingScreen> {
   Key _calendarKey = UniqueKey();
   bool _isLoading = true;
-  late AnimationController _animController;
-  late Animation<double> _fadeAnim;
-  late Animation<Offset> _slideAnim;
+  int _refreshCount = 0;
 
   @override
   void initState() {
     super.initState();
-    _animController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 550),
-    );
-    _fadeAnim = CurvedAnimation(parent: _animController, curve: Curves.easeOut);
-    _slideAnim = Tween<Offset>(
-      begin: const Offset(0, 0.06),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(parent: _animController, curve: Curves.easeOut));
     _loadUserProfile();
-  }
-
-  @override
-  void dispose() {
-    _animController.dispose();
-    super.dispose();
   }
 
   Future<void> _loadUserProfile() async {
@@ -63,8 +46,10 @@ class _ProgressTrackingScreenState extends State<ProgressTrackingScreen>
           .eq('id', userId)
           .maybeSingle();
       if (mounted) {
-        setState(() => _isLoading = false);
-        _animController.forward();
+        setState(() {
+          _isLoading = false;
+          _refreshCount++;
+        });
       }
     } catch (e) {
       if (mounted) setState(() => _isLoading = false);
@@ -73,7 +58,6 @@ class _ProgressTrackingScreenState extends State<ProgressTrackingScreen>
 
   Future<void> _refresh() async {
     HapticFeedback.lightImpact();
-    _animController.reset();
     await _loadUserProfile();
     if (mounted) {
       setState(() => _calendarKey = UniqueKey());
@@ -94,11 +78,7 @@ class _ProgressTrackingScreenState extends State<ProgressTrackingScreen>
 
     return Scaffold(
       backgroundColor: theme.colorScheme.surface,
-      body: FadeTransition(
-        opacity: _fadeAnim,
-        child: SlideTransition(
-          position: _slideAnim,
-          child: RefreshIndicator(
+      body: RefreshIndicator(
             onRefresh: _refresh,
             color: theme.colorScheme.primary,
             child: CustomScrollView(
@@ -140,9 +120,10 @@ class _ProgressTrackingScreenState extends State<ProgressTrackingScreen>
                 ),
               ],
             ),
-          ),
-        ),
-      ),
+          )
+          .animate(key: ValueKey(_refreshCount))
+          .fade(duration: 500.ms, curve: Curves.easeOut)
+          .slideY(begin: 0.06, end: 0, duration: 500.ms, curve: Curves.easeOut),
     );
   }
 

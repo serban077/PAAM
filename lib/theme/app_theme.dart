@@ -1,3 +1,4 @@
+import 'package:animations/animations.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -416,6 +417,13 @@ class AppTheme {
         side: const BorderSide(color: borderLight, width: 1),
       ),
     ),
+
+    pageTransitionsTheme: const PageTransitionsTheme(
+      builders: {
+        TargetPlatform.android: _SharedAxisTransitionsBuilder(),
+        TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+      },
+    ),
   );
 
   /// Dark theme configuration
@@ -735,6 +743,13 @@ class AppTheme {
         side: const BorderSide(color: borderDark, width: 1),
       ),
     ),
+
+    pageTransitionsTheme: const PageTransitionsTheme(
+      builders: {
+        TargetPlatform.android: _SharedAxisTransitionsBuilder(),
+        TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+      },
+    ),
   );
 
   /// Helper method to build text theme based on brightness
@@ -892,4 +907,26 @@ class AppTheme {
   static const Curve emphasizedCurve = Curves.fastOutSlowIn;
   static const Curve deceleratedCurve = Curves.easeOut;
   static const Curve acceleratedCurve = Curves.easeIn;
+}
+
+/// Shared-axis horizontal transition for all Navigator.push routes.
+/// Applied via [PageTransitionsTheme] in both light and dark themes.
+class _SharedAxisTransitionsBuilder extends PageTransitionsBuilder {
+  const _SharedAxisTransitionsBuilder();
+
+  @override
+  Widget buildTransitions<T>(
+    PageRoute<T> route,
+    BuildContext context,
+    Animation<double> animation,
+    Animation<double> secondaryAnimation,
+    Widget child,
+  ) {
+    return SharedAxisTransition(
+      animation: animation,
+      secondaryAnimation: secondaryAnimation,
+      transitionType: SharedAxisTransitionType.horizontal,
+      child: child,
+    );
+  }
 }

@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:sizer/sizer.dart';
 
 import '../../routes/app_routes.dart';
@@ -17,31 +18,15 @@ class EmailVerificationScreen extends StatefulWidget {
       _EmailVerificationScreenState();
 }
 
-class _EmailVerificationScreenState extends State<EmailVerificationScreen>
-    with SingleTickerProviderStateMixin {
+class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
   final _authService = AuthService();
   bool _isChecking = false;
   bool _isResending = false;
   int _cooldown = 0;
   Timer? _cooldownTimer;
-  late final AnimationController _iconController;
-  late final Animation<double> _iconScale;
-
-  @override
-  void initState() {
-    super.initState();
-    _iconController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 800),
-    )..repeat(reverse: true);
-    _iconScale = Tween<double>(begin: 0.95, end: 1.05).animate(
-      CurvedAnimation(parent: _iconController, curve: Curves.easeInOut),
-    );
-  }
 
   @override
   void dispose() {
-    _iconController.dispose();
     _cooldownTimer?.cancel();
     super.dispose();
   }
@@ -126,24 +111,28 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen>
             child: Column(
               children: [
                 SizedBox(height: 6.h),
-                ScaleTransition(
-                  scale: _iconScale,
-                  child: Container(
-                    width: 22.w,
-                    height: 22.w,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.15),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Center(
-                      child: CustomIconWidget(
-                        iconName: 'mark_email_unread',
-                        color: Colors.white,
-                        size: 11.w,
-                      ),
+                Container(
+                  width: 22.w,
+                  height: 22.w,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.15),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Center(
+                    child: CustomIconWidget(
+                      iconName: 'mark_email_unread',
+                      color: Colors.white,
+                      size: 11.w,
                     ),
                   ),
-                ),
+                )
+                    .animate(onPlay: (c) => c.repeat(reverse: true))
+                    .scale(
+                      begin: const Offset(0.95, 0.95),
+                      end: const Offset(1.05, 1.05),
+                      duration: 800.ms,
+                      curve: Curves.easeInOut,
+                    ),
                 SizedBox(height: 3.h),
                 Text(
                   'Check your inbox',

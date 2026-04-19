@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:sizer/sizer.dart';
 
 import '../../../services/supabase_service.dart';
@@ -13,29 +14,17 @@ class RealWorkoutStatsWidget extends StatefulWidget {
       _RealWorkoutStatsWidgetState();
 }
 
-class _RealWorkoutStatsWidgetState extends State<RealWorkoutStatsWidget>
-    with SingleTickerProviderStateMixin {
+class _RealWorkoutStatsWidgetState extends State<RealWorkoutStatsWidget> {
   bool _isLoading = true;
   int _completedWorkouts = 0;
   int _scheduledWorkouts = 0;
   int _totalMinutes = 0;
   int _calorieStreak = 0;
-  late AnimationController _staggerCtrl;
 
   @override
   void initState() {
     super.initState();
-    _staggerCtrl = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 600),
-    );
     _loadStats();
-  }
-
-  @override
-  void dispose() {
-    _staggerCtrl.dispose();
-    super.dispose();
   }
 
   Future<void> _loadStats() async {
@@ -93,7 +82,6 @@ class _RealWorkoutStatsWidgetState extends State<RealWorkoutStatsWidget>
           _calorieStreak = streak;
           _isLoading = false;
         });
-        _staggerCtrl.forward(from: 0);
       }
     } catch (e) {
       debugPrint('Error loading stats: $e');
@@ -268,26 +256,7 @@ class _RealWorkoutStatsWidgetState extends State<RealWorkoutStatsWidget>
   }
 
   Widget _buildStatCard(ThemeData theme, _StatData stat, int index) {
-    // Staggered entrance per card
-    final delay = index * 0.15;
-    final begin = delay;
-    final end = (delay + 0.55).clamp(0.0, 1.0);
-
-    return AnimatedBuilder(
-      animation: _staggerCtrl,
-      builder: (_, child) {
-        final t = _staggerCtrl.value;
-        final localT = ((t - begin) / (end - begin)).clamp(0.0, 1.0);
-        final curve = Curves.easeOutCubic.transform(localT);
-        return Opacity(
-          opacity: curve,
-          child: Transform.translate(
-            offset: Offset(0, 12 * (1 - curve)),
-            child: child,
-          ),
-        );
-      },
-      child: Container(
+    return Container(
         padding: EdgeInsets.all(3.5.w),
         decoration: BoxDecoration(
           color: stat.color.withValues(alpha: 0.06),
@@ -366,8 +335,10 @@ class _RealWorkoutStatsWidgetState extends State<RealWorkoutStatsWidget>
             ),
           ],
         ),
-      ),
-    );
+      )
+      .animate(delay: (index * 80).ms)
+      .fade(duration: 400.ms)
+      .slideY(begin: 0.15, end: 0, duration: 400.ms, curve: Curves.easeOut);
   }
 }
 
