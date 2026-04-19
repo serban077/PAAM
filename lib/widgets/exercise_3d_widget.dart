@@ -130,6 +130,9 @@ class _Exercise3DWidgetState extends State<Exercise3DWidget> {
             height: widget.height,
             fit: BoxFit.contain,
             fadeInDuration: const Duration(milliseconds: 200),
+            memCacheHeight: widget.height.isFinite && widget.height > 0
+                ? widget.height.toInt()
+                : null,
             placeholder: (_, __) => _box(bg, child: _spinner()),
             errorWidget: (_, __, ___) => _buildFallback(bg),
           ),
@@ -156,6 +159,9 @@ class _Exercise3DWidgetState extends State<Exercise3DWidget> {
         height: widget.height,
         fit: BoxFit.cover,
         fadeInDuration: const Duration(milliseconds: 200),
+        memCacheHeight: widget.height.isFinite && widget.height > 0
+            ? widget.height.toInt()
+            : null,
         placeholder: (_, __) => _box(bg, child: _spinner()),
         errorWidget: (_, __, ___) => _box(bg, child: _placeholder()),
       ),

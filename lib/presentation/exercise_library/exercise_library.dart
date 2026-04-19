@@ -6,6 +6,7 @@ import 'package:skeletonizer/skeletonizer.dart';
 
 import '../../../core/app_export.dart';
 import '../../../data/verified_exercises_data.dart';
+import '../../../utils/exercise_gif_utils.dart';
 import '../../widgets/custom_icon_widget.dart';
 import './widgets/exercise_card_widget.dart';
 import './widgets/exercise_detail_sheet.dart';
@@ -97,6 +98,13 @@ class _ExerciseLibraryState extends State<ExerciseLibrary> {
       _currentPage = 1;
       _isLoading = false;
     });
+    // Warm the image cache for the first visible exercises
+    if (mounted) {
+      for (final ex in _filteredExercises.take(10)) {
+        final url = ExerciseGifUtils.getFrame0Url(ex['name'] as String? ?? '');
+        if (url != null) precacheImage(NetworkImage(url), context);
+      }
+    }
   }
 
   Future<void> _loadMoreExercises() async {

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:sizer/sizer.dart';
 
@@ -179,7 +180,14 @@ class _UserFoodSubmissionScreenState extends State<UserFoodSubmissionScreen> {
         maxWidth: 1024,
       );
       if (picked == null) return;
-      final bytes = await picked.readAsBytes();
+      final rawBytes = await picked.readAsBytes();
+      final bytes = await FlutterImageCompress.compressWithList(
+        rawBytes,
+        minWidth: 1024,
+        minHeight: 1024,
+        quality: 75,
+        format: CompressFormat.jpeg,
+      );
       setState(() {
         _imageBytes = bytes;
         _imagePath = picked.path;

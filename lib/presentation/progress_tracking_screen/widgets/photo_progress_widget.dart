@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:sizer/sizer.dart';
 
@@ -57,7 +58,17 @@ class _PhotoProgressWidgetState extends State<PhotoProgressWidget> {
         imageQuality: 85,
         maxWidth: 1200,
       );
-      return file?.path;
+      if (file == null) return null;
+      final targetPath =
+          '${Directory.systemTemp.path}/${DateTime.now().millisecondsSinceEpoch}_photo.jpg';
+      final result = await FlutterImageCompress.compressAndGetFile(
+        file.path,
+        targetPath,
+        quality: 80,
+        minWidth: 1200,
+        minHeight: 1200,
+      );
+      return result?.path ?? file.path;
     } catch (_) {
       return null;
     }
