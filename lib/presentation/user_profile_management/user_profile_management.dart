@@ -77,13 +77,13 @@ class _UserProfileManagementState extends State<UserProfileManagement> {
   }
 
   Future<void> _regenerateAIPlan() async {
+    final messenger = ScaffoldMessenger.of(context);
     try {
-      if (!mounted) return;
       final userId = SupabaseService.instance.client.auth.currentUser?.id;
       if (userId == null) return;
       await GeminiAIService().generateCompletePlan(userId);
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
+      messenger.showSnackBar(
         const SnackBar(
           content: Text('Your plan has been updated with new preferences!'),
           backgroundColor: Colors.green,
@@ -92,7 +92,7 @@ class _UserProfileManagementState extends State<UserProfileManagement> {
       );
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
+      messenger.showSnackBar(
         SnackBar(
           content: Text('Error regenerating plan: $e'),
           backgroundColor: Colors.red,

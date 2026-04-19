@@ -99,6 +99,7 @@ class _AuthenticationOnboardingFlowState
       final needsMfa = await MfaService().needsMfaChallenge();
       if (needsMfa && mounted) {
         final factorId = await MfaService().verifiedFactorId;
+        if (!mounted) return;
         if (factorId != null) {
           setState(() => _isCheckingAuth = false);
           Navigator.pushNamed(

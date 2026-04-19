@@ -76,7 +76,7 @@ class _QuantityInputDialogState extends State<QuantityInputDialog> {
           Container(
             padding: EdgeInsets.all(3.w),
             decoration: BoxDecoration(
-              color: theme.colorScheme.primaryContainer.withOpacity(0.3),
+              color: theme.colorScheme.primaryContainer.withValues(alpha:0.3),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Column(

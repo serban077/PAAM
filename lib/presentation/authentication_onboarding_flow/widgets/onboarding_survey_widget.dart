@@ -348,12 +348,16 @@ class _OnboardingSurveyWidgetState extends State<OnboardingSurveyWidget> {
           style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.bold),
         ),
         SizedBox(height: 3.h),
-        ..._fitnessGoals.map(
-          (goal) => RadioListTile<String>(
-            title: Text(_getLabelForGoal(goal)),
-            value: goal,
-            groupValue: _fitnessGoal,
-            onChanged: (value) => setState(() => _fitnessGoal = value),
+        RadioGroup<String>(
+          groupValue: _fitnessGoal,
+          onChanged: (value) => setState(() => _fitnessGoal = value),
+          child: Column(
+            children: _fitnessGoals.map(
+              (goal) => RadioListTile<String>(
+                title: Text(_getLabelForGoal(goal)),
+                value: goal,
+              ),
+            ).toList(),
           ),
         ),
       ],
@@ -369,12 +373,16 @@ class _OnboardingSurveyWidgetState extends State<OnboardingSurveyWidget> {
           style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.bold),
         ),
         SizedBox(height: 3.h),
-        ..._activityLevels.map(
-          (level) => RadioListTile<String>(
-            title: Text(_getLabelForActivity(level)),
-            value: level,
-            groupValue: _activityLevel,
-            onChanged: (value) => setState(() => _activityLevel = value),
+        RadioGroup<String>(
+          groupValue: _activityLevel,
+          onChanged: (value) => setState(() => _activityLevel = value),
+          child: Column(
+            children: _activityLevels.map(
+              (level) => RadioListTile<String>(
+                title: Text(_getLabelForActivity(level)),
+                value: level,
+              ),
+            ).toList(),
           ),
         ),
       ],
@@ -390,12 +398,16 @@ class _OnboardingSurveyWidgetState extends State<OnboardingSurveyWidget> {
           style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.bold),
         ),
         SizedBox(height: 3.h),
-        ..._equipmentTypes.map(
-          (equipment) => RadioListTile<String>(
-            title: Text(_getLabelForEquipment(equipment)),
-            value: equipment,
-            groupValue: _equipment,
-            onChanged: (value) => setState(() => _equipment = value),
+        RadioGroup<String>(
+          groupValue: _equipment,
+          onChanged: (value) => setState(() => _equipment = value),
+          child: Column(
+            children: _equipmentTypes.map(
+              (equipment) => RadioListTile<String>(
+                title: Text(_getLabelForEquipment(equipment)),
+                value: equipment,
+              ),
+            ).toList(),
           ),
         ),
       ],
@@ -411,12 +423,16 @@ class _OnboardingSurveyWidgetState extends State<OnboardingSurveyWidget> {
           style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.bold),
         ),
         SizedBox(height: 3.h),
-        ..._dietaryPreferences.map(
-          (diet) => RadioListTile<String>(
-            title: Text(_getLabelForDiet(diet)),
-            value: diet,
-            groupValue: _dietaryPreference,
-            onChanged: (value) => setState(() => _dietaryPreference = value),
+        RadioGroup<String>(
+          groupValue: _dietaryPreference,
+          onChanged: (value) => setState(() => _dietaryPreference = value),
+          child: Column(
+            children: _dietaryPreferences.map(
+              (diet) => RadioListTile<String>(
+                title: Text(_getLabelForDiet(diet)),
+                value: diet,
+              ),
+            ).toList(),
           ),
         ),
       ],
@@ -440,7 +456,7 @@ class _OnboardingSurveyWidgetState extends State<OnboardingSurveyWidget> {
         ),
         SizedBox(height: 2.h),
         DropdownButtonFormField<String>(
-          value: _gender,
+          initialValue: _gender,
           decoration: const InputDecoration(labelText: 'Gender'),
           items: [
             'male',

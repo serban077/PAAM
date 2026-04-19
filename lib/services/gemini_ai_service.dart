@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'dart:convert';
 import '../services/supabase_service.dart';
 import '../data/verified_exercises_data.dart';
@@ -202,7 +203,7 @@ class GeminiAIService {
           });
         } else {
           // Exercise not found in database - try to find closest match or use default
-          print('Warning: Exercise "$exerciseName" not found in verified database');
+          debugPrint('Warning: Exercise "$exerciseName" not found in verified database');
           enrichedExercises.add({
             ...exercise,
             'video_url': 'https://www.youtube.com/watch?v=IODxDxX7oi4', // Default to push-ups video
@@ -325,7 +326,7 @@ class GeminiAIService {
           });
 
     } catch (e) {
-      print('Error saving generated plan: $e');
+      debugPrint('Error saving generated plan: $e');
       throw Exception('Could not save plan to database: $e');
     }
   }

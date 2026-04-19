@@ -146,6 +146,7 @@ class _BarcodeScannerPageState extends State<BarcodeScannerPage>
       );
     } catch (e) {
       if (!mounted) return;
+      final messenger = ScaffoldMessenger.of(context);
       // On error, resume camera and let user try again
       await _controller.start();
       setState(() {
@@ -153,7 +154,7 @@ class _BarcodeScannerPageState extends State<BarcodeScannerPage>
         _lastBarcode = null;
         _statusMessage = 'Point camera at a food barcode';
       });
-      ScaffoldMessenger.of(context).showSnackBar(
+      messenger.showSnackBar(
         SnackBar(
           content: Text('Error: $e'),
           backgroundColor: Colors.red,

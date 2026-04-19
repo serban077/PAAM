@@ -188,7 +188,7 @@ class _OnboardingSurveyScreenState extends State<OnboardingSurveyScreen> {
                           borderRadius: BorderRadius.circular(12.0),
                         ),
                       ),
-                      value: _gender,
+                      initialValue: _gender,
                       items: const [
                         DropdownMenuItem(
                           value: 'male',
@@ -300,7 +300,7 @@ class _OnboardingSurveyScreenState extends State<OnboardingSurveyScreen> {
                           borderRadius: BorderRadius.circular(12.0),
                         ),
                       ),
-                      value: _fitnessGoal,
+                      initialValue: _fitnessGoal,
                       items: const [
                         DropdownMenuItem(
                           value: 'weight_loss',
@@ -336,7 +336,7 @@ class _OnboardingSurveyScreenState extends State<OnboardingSurveyScreen> {
                           borderRadius: BorderRadius.circular(12.0),
                         ),
                       ),
-                      value: _experienceLevel,
+                      initialValue: _experienceLevel,
                       items: const [
                         DropdownMenuItem(
                           value: 'beginner',

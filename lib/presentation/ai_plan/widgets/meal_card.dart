@@ -37,7 +37,7 @@ class _MealCardState extends State<MealCard> {
               });
             },
             leading: CircleAvatar(
-              backgroundColor: Theme.of(context).primaryColor.withOpacity(0.1),
+              backgroundColor: Theme.of(context).primaryColor.withValues(alpha:0.1),
               child: Icon(
                 _getMealIcon(widget.meal.mealName),
                 color: Theme.of(context).primaryColor,

@@ -1,6 +1,5 @@
-/// Data models for M18 — Smart Photo-to-Recipe Generator.
-///
-/// Used by [FoodRecognitionService] and [SmartRecipeService].
+// Data models for M18 — Smart Photo-to-Recipe Generator.
+// Used by FoodRecognitionService and SmartRecipeService.
 
 class DetectedIngredient {
   final String name;

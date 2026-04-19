@@ -108,8 +108,8 @@ class _BodyMeasurementsCardState extends State<BodyMeasurementsCard> {
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: [
-            theme.colorScheme.primary.withOpacity(0.05),
-            theme.colorScheme.primary.withOpacity(0.15),
+            theme.colorScheme.primary.withValues(alpha:0.05),
+            theme.colorScheme.primary.withValues(alpha:0.15),
           ],
         ),
         borderRadius: BorderRadius.circular(12),
@@ -124,7 +124,7 @@ class _BodyMeasurementsCardState extends State<BodyMeasurementsCard> {
                 Icon(
                   Icons.accessibility_new,
                   size: 30.h,
-                  color: theme.colorScheme.primary.withOpacity(0.3),
+                  color: theme.colorScheme.primary.withValues(alpha:0.3),
                 ),
                 SizedBox(height: 2.h),
                 Text(
@@ -178,12 +178,12 @@ class _BodyMeasurementsCardState extends State<BodyMeasurementsCard> {
         width: 32,
         height: 32,
         decoration: BoxDecoration(
-          color: theme.colorScheme.primary.withOpacity(0.9),
+          color: theme.colorScheme.primary.withValues(alpha:0.9),
           shape: BoxShape.circle,
           border: Border.all(color: Colors.white, width: 2),
           boxShadow: [
             BoxShadow(
-              color: theme.colorScheme.primary.withOpacity(0.5),
+              color: theme.colorScheme.primary.withValues(alpha:0.5),
               blurRadius: 8,
               spreadRadius: 2,
             ),
@@ -219,7 +219,7 @@ class _BodyMeasurementsCardState extends State<BodyMeasurementsCard> {
 
           return ListTile(
             leading: CircleAvatar(
-              backgroundColor: theme.colorScheme.primary.withOpacity(0.1),
+              backgroundColor: theme.colorScheme.primary.withValues(alpha:0.1),
               child: Icon(
                 Icons.straighten,
                 color: theme.colorScheme.primary,
@@ -236,7 +236,7 @@ class _BodyMeasurementsCardState extends State<BodyMeasurementsCard> {
               ),
             ),
           );
-        }).toList(),
+        }),
         SizedBox(height: 2.h),
       ],
     );
@@ -251,7 +251,7 @@ class _BodyMeasurementsCardState extends State<BodyMeasurementsCard> {
             Icon(
               Icons.straighten,
               size: 48,
-              color: theme.colorScheme.onSurfaceVariant.withOpacity(0.5),
+              color: theme.colorScheme.onSurfaceVariant.withValues(alpha:0.5),
             ),
             SizedBox(height: 1.h),
             Text(
@@ -264,7 +264,7 @@ class _BodyMeasurementsCardState extends State<BodyMeasurementsCard> {
             Text(
               'Tap the + buttons to add',
               style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant.withOpacity(0.7),
+                color: theme.colorScheme.onSurfaceVariant.withValues(alpha:0.7),
               ),
             ),
             SizedBox(height: 2.h),
@@ -275,6 +275,7 @@ class _BodyMeasurementsCardState extends State<BodyMeasurementsCard> {
   }
 
   void _showAddMeasurementDialog({String? measurementType}) {
+    final messenger = ScaffoldMessenger.of(context);
     showDialog(
       context: context,
       builder: (context) => AddMeasurementDialog(
@@ -288,7 +289,7 @@ class _BodyMeasurementsCardState extends State<BodyMeasurementsCard> {
             );
             await _loadMeasurements();
             if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
+              messenger.showSnackBar(
                 const SnackBar(
                   content: Text('Measurement saved successfully!'),
                   backgroundColor: Colors.green,
@@ -297,7 +298,7 @@ class _BodyMeasurementsCardState extends State<BodyMeasurementsCard> {
             }
           } catch (e) {
             if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
+              messenger.showSnackBar(
                 SnackBar(
                   content: Text('Error: $e'),
                   backgroundColor: Colors.red,
@@ -355,7 +356,7 @@ class _AddMeasurementDialogState extends State<AddMeasurementDialog> {
         children: [
           if (widget.measurementType == null)
             DropdownButtonFormField<String>(
-              value: _selectedType,
+              initialValue: _selectedType,
               decoration: InputDecoration(
                 labelText: 'Measurement Type',
                 border: OutlineInputBorder(),

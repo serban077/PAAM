@@ -118,7 +118,7 @@ class _AIMealPlanSectionState extends State<AIMealPlanSection> {
 
     if (_isLoadingPlan) {
       return Card(
-        color: theme.colorScheme.primaryContainer.withOpacity(0.3),
+        color: theme.colorScheme.primaryContainer.withValues(alpha:0.3),
         elevation: 2,
         child: Padding(
           padding: EdgeInsets.all(3.w),
@@ -134,7 +134,7 @@ class _AIMealPlanSectionState extends State<AIMealPlanSection> {
       children: [
         // Header card
         Card(
-          color: theme.colorScheme.primaryContainer.withOpacity(0.3),
+          color: theme.colorScheme.primaryContainer.withValues(alpha:0.3),
           elevation: 2,
           child: Padding(
             padding: EdgeInsets.all(3.w),

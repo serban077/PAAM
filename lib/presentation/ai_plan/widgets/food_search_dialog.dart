@@ -187,7 +187,7 @@ class _FoodSearchDialogState extends State<FoodSearchDialog> {
         final food = _searchResults[index];
         return ListTile(
           leading: CircleAvatar(
-            backgroundColor: Theme.of(context).primaryColor.withOpacity(0.1),
+            backgroundColor: Theme.of(context).primaryColor.withValues(alpha:0.1),
             child: Icon(
               Icons.restaurant,
               color: Theme.of(context).primaryColor,
