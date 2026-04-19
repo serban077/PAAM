@@ -3,7 +3,7 @@ import 'package:sizer/sizer.dart';
 
 import '../../../core/app_export.dart';
 
-class ExerciseCardWidget extends StatelessWidget {
+class ExerciseCardWidget extends StatefulWidget {
   final Map<String, dynamic> exercise;
   final VoidCallback onTap;
   final VoidCallback onLongPress;
@@ -14,6 +14,13 @@ class ExerciseCardWidget extends StatelessWidget {
     required this.onTap,
     required this.onLongPress,
   });
+
+  @override
+  State<ExerciseCardWidget> createState() => _ExerciseCardWidgetState();
+}
+
+class _ExerciseCardWidgetState extends State<ExerciseCardWidget> {
+  bool _isPressed = false;
 
   Color _getDifficultyColor(String difficulty, ThemeData theme) {
     switch (difficulty) {
@@ -50,130 +57,140 @@ class ExerciseCardWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final difficulty = exercise['difficulty'] as String? ?? '';
-    final bodyPart = exercise['bodyPart'] as String? ?? '';
+    final difficulty = widget.exercise['difficulty'] as String? ?? '';
+    final bodyPart = widget.exercise['bodyPart'] as String? ?? '';
     final diffColor = _getDifficultyColor(difficulty, theme);
-    final imageUrl = exercise['image'] as String?;
+    final imageUrl = widget.exercise['image'] as String?;
     final hasImage = imageUrl != null && imageUrl.isNotEmpty;
 
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 0.6.h),
-      child: Material(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(16),
-        elevation: 2,
-        shadowColor: theme.colorScheme.shadow.withAlpha(30),
-        child: InkWell(
-          onTap: onTap,
-          onLongPress: onLongPress,
-          borderRadius: BorderRadius.circular(16),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              // Left: exercise image or body-part placeholder
-              ClipRRect(
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(16),
-                  bottomLeft: Radius.circular(16),
-                ),
-                child: SizedBox(
-                  width: 24.w,
-                  height: 22.w,
-                  child: hasImage
-                      ? CustomImageWidget(
-                          imageUrl: imageUrl,
-                          fit: BoxFit.cover,
-                          semanticLabel:
-                              exercise['semanticLabel'] ?? exercise['name'],
-                        )
-                      : Container(
-                          color: diffColor.withAlpha(22),
-                          child: Center(
-                            child: CustomIconWidget(
-                              iconName: _bodyPartIcon(bodyPart),
-                              color: diffColor.withAlpha(120),
-                              size: 36,
-                            ),
-                          ),
-                        ),
-                ),
-              ),
-              // Difficulty accent strip
-              Container(width: 3, height: 22.w, color: diffColor),
-              // Right: info
-              Expanded(
-                child: Padding(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: 3.w,
-                    vertical: 1.5.h,
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        exercise['name'],
-                        style: theme.textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.w700,
-                        ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      SizedBox(height: 0.5.h),
-                      Row(
-                        children: [
-                          CustomIconWidget(
-                            iconName: 'adjust',
-                            color: theme.colorScheme.onSurfaceVariant,
-                            size: 11,
-                          ),
-                          SizedBox(width: 1.w),
-                          Expanded(
-                            child: Text(
-                              exercise['targetMuscles'],
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: theme.colorScheme.onSurfaceVariant,
+      child: AnimatedScale(
+        scale: _isPressed ? 0.97 : 1.0,
+        duration: const Duration(milliseconds: 80),
+        curve: Curves.easeOut,
+        child: GestureDetector(
+          onTapDown: (_) => setState(() => _isPressed = true),
+          onTapUp: (_) => setState(() => _isPressed = false),
+          onTapCancel: () => setState(() => _isPressed = false),
+          child: Material(
+            color: theme.colorScheme.surface,
+            borderRadius: BorderRadius.circular(16),
+            elevation: 2,
+            shadowColor: theme.colorScheme.shadow.withAlpha(30),
+            child: InkWell(
+              onTap: widget.onTap,
+              onLongPress: widget.onLongPress,
+              borderRadius: BorderRadius.circular(16),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  // Left: exercise image or body-part placeholder
+                  ClipRRect(
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(16),
+                      bottomLeft: Radius.circular(16),
+                    ),
+                    child: SizedBox(
+                      width: 24.w,
+                      height: 22.w,
+                      child: hasImage
+                          ? CustomImageWidget(
+                              imageUrl: imageUrl,
+                              fit: BoxFit.cover,
+                              semanticLabel:
+                                  widget.exercise['semanticLabel'] ?? widget.exercise['name'],
+                            )
+                          : Container(
+                              color: diffColor.withAlpha(22),
+                              child: Center(
+                                child: CustomIconWidget(
+                                  iconName: _bodyPartIcon(bodyPart),
+                                  color: diffColor.withAlpha(120),
+                                  size: 36,
+                                ),
                               ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
                             ),
-                          ),
-                        ],
-                      ),
-                      SizedBox(height: 1.2.h),
-                      Row(
-                        children: [
-                          _InfoChip(
-                            label: exercise['equipment'],
-                            color: theme.colorScheme.primary,
-                            bgColor:
-                                theme.colorScheme.primary.withAlpha(18),
-                            iconName: 'fitness_center',
-                            theme: theme,
-                          ),
-                          SizedBox(width: 2.w),
-                          _InfoChip(
-                            label: difficulty,
-                            color: diffColor,
-                            bgColor: diffColor.withAlpha(22),
-                            theme: theme,
-                          ),
-                        ],
-                      ),
-                    ],
+                    ),
                   ),
-                ),
+                  // Difficulty accent strip
+                  Container(width: 3, height: 22.w, color: diffColor),
+                  // Right: info
+                  Expanded(
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 3.w,
+                        vertical: 1.5.h,
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            widget.exercise['name'],
+                            style: theme.textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.w700,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          SizedBox(height: 0.5.h),
+                          Row(
+                            children: [
+                              CustomIconWidget(
+                                iconName: 'adjust',
+                                color: theme.colorScheme.onSurfaceVariant,
+                                size: 11,
+                              ),
+                              SizedBox(width: 1.w),
+                              Expanded(
+                                child: Text(
+                                  widget.exercise['targetMuscles'],
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    color: theme.colorScheme.onSurfaceVariant,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                          SizedBox(height: 1.2.h),
+                          Row(
+                            children: [
+                              _InfoChip(
+                                label: widget.exercise['equipment'],
+                                color: theme.colorScheme.primary,
+                                bgColor:
+                                    theme.colorScheme.primary.withAlpha(18),
+                                iconName: 'fitness_center',
+                                theme: theme,
+                              ),
+                              SizedBox(width: 2.w),
+                              _InfoChip(
+                                label: difficulty,
+                                color: diffColor,
+                                bgColor: diffColor.withAlpha(22),
+                                theme: theme,
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  // Chevron
+                  Padding(
+                    padding: EdgeInsets.only(right: 3.w),
+                    child: CustomIconWidget(
+                      iconName: 'chevron_right',
+                      color: theme.colorScheme.onSurfaceVariant.withAlpha(100),
+                      size: 20,
+                    ),
+                  ),
+                ],
               ),
-              // Chevron
-              Padding(
-                padding: EdgeInsets.only(right: 3.w),
-                child: CustomIconWidget(
-                  iconName: 'chevron_right',
-                  color: theme.colorScheme.onSurfaceVariant.withAlpha(100),
-                  size: 20,
-                ),
-              ),
-            ],
+            ),
           ),
         ),
       ),

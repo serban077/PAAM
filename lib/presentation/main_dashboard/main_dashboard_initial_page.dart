@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:sizer/sizer.dart';
+import 'package:skeletonizer/skeletonizer.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../core/app_export.dart';
@@ -194,8 +195,6 @@ class _MainDashboardInitialPageState extends State<MainDashboardInitialPage> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final theme = Theme.of(context);
 
-    if (_isLoading) return _buildLoadingScreen(isDark);
-
     final userName = (_userProfile?['full_name'] ?? 'User') as String;
     final firstName = userName.split(' ').first;
     final currentWeight =
@@ -203,7 +202,9 @@ class _MainDashboardInitialPageState extends State<MainDashboardInitialPage> {
     final targetWeight =
         _userProfile?['target_weight_kg']?.toDouble() ?? 0.0;
 
-    return Scaffold(
+    return Skeletonizer(
+      enabled: _isLoading,
+      child: Scaffold(
       body: Stack(
         children: [
           // Full-screen gradient background
@@ -235,6 +236,7 @@ class _MainDashboardInitialPageState extends State<MainDashboardInitialPage> {
             ),
           ),
         ],
+      ),
       ),
     );
   }
@@ -394,7 +396,7 @@ class _MainDashboardInitialPageState extends State<MainDashboardInitialPage> {
                 // Workout Streak
                 _buildSectionTitle('Workout Streak', theme),
                 SizedBox(height: 1.5.h),
-                _buildWorkoutStreakCard(theme),
+                RepaintBoundary(child: _buildWorkoutStreakCard(theme)),
                 SizedBox(height: 2.5.h),
 
                 // Daily Tip
@@ -412,7 +414,7 @@ class _MainDashboardInitialPageState extends State<MainDashboardInitialPage> {
                 // Weekly Progress
                 _buildSectionTitle('Weekly Progress', theme),
                 SizedBox(height: 1.5.h),
-                const WeeklyProgressWidget(),
+                const RepaintBoundary(child: WeeklyProgressWidget()),
               ],
             ),
           ),
@@ -692,170 +694,4 @@ class _MainDashboardInitialPageState extends State<MainDashboardInitialPage> {
     );
   }
 
-  // ── Loading Screen ─────────────────────────────────────────────────
-
-  Widget _buildLoadingScreen(bool isDark) {
-    final cardColor = isDark ? AppTheme.surfaceDark : AppTheme.surfaceLight;
-    final skeletonColor = isDark
-        ? Colors.white.withValues(alpha: 0.08)
-        : Colors.grey.shade200;
-
-    return Scaffold(
-      body: Stack(
-        children: [
-          Positioned.fill(
-            child: Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: _gradientColors(isDark),
-                ),
-              ),
-            ),
-          ),
-          SafeArea(
-            child: Column(
-              children: [
-                // Skeleton header
-                Padding(
-                  padding: EdgeInsets.fromLTRB(5.w, 1.5.h, 5.w, 2.h),
-                  child: Row(
-                    children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Container(
-                            height: 2.5.h,
-                            width: 40.w,
-                            decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.2),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                          ),
-                          SizedBox(height: 1.h),
-                          Container(
-                            height: 1.8.h,
-                            width: 32.w,
-                            decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.15),
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const Spacer(),
-                      CircleAvatar(
-                        radius: 5.5.w,
-                        backgroundColor: Colors.white.withValues(alpha: 0.2),
-                      ),
-                    ],
-                  ),
-                ),
-                // Skeleton card
-                Expanded(
-                  child: Container(
-                    width: double.infinity,
-                    decoration: BoxDecoration(
-                      color: cardColor,
-                      borderRadius: const BorderRadius.vertical(
-                        top: Radius.circular(28),
-                      ),
-                      border: isDark
-                          ? Border(
-                              top: BorderSide(
-                                color: AppTheme.primaryDark
-                                    .withValues(alpha: 0.25),
-                                width: 1,
-                              ),
-                            )
-                          : null,
-                    ),
-                    padding: EdgeInsets.fromLTRB(5.w, 2.5.h, 5.w, 4.h),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Section title skeleton
-                        Container(
-                          height: 2.h,
-                          width: 25.w,
-                          decoration: BoxDecoration(
-                            color: skeletonColor,
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                        ),
-                        SizedBox(height: 1.5.h),
-                        // Metric cards skeleton
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Container(
-                                height: 10.h,
-                                decoration: BoxDecoration(
-                                  color: skeletonColor,
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                              ),
-                            ),
-                            SizedBox(width: 3.w),
-                            Expanded(
-                              child: Container(
-                                height: 10.h,
-                                decoration: BoxDecoration(
-                                  color: skeletonColor,
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        SizedBox(height: 2.5.h),
-                        // Section title skeleton
-                        Container(
-                          height: 2.h,
-                          width: 32.w,
-                          decoration: BoxDecoration(
-                            color: skeletonColor,
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                        ),
-                        SizedBox(height: 1.5.h),
-                        // Workout card skeleton
-                        Container(
-                          height: 16.h,
-                          decoration: BoxDecoration(
-                            color: skeletonColor,
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                        ),
-                        SizedBox(height: 2.5.h),
-                        // Section title skeleton
-                        Container(
-                          height: 2.h,
-                          width: 22.w,
-                          decoration: BoxDecoration(
-                            color: skeletonColor,
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                        ),
-                        SizedBox(height: 1.5.h),
-                        // Nutrition skeleton
-                        Container(
-                          height: 12.h,
-                          decoration: BoxDecoration(
-                            color: skeletonColor,
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 }

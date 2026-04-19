@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:sizer/sizer.dart';
+import 'package:skeletonizer/skeletonizer.dart';
 
 import '../../../core/app_export.dart';
 import '../../../data/verified_exercises_data.dart';
@@ -18,6 +20,15 @@ class ExerciseLibrary extends StatefulWidget {
 }
 
 class _ExerciseLibraryState extends State<ExerciseLibrary> {
+  static const Map<String, dynamic> _dummyExercise = {
+    'name': 'Exercise Name Placeholder',
+    'bodyPart': 'Chest',
+    'targetMuscles': 'Pectorals, Triceps',
+    'equipment': 'Barbell',
+    'difficulty': 'Beginner',
+    'image': null,
+  };
+
   final TextEditingController _searchController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
 
@@ -506,12 +517,20 @@ class _ExerciseLibraryState extends State<ExerciseLibrary> {
                   onRefresh: _refreshExercises,
                   child: ListView.builder(
                     controller: _scrollController,
+                    cacheExtent: 500,
                     padding: EdgeInsets.only(top: 0.5.h, bottom: 10.h),
                     itemCount: _filteredExercises.length +
                         (_isLoadingMore ? 3 : 0),
                     itemBuilder: (context, index) {
                       if (index >= _filteredExercises.length) {
-                        return _buildSkeletonCard();
+                        return Skeletonizer(
+                          enabled: true,
+                          child: ExerciseCardWidget(
+                            exercise: _dummyExercise,
+                            onTap: () {},
+                            onLongPress: () {},
+                          ),
+                        );
                       }
                       return ExerciseCardWidget(
                         exercise: _filteredExercises[index],
@@ -519,7 +538,18 @@ class _ExerciseLibraryState extends State<ExerciseLibrary> {
                             _onExerciseTap(_filteredExercises[index]),
                         onLongPress: () => _onExerciseLongPress(
                             _filteredExercises[index]),
-                      );
+                      )
+                          .animate(
+                            delay: Duration(
+                                milliseconds: (index % 10) * 40),
+                          )
+                          .fade(duration: 300.ms)
+                          .slideY(
+                            begin: 0.08,
+                            end: 0,
+                            duration: 300.ms,
+                            curve: Curves.easeOut,
+                          );
                     },
                   ),
                 ),
@@ -596,106 +626,12 @@ class _ExerciseLibraryState extends State<ExerciseLibrary> {
     return ListView.builder(
       padding: EdgeInsets.only(top: 0.5.h, bottom: 4.h),
       itemCount: 6,
-      itemBuilder: (context, index) => _buildSkeletonCard(),
-    );
-  }
-
-  Widget _buildSkeletonCard() {
-    final theme = Theme.of(context);
-    return Padding(
-      padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 0.6.h),
-      child: Container(
-        height: 22.w,
-        decoration: BoxDecoration(
-          color: theme.colorScheme.surface,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withAlpha(10),
-              blurRadius: 6,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 24.w,
-              decoration: BoxDecoration(
-                color:
-                    theme.colorScheme.surfaceContainerHighest.withAlpha(76),
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(16),
-                  bottomLeft: Radius.circular(16),
-                ),
-              ),
-            ),
-            Container(
-              width: 3,
-              color: theme.colorScheme.outline.withAlpha(40),
-            ),
-            Expanded(
-              child: Padding(
-                padding: EdgeInsets.symmetric(
-                  horizontal: 3.w,
-                  vertical: 1.5.h,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Container(
-                          height: 1.8.h,
-                          width: 35.w,
-                          decoration: BoxDecoration(
-                            color: theme.colorScheme.surfaceContainerHighest
-                                .withAlpha(76),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                        ),
-                        SizedBox(height: 0.6.h),
-                        Container(
-                          height: 1.4.h,
-                          width: 25.w,
-                          decoration: BoxDecoration(
-                            color: theme.colorScheme.surfaceContainerHighest
-                                .withAlpha(50),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                        ),
-                      ],
-                    ),
-                    Row(
-                      children: [
-                        Container(
-                          height: 3.w,
-                          width: 18.w,
-                          decoration: BoxDecoration(
-                            color: theme.colorScheme.surfaceContainerHighest
-                                .withAlpha(60),
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                        ),
-                        SizedBox(width: 2.w),
-                        Container(
-                          height: 3.w,
-                          width: 14.w,
-                          decoration: BoxDecoration(
-                            color: theme.colorScheme.surfaceContainerHighest
-                                .withAlpha(60),
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
+      itemBuilder: (context, index) => Skeletonizer(
+        enabled: true,
+        child: ExerciseCardWidget(
+          exercise: _dummyExercise,
+          onTap: () {},
+          onLongPress: () {},
         ),
       ),
     );
