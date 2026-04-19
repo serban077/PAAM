@@ -7,11 +7,11 @@ Update `## Current Status` in `CLAUDE.md` at the end of every session.
 
 ## Current Status
 
-**Last updated:** 2026-04-17
-**Last session completed:** M23 — High Refresh Rate & UI Fluidity: flutter_displaymode 120Hz unlock, SharedAxisTransition page transitions, 3 AnimationControllers replaced with flutter_animate, Skeletonizer for dashboard + exercise library, dart fix (0 to fix — already clean), RepaintBoundary on WeeklyProgressWidget + streak card, cacheExtent:500 on exercise library, ExerciseCardWidget press scale animation (StatefulWidget conversion), staggered entrance animations on exercise cards; flutter analyze: **0 issues**
-**Next session starts with:** M24 — Image & Asset Optimization
+**Last updated:** 2026-04-19
+**Last session completed:** M24 — Image & Asset Optimization: PNG/JPG→WebP (body_silhouette -34%, no-image -87%), flutter_image_compress 2.3.0 in 3 camera capture flows (quality 75/1024px before Gemini), memCacheHeight on exercise_3d_widget, precacheImage warms first 10 exercises on library load, svgo on both SVGs (-38/-50%), flutter_launcher_icons + flutter_native_splash generated (green/#1B3A5E theme, all mipmap/iOS sizes); flutter analyze: **0 issues**
+**Next session starts with:** M25 — Memory Management & Leak Audit
 **Active branches:** main
-**Blockers / notes:** `pubspec.lock` gitignored — run `flutter pub get` at session start. `product_found_sheet.dart` unused untracked — safe to delete. USDA_API_KEY in env.json. Gemini 2.5 Flash needs maxTokens ≥ 8192. M20 manual config: "Confirm email" enabled in Supabase ✅; hCaptcha skipped (no free tier needed for PAAM). M19 deferred: pagination UI, streak RPC, lazy ProgressTrackingScreen, SharedPreferences layer, build/bundle (19.9), perf monitoring (19.10). Supabase remaining: 2 food_database rls_policy_always_true (intentional by design — any authenticated user can add/edit foods), workout_plans multiple_permissive_policies (legacy user_id/creator_id dual schema — defer to M27), 30 unused_index INFO (newly added FK indexes not yet used — defer to M27).
+**Blockers / notes:** `pubspec.lock` gitignored — run `flutter pub get` at session start. `kotlin.incremental=false` set in android/gradle.properties — required fix for cross-drive pub cache (C:) vs project (D:) on Windows; do not remove. USDA_API_KEY in env.json. Gemini 2.5 Flash needs maxTokens ≥ 8192. M20 manual config: "Confirm email" enabled in Supabase ✅; hCaptcha skipped (no free tier needed for PAAM). M19 deferred: pagination UI, streak RPC, lazy ProgressTrackingScreen, SharedPreferences layer, build/bundle (19.9), perf monitoring (19.10). Supabase remaining: 2 food_database rls_policy_always_true (intentional by design — any authenticated user can add/edit foods), workout_plans multiple_permissive_policies (legacy user_id/creator_id dual schema — defer to M27), 30 unused_index INFO (newly added FK indexes not yet used — defer to M27).
 
 ---
 
@@ -706,30 +706,30 @@ Update `## Current Status` in `CLAUDE.md` at the end of every session.
 > Images are the heaviest asset class. Compress, cache smarter, strip metadata, and pre-resolve sizes so memory stays low and scroll stays smooth.
 
 ### 24.1 — Bundled Asset Compression
-- [ ] Audit every file in `assets/images/` — record current size + format
-- [ ] Convert PNG/JPG to WebP where visual quality allows (typically 40-60% smaller)
-- [ ] For photos: quality 80; for UI graphics: lossless WebP
-- [ ] Re-verify paths in code after any rename
+- [x] Audit every file in `assets/images/` — record current size + format
+- [x] Convert PNG/JPG to WebP where visual quality allows (typically 40-60% smaller)
+- [x] For photos: quality 80; for UI graphics: lossless WebP
+- [x] Re-verify paths in code after any rename
 
 ### 24.2 — Remote Image Pipeline
-- [ ] Verify every `Image.network(` call is replaced with `CustomImageWidget` (grep)
-- [ ] Confirm `CachedNetworkImage` has `memCacheWidth`, `memCacheHeight`, `maxWidthDiskCache`, `maxHeightDiskCache` on every usage (with `.isFinite` guard per CLAUDE.md)
-- [ ] Add `errorWidget` + `placeholder` to every `CustomImageWidget` call site that doesn't have one
-- [ ] Pre-fetch exercise images on `ExerciseLibrary` initial load using `precacheImage`
+- [x] Verify every `Image.network(` call is replaced with `CustomImageWidget` (grep)
+- [x] Confirm `CachedNetworkImage` has `memCacheWidth`, `memCacheHeight`, `maxWidthDiskCache`, `maxHeightDiskCache` on every usage (with `.isFinite` guard per CLAUDE.md)
+- [x] Add `errorWidget` + `placeholder` to every `CustomImageWidget` call site that doesn't have one
+- [x] Pre-fetch exercise images on `ExerciseLibrary` initial load using `precacheImage`
 
 ### 24.3 — Camera Capture Compression
-- [ ] Add `flutter_image_compress: ^2.3.0` — run compression **before** base64 encoding for Gemini Vision
-- [ ] Target: photos sent to Gemini Vision ≤ 500KB (quality 75, max 1024px)
-- [ ] Apply in `capture_step.dart`, `user_food_submission_screen.dart`, any nutrition label flow
+- [x] Add `flutter_image_compress: ^2.3.0` — run compression **before** base64 encoding for Gemini Vision
+- [x] Target: photos sent to Gemini Vision ≤ 500KB (quality 75, max 1024px)
+- [x] Apply in `capture_step.dart`, `user_food_submission_screen.dart`, any nutrition label flow
 
 ### 24.4 — SVG Optimization
-- [ ] Audit every `.svg` in `assets/` — run through `svgo` (or manual cleanup) to strip metadata, whitespace, unnecessary groups
-- [ ] Verify `flutter_svg` is only imported where actually needed
+- [x] Audit every `.svg` in `assets/` — run through `svgo` (or manual cleanup) to strip metadata, whitespace, unnecessary groups
+- [x] Verify `flutter_svg` is only imported where actually needed
 
 ### 24.5 — App Icon & Splash Screen
-- [ ] Add `flutter_launcher_icons: ^0.14.1` (dev dep) — single source of truth for all icon sizes (Android + iOS)
-- [ ] Add `flutter_native_splash: ^2.4.1` (dev dep) — native splash, no Flutter widget flash on cold start
-- [ ] Generate assets for both; replace existing splash screen widget with native handoff
+- [x] Add `flutter_launcher_icons: ^0.14.1` (dev dep) — single source of truth for all icon sizes (Android + iOS)
+- [x] Add `flutter_native_splash: ^2.4.1` (dev dep) — native splash, no Flutter widget flash on cold start
+- [x] Generate assets for both; replace existing splash screen widget with native handoff
 - [ ] Measure cold start time change vs M22.3 baseline
 
 ---
@@ -974,7 +974,7 @@ Update `## Current Status` in `CLAUDE.md` at the end of every session.
 ### 31.6 — First Frame Optimization
 - [ ] `main()` runs absolute minimum work before `runApp`
 - [ ] Heavy Supabase session restore happens in `AuthenticationOnboardingFlow` with splash, not in `main()`
-- [ ] Native splash from M24.5 covers the entire boot until first real frame
+- [x] Native splash from M24.5 covers the entire boot until first real frame
 
 ---
 
