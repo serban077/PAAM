@@ -430,3 +430,14 @@ Shimmer is shown while `_isLoading == true`; replaced with real content on data 
 - Loading skeleton: gradient header (matching hero) + white body + white `CircularProgressIndicator`
 - `ScaffoldMessenger` captured before `await` gaps in all 3 `onUpdate` callbacks — fixes `use_build_context_synchronously`
 - `_goalDisplay` / `_activityDisplay` static const maps on the state class for badge labels
+
+**M23 Animation & Performance patterns** (2026-04-17):
+- **flutter_animate** replaces hand-rolled `AnimationController` for entrance animations:
+  - One-shot entrance: `widget.animate().fade(duration:500.ms).slideY(begin:0.06, end:0)` — plays once on insertion
+  - Re-trigger on refresh: `widget.animate(key:ValueKey(_counter))` — new key forces replay; increment `_counter` in setState
+  - Repeating pulse: `.animate(onPlay:(c)=>c.repeat(reverse:true)).scale(begin:Offset(0.95,0.95), end:Offset(1.05,1.05))`
+  - Staggered list: `.animate(delay:(index%10*40).ms).fade(300.ms).slideY(begin:0.08)` — `index%10` prevents huge delay on page 2+
+- **Skeletonizer** wraps real widget tree: `Skeletonizer(enabled:_isLoading, child:realScaffold)` — auto-generates shimmer from widget structure; keep dummy data with the same shape as real data for list skeletons
+- **AnimatedScale press**: convert card to `StatefulWidget`, add `bool _isPressed`; wrap `Material` with `AnimatedScale(scale:_isPressed?0.97:1.0, duration:80ms)` + outer `GestureDetector(onTapDown/Up/Cancel)` — `InkWell` inside Material still handles ripple + `onTap`/`onLongPress`
+- **RepaintBoundary**: wrap widgets that own expensive `CustomPainter` or repeated animation (fl_chart, animated rings) — isolates them from parent repaints
+- **SharedAxisTransition**: configured globally in `app_theme.dart` via `PageTransitionsTheme` — no per-screen changes needed; app lock fade transition uses its own `PageRouteBuilder` which takes precedence
