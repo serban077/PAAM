@@ -103,6 +103,10 @@ class _AccountManagementSectionWidgetState
       },
     );
 
+    currentPasswordController.dispose();
+    newPasswordController.dispose();
+    confirmPasswordController.dispose();
+
     if (result == true && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(

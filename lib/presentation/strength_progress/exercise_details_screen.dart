@@ -154,6 +154,9 @@ class _ExerciseDetailsScreenState extends State<ExerciseDetailsScreen> {
       ),
     );
 
+    weightController.dispose();
+    repsController.dispose();
+
     if (result != null) {
       await _savePR(exerciseId, result['weight'], result['reps']);
     }

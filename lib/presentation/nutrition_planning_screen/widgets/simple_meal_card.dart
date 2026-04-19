@@ -293,6 +293,6 @@ class _SimpleMealCardState extends State<SimpleMealCard> {
           ),
         ],
       ),
-    );
+    ).then((_) => controller.dispose());
   }
 }

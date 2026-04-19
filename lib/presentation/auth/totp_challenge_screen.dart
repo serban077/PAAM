@@ -82,7 +82,7 @@ class _TotpChallengeScreenState extends State<TotpChallengeScreen> {
           ),
         ],
       ),
-    );
+    ).then((_) => backupController.dispose());
   }
 
   @override
