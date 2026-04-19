@@ -7,11 +7,11 @@ Update `## Current Status` in `CLAUDE.md` at the end of every session.
 
 ## Current Status
 
-**Last updated:** 2026-04-16
-**Last session completed:** M22 — Audit Baseline (static slice): flutter analyze (125 issues — 0 errors in main app), 4 unused packages confirmed (camera/youtube/universal_html/before_after), APK build FAILED (R8 — ProGuard fix ready), 72 DB performance + 13 security advisors logged, postgres logs clean; full report in docs/AUDIT_BASELINE.md
-**Next session starts with:** M23 — High Refresh Rate & UI Fluidity (flutter_displaymode, flutter_animate, animations pkg, skeletonizer, widget rebuild reduction)
+**Last updated:** 2026-04-17
+**Last session completed:** M23 — High Refresh Rate & UI Fluidity: flutter_displaymode 120Hz unlock, SharedAxisTransition page transitions, 3 AnimationControllers replaced with flutter_animate, Skeletonizer for dashboard + exercise library, dart fix (0 to fix — already clean), RepaintBoundary on WeeklyProgressWidget + streak card, cacheExtent:500 on exercise library, ExerciseCardWidget press scale animation (StatefulWidget conversion), staggered entrance animations on exercise cards; flutter analyze: **0 issues**
+**Next session starts with:** M24 — Image & Asset Optimization
 **Active branches:** main
-**Blockers / notes:** `pubspec.lock` gitignored — run `flutter pub get` at session start. `product_found_sheet.dart` unused untracked — safe to delete. USDA_API_KEY in env.json. Gemini 2.5 Flash needs maxTokens ≥ 8192. M20 manual config: "Confirm email" enabled in Supabase ✅; hCaptcha skipped (no free tier needed for PAAM). M19 deferred: pagination UI, streak RPC, lazy ProgressTrackingScreen, SharedPreferences layer, build/bundle (19.9), perf monitoring (19.10). Pre-existing 44 project-wide info/warnings in gemini_ai_service.dart, body_measurements_card.dart etc. — not blocking.
+**Blockers / notes:** `pubspec.lock` gitignored — run `flutter pub get` at session start. `product_found_sheet.dart` unused untracked — safe to delete. USDA_API_KEY in env.json. Gemini 2.5 Flash needs maxTokens ≥ 8192. M20 manual config: "Confirm email" enabled in Supabase ✅; hCaptcha skipped (no free tier needed for PAAM). M19 deferred: pagination UI, streak RPC, lazy ProgressTrackingScreen, SharedPreferences layer, build/bundle (19.9), perf monitoring (19.10). Supabase remaining: 2 food_database rls_policy_always_true (intentional by design — any authenticated user can add/edit foods), workout_plans multiple_permissive_policies (legacy user_id/creator_id dual schema — defer to M27), 30 unused_index INFO (newly added FK indexes not yet used — defer to M27).
 
 ---
 
@@ -627,8 +627,8 @@ Update `## Current Status` in `CLAUDE.md` at the end of every session.
 
 ### 22.1 — Static Analysis & Lint Baseline
 - [x] Run `flutter analyze` and record exact warning/info count per file — **125 issues: 0 errors (main app), ~10 warnings, ~100 infos, 7 errors in PAAM subfolder**
-- [ ] Fix remaining pre-existing lints in `gemini_ai_service.dart`, `body_measurements_card.dart` (and any others flagged in M19.9)
-- [ ] Audit and delete `lib/presentation/nutrition_planning_screen/widgets/product_found_sheet.dart` (confirmed unused per CLAUDE.md)
+- [x] Fix remaining pre-existing lints — **flutter analyze lib/ → 0 issues**: withOpacity→withValues(alpha:) ×8 files, value:→initialValue: DropdownButtonFormField ×6 occurrences, use_build_context_synchronously ×5 files, Radio→RadioGroup migration ×4 steps, debugPrint import fix, unnecessary_to_list_in_spreads fix, 2 raw print()→debugPrint
+- [x] Audit and delete `lib/presentation/nutrition_planning_screen/widgets/product_found_sheet.dart` — **deleted**
 - [x] Grep for leftover `print(` / `TODO` / `FIXME` in `lib/` — **2 raw print() in gemini_ai_service.dart; 1 TODO in onboarding_survey_widget.dart; 0 FIXME/HACK**
 - [ ] Add stricter lint ruleset via `very_good_analysis` or custom `analysis_options.yaml` (optional — pending user decision)
 
@@ -650,6 +650,9 @@ Update `## Current Status` in `CLAUDE.md` at the end of every session.
 - [x] Run `mcp__supabase__get_advisors` performance — **72 issues: 28 WARN auth_rls_initplan (auth.uid() re-evaluated per row), 14 WARN multiple_permissive_policies, 13 INFO unindexed FKs, 17 INFO unused indexes**
 - [x] Run `mcp__supabase__get_logs` postgres — **CLEAN: 0 errors, only connection + checkpoint events**
 - [x] All findings documented in `docs/AUDIT_BASELINE.md`
+- [x] **FIXED (M22 fix pass):** 29 auth_rls_initplan → `(SELECT auth.uid())` migration applied; 10 function_search_path_mutable → `SET search_path = public, pg_catalog` applied; 13 unindexed FK → indexes created; duplicate food_database policies dropped; exercises/session_exercises/workout_sessions multiple permissive policies consolidated
+- [x] **FIXED:** workout_plans 3-policy overlap — dropped 2 legacy creator_id policies, migrated 2 rows to user_id; dropped 29 old unused non-FK indexes; re-added FK covering indexes for all 16 FK columns
+- [ ] **Remaining (intentional/manual):** 2 food_database rls_policy_always_true (by design — any auth user can add/edit foods), unused_index INFO on FK indexes (new, will clear with query traffic), leaked_password_protection (enable manually: Dashboard → Auth → Password Security)
 
 ### 22.5 — Baseline Document
 - [x] Created `docs/AUDIT_BASELINE.md` — full report with static analysis, deps, build, DB health, priority fix queue
@@ -662,38 +665,39 @@ Update `## Current Status` in `CLAUDE.md` at the end of every session.
 > Make the app feel buttery-smooth. Unlock 90/120Hz displays, eliminate jank frames, cut widget rebuilds, upgrade animations to a declarative system. Biggest perceived-fluency win.
 
 ### 23.1 — High Refresh Rate Display Support
-- [ ] Add `flutter_displaymode: ^0.6.0` to `pubspec.yaml`
-- [ ] In `main.dart`, call `FlutterDisplayMode.setHighRefreshRate()` after `WidgetsFlutterBinding.ensureInitialized()`
-- [ ] Test on a 90/120Hz Android device — record before/after FPS on a scroll-heavy screen
-- [ ] Guard call with `Platform.isAndroid` (iOS handles automatically)
+- [x] Add `flutter_displaymode: ^0.6.0` to `pubspec.yaml`
+- [x] In `main.dart`, call `FlutterDisplayMode.setHighRefreshRate()` after `WidgetsFlutterBinding.ensureInitialized()`
+- [~] Test on a 90/120Hz Android device — record before/after FPS on a scroll-heavy screen **[DEFERRED — needs device]**
+- [x] Guard call with `Platform.isAndroid` (iOS handles automatically)
 
 ### 23.2 — Animation System Upgrade
-- [ ] Add `flutter_animate: ^4.5.0` to `pubspec.yaml` — declarative, performant, replaces hand-rolled `AnimationController` boilerplate
-- [ ] Add `animations: ^2.0.11` (official Flutter team) — for `OpenContainer` / `SharedAxisTransition` / `FadeThroughTransition` between screens
-- [ ] Replace at least 3 hand-rolled `AnimationController` setups with `.animate()` chains (measure LOC reduction)
-- [ ] Add `OpenContainer` Hero-style transition from exercise cards → exercise detail
-- [ ] Add `SharedAxisTransition` between bottom-nav tabs (opt-in via `PageTransitionsTheme`)
+- [x] Add `flutter_animate: ^4.5.0` to `pubspec.yaml`
+- [x] Add `animations: ^2.0.11` (official Flutter team) — `SharedAxisTransition` via `PageTransitionsTheme`
+- [x] Replace 3 hand-rolled `AnimationController` setups with `.animate()` chains: `progress_tracking_screen.dart`, `real_workout_stats_widget.dart`, `email_verification_screen.dart`
+- [ ] Add `OpenContainer` Hero-style transition from exercise cards → exercise detail (deferred)
+- [x] Add `SharedAxisTransition` to all routes via `PageTransitionsTheme` in `app_theme.dart`
 
 ### 23.3 — Skeleton Loading Modernization
-- [ ] Add `skeletonizer: ^1.4.2` — modern replacement for `shimmer` package, wraps any widget tree
-- [ ] Replace existing `shimmer` usages where skeletonizer's auto-detection is cleaner (exercise library cards, meal cards, contributions list)
-- [ ] Keep `shimmer` only where custom shimmer shapes are needed
+- [x] Add `skeletonizer: ^1.4.2` to `pubspec.yaml`
+- [x] Replace dashboard `_buildLoadingScreen()` static placeholders with `Skeletonizer(enabled: _isLoading)` wrapping real content
+- [x] Replace exercise library `_buildSkeletonCard()` with `Skeletonizer`-wrapped real `ExerciseCardWidget` using dummy data
+- [x] Keep `shimmer` for AI loading widgets with custom skeleton shapes
 
 ### 23.4 — Widget Rebuild Reduction
-- [ ] DevTools "Track Widget Builds" on dashboard + nutrition + progress — record top 10 rebuild hotspots
-- [ ] Add `const` to every eligible widget constructor (scripted fix with `dart fix --apply`)
-- [ ] Wrap frequently-repainting widgets in `RepaintBoundary` (ring/arc progress, animated streak card)
-- [ ] Extract large inline widgets inside `build()` into top-level stateless widgets with `const` constructors
+- [~] DevTools "Track Widget Builds" — top 10 rebuild hotspots **[DEFERRED — needs device]**
+- [x] `dart fix --apply` — 0 to fix (already clean from M22 pass)
+- [x] Wrap `WeeklyProgressWidget` in `RepaintBoundary` (fl_chart repaints)
+- [x] Wrap `_buildWorkoutStreakCard` in `RepaintBoundary` (animated streak ring)
 
 ### 23.5 — Scroll Performance
-- [ ] Audit every `ListView` / `Column` with `.map()` — convert to `ListView.builder` where item count > 10
-- [ ] Add `cacheExtent` tuning to long lists (exercise library, contributions, meal list)
-- [ ] Add `AutomaticKeepAliveClientMixin` where tab switches cause expensive rebuilds (if any remain after M19)
+- [x] `cacheExtent: 500` on exercise library `ListView.builder`
+- [x] Exercise library already uses `ListView.builder` with pagination ✅
+- [~] `AutomaticKeepAliveClientMixin` — N/A: `IndexedStack` already keeps all tabs alive ✅
 
 ### 23.6 — Motion & Micro-interactions
-- [ ] Add subtle press animations on cards (`Tween<double> scale 1.0 → 0.97`) via `flutter_animate`
-- [ ] Add staggered entrance animations on list items (`.animate(interval: 40.ms).fadeIn().slideY()`)
-- [ ] Add loading → success checkmark animation on "Log Meal" / "Mark Eaten" buttons
+- [x] Press scale animation on `ExerciseCardWidget` — `AnimatedScale` 1.0→0.97, 80ms (`StatelessWidget` → `StatefulWidget`)
+- [x] Staggered entrance on exercise list items — `.animate(delay: (index % 10) * 40ms).fade(300ms).slideY(0.08→0, 300ms)`
+- [ ] Loading → success checkmark animation on "Log Meal" / "Mark Eaten" (deferred)
 
 ---
 
@@ -1076,3 +1080,5 @@ Update `## Current Status` in `CLAUDE.md` at the end of every session.
 | 2026-04-07 | Progress screen UI overhaul | SliverAppBar + parallax header; shimmer skeleton; animated weekly calendar (AnimatedContainer + HapticFeedback + progress bar); arc weight progress card (CustomPaint, bidirectional goal logic, count-up animation); 2×2 stat grid with staggered entrance animations; 3D body silhouette (bezier + LinearGradient depth) with diagram-style measurement pins (LayoutBuilder, dots + connector lines + pill labels); flutter analyze 0 issues | M11 — Testing & Quality |
 | 2026-04-15 | M21 complete | Exercise library expansion: 100+ exercises across 13 categories (Chest/Back/Legs/Glutes/Calves/Shoulders/Arms/Forearms/Abs/Full Body/Stretching/Plyometrics/Cardio); Unsplash photos per exercise; full GIF animation mapping in exercise_gif_utils.dart; new equipment types (Kettlebell/Resistance Band/Box); pagination + scroll-driven load-more; styled body-part placeholder cards; getExerciseListForPrompt() helper for Gemini prompts; fixed 2 warnings in photo_recipe_screen.dart | M11 — Testing & Quality |
 | 2026-04-16 | M22 baseline (static) | flutter analyze: 125 issues (0 errors main app, 7 PAAM subfolder, ~10 warn, ~100 info); 4 unused packages confirmed (camera/youtube_player_flutter/universal_html/before_after); APK build FAILED (R8 ProGuard — fix documented); flutter pub outdated: 8 major + 8 minor upgrades; js package discontinued; Supabase: 13 security WARN + 72 perf issues (28 auth_rls_initplan WARN, 14 multiple_permissive_policies, 13 unindexed FKs, 17 unused indexes); postgres logs clean; docs/AUDIT_BASELINE.md created | M23 — High Refresh Rate & UI Fluidity |
+| 2026-04-16 | M22 fix pass | flutter analyze lib/: **0 issues** (withOpacity×8, initialValue×6, use_build_context_synchronously×5, RadioGroup migration×4, debugPrint import, print→debugPrint×2, unnecessary_to_list); APK R8 ProGuard fixed + minify enabled; 4 unused packages removed from pubspec.yaml; Supabase: 29 auth_rls_initplan FIXED, 10 search_path FIXED, 13 FK indexes ADDED, duplicate food policies FIXED, exercises/session_exercises/workout_sessions permissive policies consolidated | M23 — High Refresh Rate & UI Fluidity |
+| 2026-04-17 | M23 complete (static) | 4 packages added (flutter_displaymode/flutter_animate/animations/skeletonizer); 120Hz unlock in main.dart; SharedAxisTransition for all routes (app_theme.dart); 3 AnimationControllers → flutter_animate (.animate chains); Skeletonizer on dashboard + exercise library; dart fix (0 to fix); RepaintBoundary on WeeklyProgressWidget + streak card; cacheExtent:500 on exercise library; ExerciseCardWidget press scale (StatefulWidget); staggered entrance on exercise list; flutter analyze: **0 issues**. Device measurement items deferred. | M24 — Image & Asset Optimization |
