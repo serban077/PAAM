@@ -7,9 +7,9 @@ Update `## Current Status` in `CLAUDE.md` at the end of every session.
 
 ## Current Status
 
-**Last updated:** 2026-04-20
-**Last session completed:** M26 — Network Layer Hardening & Offline Resilience: `_dio_interceptors.dart` (AppLogInterceptor, NetworkOfflineException, assertConnected, withRetry); OFF+USDA: logging, retry, CancelToken param, offline fast-fail; GeminiAIService: AppLogInterceptor; FoodRecognitionService: CancelToken passthrough + offline guard; SmartRecipeService: offline guard; AppCacheService: external search cache (10 min LRU-20) + vision cache (10 min); AddFoodModalWidget: CancelToken + external cache read/write; PhotoRecipeScreen: CancelToken + vision cache read/write; flutter analyze lib/: **0 issues**
-**Next session starts with:** M27 — Supabase Query & Index Optimization
+**Last updated:** 2026-04-21
+**Last session completed:** M27 — Supabase Query & Index Optimization: 4 composite indexes (workout_logs/user_meals/workout_plans/body_measurements); `calculate_user_streak` RPC (STABLE+SECURITY DEFINER+search_path); 3 N+1 fixes (ProgressPhotoService Future.wait, GeminiAIService session_exercises batch insert, WorkoutService PR batch insert); 5 explicit select() projections (workout_service ×4, body_measurements_service ×1); `_fetchWorkoutStreak` → RPC call; RLS audit clean; advisors unchanged; flutter analyze lib/: **0 issues**
+**Next session starts with:** M28 — AI Pipeline Optimization (Gemini)
 **Active branches:** main
 **Blockers / notes:** `pubspec.lock` gitignored — run `flutter pub get` at session start. `kotlin.incremental=false` set in android/gradle.properties — required fix for cross-drive pub cache (C:) vs project (D:) on Windows; do not remove. USDA_API_KEY in env.json. Gemini 2.5 Flash needs maxTokens ≥ 8192. M20 manual config: "Confirm email" enabled in Supabase ✅; hCaptcha skipped (no free tier needed for PAAM). M19 deferred: pagination UI, streak RPC, lazy ProgressTrackingScreen, SharedPreferences layer, build/bundle (19.9), perf monitoring (19.10). Supabase remaining: 2 food_database rls_policy_always_true (intentional by design — any authenticated user can add/edit foods), workout_plans multiple_permissive_policies (legacy user_id/creator_id dual schema — defer to M27), 30 unused_index INFO (newly added FK indexes not yet used — defer to M27).
 
@@ -801,30 +801,31 @@ Update `## Current Status` in `CLAUDE.md` at the end of every session.
 
 > Use Supabase advisors + log analysis to catch slow queries, missing indexes, and RLS overhead before they bite in production.
 
-### 27.1 — Index Audit
-- [ ] Run `mcp__supabase__list_tables` — for every table, identify columns used in WHERE / ORDER BY in Dart code
-- [ ] Create migration adding missing indexes: `nutrition_logs(user_id, date)`, `workout_logs(user_id, created_at DESC)`, `food_database(name, brand)` if missing, `progress_photos(user_id, created_at DESC)`, `body_measurements(user_id, measured_at DESC)`, `workout_set_logs(session_id, exercise_id)`
-- [ ] Verify no duplicate indexes
+### 27.1 — Index Audit ✅
+- [x] Audited all service queries for WHERE / ORDER BY columns — identified 4 missing composites
+- [x] Created migration `20260421000001_m27_missing_indexes.sql`: `workout_logs(user_id, completed_at DESC)`, `user_meals(user_id, consumed_at)`, `workout_plans(user_id, is_active)`, `body_measurements(user_id, measurement_type, measured_at DESC)`
+- [x] Verified no duplicates — existing `progress_photos(user_id, created_at DESC)` + `strength_progress(user_id, exercise_id, recorded_at DESC)` already present
 
-### 27.2 — Query Projection
-- [ ] Every `.select()` call must list explicit columns — no implicit `*` on wide tables (continuation of M19.2)
-- [ ] Audit WorkoutService, NutritionService, BodyMeasurementsService, ProgressPhotoService
+### 27.2 — Query Projection ✅
+- [x] Fixed `workout_service.dart`: `getWorkoutPlanDetails` + `getWorkoutPlansByCategory` → no more `select('*')`; `startWorkoutPlan` + `saveCompletedWorkout` insert returns → explicit columns
+- [x] Fixed `body_measurements_service.dart`: `getMeasurements()` → explicit column list
 
-### 27.3 — N+1 Query Audit
-- [ ] Identify any `for (...) { await supabase.from(...).select(...) }` patterns → replace with a single join or `in_` batch call
+### 27.3 — N+1 Query Audit ✅
+- [x] Fixed `ProgressPhotoService.getUserPhotos()`: sequential `await _attachSignedUrls()` loop → `Future.wait(rows.map(...))`
+- [x] Fixed `GeminiAIService.saveGeneratedPlan()`: sequential `session_exercises` inserts → `Future.wait` + single batch insert
+- [x] Fixed `WorkoutService._autoDetectPRs()`: sequential `strength_progress` inserts → collect + single batch insert
 
-### 27.4 — Streak RPC (deferred from M19.2)
-- [ ] Create Postgres RPC `calculate_user_streak(user_id uuid) RETURNS int`
-- [ ] Replace client-side `_fetchWorkoutStreak()` calculation with RPC call
-- [ ] Index `workout_logs(user_id, completed_at DESC)` if not already present
+### 27.4 — Streak RPC ✅
+- [x] Created `calculate_user_streak(p_user_id uuid) RETURNS integer` via migration `20260421000002_m27_streak_rpc.sql` (STABLE, SECURITY DEFINER, SET search_path = public, pg_catalog)
+- [x] Replaced client-side `_fetchWorkoutStreak()` (365-row fetch + Dart loop) with single RPC call
+- [x] Index `workout_logs(user_id, completed_at DESC)` added (covers both RPC + old query)
 
-### 27.5 — RLS Policy Audit
-- [ ] For every table, run `mcp__supabase__execute_sql` `SELECT * FROM pg_policies WHERE tablename = '...'`
-- [ ] Verify each user-scoped table has `auth.uid() = user_id` check
-- [ ] Verify `food_database` has the M17 contribution-level policies intact
+### 27.5 — RLS Policy Audit ✅
+- [x] Verified all 8 user-scoped tables — every policy uses `(SELECT auth.uid())` pattern (M22-fixed, no per-row re-evaluation)
+- [x] `food_database` contribution policies intact: DELETE scoped to `contributed_by = auth.uid()` ✅
 
-### 27.6 — Advisor Follow-ups
-- [ ] Re-run `mcp__supabase__get_advisors` after 27.1–27.5 — target 0 critical findings
+### 27.6 — Advisor Follow-ups ✅
+- [x] Re-ran security + performance advisors — no new warnings from M27 changes; new RPC has `SET search_path` so no `function_search_path_mutable` trigger; only pre-existing intentional WARNs remain
 
 ---
 
@@ -1089,3 +1090,4 @@ Update `## Current Status` in `CLAUDE.md` at the end of every session.
 | 2026-04-17 | M23 complete (static) | 4 packages added (flutter_displaymode/flutter_animate/animations/skeletonizer); 120Hz unlock in main.dart; SharedAxisTransition for all routes (app_theme.dart); 3 AnimationControllers → flutter_animate (.animate chains); Skeletonizer on dashboard + exercise library; dart fix (0 to fix); RepaintBoundary on WeeklyProgressWidget + streak card; cacheExtent:500 on exercise library; ExerciseCardWidget press scale (StatefulWidget); staggered entrance on exercise list; flutter analyze: **0 issues**. Device measurement items deferred. | M24 — Image & Asset Optimization |
 | 2026-04-19 | M25 complete (static) | Controller disposal audit: 4 leaks fixed (account_management_section_widget 3 controllers, totp_challenge_screen backupController, simple_meal_card edit-quantity controller, exercise_details_screen 2 PR-dialog controllers); all AnimationController/ScrollController/PageController/StreamSubscription/Timer verified clean; no Supabase realtime channels; compute audit: all Gemini payloads 15–30KB (below 50KB threshold, no isolate migration); DevTools heap profiling deferred (needs device); flutter analyze lib/: **0 issues** | M26 — Network Layer Hardening & Offline Resilience |
 | 2026-04-20 | M26 complete (static) | New `_dio_interceptors.dart`: AppLogInterceptor (debug), NetworkOfflineException, assertConnected(), withRetry(3 retries, 500ms exp backoff); OFF+USDA: logging, retry, CancelToken param on searchFoods(), offline fast-fail on all methods; GeminiAIService: AppLogInterceptor added; FoodRecognitionService: CancelToken passthrough + offline guard; SmartRecipeService: offline guard; AppCacheService: external search cache (10min LRU-20) + vision result cache (10min) + invalidateAll() updated; AddFoodModalWidget: CancelToken per-query cancel + external cache read/write; PhotoRecipeScreen: CancelToken + _imageKey() fingerprint + vision cache read/write; flutter analyze lib/: **0 issues** | M27 — Supabase Query & Index Optimization |
+| 2026-04-21 | M27 complete | 4 composite indexes added (workout_logs/user_meals/workout_plans/body_measurements); `calculate_user_streak` Postgres RPC (STABLE+SECURITY DEFINER+search_path) replaces 365-row client-side loop; 3 N+1 fixes (ProgressPhotoService Future.wait, GeminiAIService batch session_exercises insert, WorkoutService batch PR insert); 5 explicit select() projections (workout_service ×4, body_measurements_service ×1); RLS audit: all policies use (SELECT auth.uid()) ✅; advisors clean (no new warnings); flutter analyze lib/: **0 issues** | M28 — AI Pipeline Optimization (Gemini) |

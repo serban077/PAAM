@@ -203,7 +203,23 @@ Food search LRU (3 min, max 20). `invalidateAll()` on sign-out.
 ## WorkoutService / NutritionService
 
 Standard CRUD services. Pattern: scope all queries by `user_id`, `.timeout(15s)`, wrap in try/catch.
-`WorkoutService` uses explicit column projections on all list queries. `NutritionService` applies `.limit(50)` on `getUserMeals()` and `getMyContributions()`.
+`WorkoutService` uses explicit column projections on all queries — **never** `select('*')` or bare `select()`. `NutritionService` applies `.limit(50)` on `getUserMeals()` and `getMyContributions()`.
+
+**Supabase RPC — `calculate_user_streak(p_user_id uuid) RETURNS integer` (M27):**
+Replaces the former 365-row client-side streak loop in `main_dashboard_initial_page.dart`.
+```dart
+final result = await SupabaseService.instance.client
+    .rpc('calculate_user_streak', params: {'p_user_id': userId})
+    .timeout(const Duration(seconds: 15));
+return (result as int?) ?? 0;
+```
+Function is `STABLE`, `SECURITY DEFINER`, `SET search_path = public, pg_catalog`. Backed by `idx_workout_logs_user_completed (user_id, completed_at DESC)`.
+
+**N+1 patterns — never introduce these (M27):**
+- Do NOT `await` inside a `for` loop over DB rows — use `Future.wait(list.map(...))` for parallel resolution
+- Do NOT insert rows one-by-one in a loop — collect into `List<Map>`, then single `.insert(list)` call
+- Example fix: `ProgressPhotoService.getUserPhotos()` — parallel signed URL resolution via `Future.wait`
+- Example fix: `WorkoutService._autoDetectPRs()` — batch `strength_progress` insert after collecting all PR rows
 
 Key methods:
 - `WorkoutService.saveCompletedWorkout({sessionId, durationSeconds, setLogs})` — INSERTs `workout_logs` + `workout_set_logs`, calls `_autoDetectPRs()`, returns `{'workoutLog', 'newPRs'}`
