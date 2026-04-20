@@ -16,7 +16,7 @@ class BodyMeasurementsService {
       // Build query based on filters
       dynamic query = _client
           .from('body_measurements')
-          .select()
+          .select('id, user_id, measurement_type, value, measured_at, notes, created_at')
           .eq('user_id', userId);
 
       if (measurementType != null) {

@@ -102,11 +102,7 @@ class ProgressPhotoService {
           .order('created_at', ascending: false)
           .timeout(const Duration(seconds: 15));
 
-      final results = <Map<String, dynamic>>[];
-      for (final row in rows) {
-        results.add(await _attachSignedUrls(row));
-      }
-      return results;
+      return await Future.wait(rows.map((row) => _attachSignedUrls(row)));
     } catch (e) {
       throw Exception('getUserPhotos failed: $e');
     }

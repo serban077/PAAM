@@ -26,7 +26,7 @@ class WorkoutService {
       // Get plan details
       final plan = await _client
           .from('workout_plans')
-          .select('*')
+          .select('id, user_id, plan_name, fitness_goal, weekly_frequency, duration_weeks, is_active, created_at')
           .eq('id', planId)
           .single();
 
@@ -75,7 +75,7 @@ class WorkoutService {
       // Get plans
       final plans = await _client
           .from('workout_plans')
-          .select('*')
+          .select('id, plan_name, fitness_goal, weekly_frequency, duration_weeks, is_active')
           .inFilter('id', planIds);
 
       return plans;
@@ -121,7 +121,7 @@ class WorkoutService {
             'duration_weeks': planExists['duration_weeks'],
             'is_active': true,
           })
-          .select()
+          .select('id, plan_name, fitness_goal, weekly_frequency, duration_weeks, is_active')
           .single();
 
       return newPlan;
@@ -211,7 +211,7 @@ class WorkoutService {
             'total_volume_kg': totalVolume,
             'completed_at': DateTime.now().toIso8601String(),
           })
-          .select()
+          .select('id, user_id, session_id, duration_seconds, total_volume_kg, completed_at')
           .single()
           .timeout(const Duration(seconds: 15));
 
@@ -288,26 +288,33 @@ class WorkoutService {
         }
       }
 
-      // Insert new PRs where session best > existing max
+      // Collect new PRs where session best > existing max, then batch insert
       final List<Map<String, dynamic>> newPRs = [];
+      final List<Map<String, dynamic>> prRowsToInsert = [];
       for (final entry in bestByExercise.entries) {
         final exId = entry.key;
         final sessionBest = entry.value['weight_kg'] as double;
         final existingBest = existingMax[exId];
         if (existingBest == null || sessionBest > existingBest) {
-          await _client.from('strength_progress').insert({
+          prRowsToInsert.add({
             'user_id': userId,
             'exercise_id': exId,
             'session_id': sessionId,
             'weight_kg': sessionBest,
             'reps': entry.value['reps'],
-          }).timeout(const Duration(seconds: 15));
+          });
           newPRs.add({
             'exercise_id': exId,
             'weight_kg': sessionBest,
             'reps': entry.value['reps'],
           });
         }
+      }
+      if (prRowsToInsert.isNotEmpty) {
+        await _client
+            .from('strength_progress')
+            .insert(prRowsToInsert)
+            .timeout(const Duration(seconds: 15));
       }
 
       return newPRs;

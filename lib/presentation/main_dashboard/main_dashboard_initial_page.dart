@@ -136,27 +136,10 @@ class _MainDashboardInitialPageState extends State<MainDashboardInitialPage> {
 
   Future<int> _fetchWorkoutStreak(String userId) async {
     try {
-      final logs = await SupabaseService.instance.client
-          .from('workout_logs')
-          .select('completed_at')
-          .eq('user_id', userId)
-          .order('completed_at', ascending: false)
-          .limit(365)
+      final result = await SupabaseService.instance.client
+          .rpc('calculate_user_streak', params: {'p_user_id': userId})
           .timeout(const Duration(seconds: 15));
-
-      final logDays = (logs as List).map((l) {
-        final dt = DateTime.parse(l['completed_at'] as String);
-        return DateTime(dt.year, dt.month, dt.day);
-      }).toSet();
-
-      int streak = 0;
-      final today = DateTime.now();
-      var checkDay = DateTime(today.year, today.month, today.day);
-      while (logDays.contains(checkDay)) {
-        streak++;
-        checkDay = checkDay.subtract(const Duration(days: 1));
-      }
-      return streak;
+      return (result as int?) ?? 0;
     } catch (_) {
       return 0;
     }

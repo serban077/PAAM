@@ -307,12 +307,11 @@ class GeminiAIService {
            return _prepareSessionExerciseData(sessionId, exerciseMap, exercises.indexOf(ex));
         }).toList();
 
-        // We need to execute these insert operations, possibly one by one if we need IDs
-        for (var dataFuture in sessionExercises) {
-           final data = await dataFuture;
-           if (data != null) {
-             await SupabaseService.instance.client.from('session_exercises').insert(data);
-           }
+        // Resolve all exercise lookups concurrently, then batch insert in one call
+        final resolvedData = await Future.wait(sessionExercises);
+        final validData = resolvedData.whereType<Map<String, dynamic>>().toList();
+        if (validData.isNotEmpty) {
+          await SupabaseService.instance.client.from('session_exercises').insert(validData);
         }
         
         dayIndex++;
