@@ -1,7 +1,10 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
+import 'package:dio/dio.dart';
+
 import '../data/models/smart_recipe_models.dart';
+import '_dio_interceptors.dart';
 import 'gemini_ai_service.dart';
 
 /// Recognizes food ingredients from a photo using Gemini Vision.
@@ -37,11 +40,15 @@ RULES:
   /// Analyzes an image and returns detected food ingredients.
   ///
   /// [imageBytes] — the raw image bytes (JPEG/PNG).
-  /// Returns [FoodRecognitionResult] with detected ingredients.
+  /// [cancelToken] — optional Dio cancel token; cancel it to abort the Vision
+  ///   call when the user navigates away before the response arrives.
+  /// Throws [NetworkOfflineException] when the device has no connectivity.
   /// Throws on API failure or timeout.
   Future<FoodRecognitionResult> recognizeIngredients(
-    Uint8List imageBytes,
-  ) async {
+    Uint8List imageBytes, {
+    CancelToken? cancelToken,
+  }) async {
+    await assertConnected();
     try {
       final base64Image = base64Encode(imageBytes);
       final client = GeminiAIService().client;
@@ -65,6 +72,7 @@ RULES:
             model: 'gemini-2.5-flash',
             temperature: 0.1,
             maxTokens: 8192,
+            cancelToken: cancelToken,
           )
           .timeout(const Duration(seconds: 45));
 
@@ -91,6 +99,8 @@ RULES:
       }
 
       return const FoodRecognitionResult(ingredients: []);
+    } on NetworkOfflineException {
+      rethrow;
     } catch (e) {
       throw Exception('Food recognition failed: $e');
     }

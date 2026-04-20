@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:developer' as dev;
 
 import '../data/models/smart_recipe_models.dart';
+import '_dio_interceptors.dart';
 import 'gemini_ai_service.dart';
 import 'supabase_service.dart';
 
@@ -21,6 +22,7 @@ class SmartRecipeService {
   Future<RecipeGenerationResult> generateRecipes(
     List<DetectedIngredient> ingredients,
   ) async {
+    await assertConnected();
     try {
       // Build ingredient list string
       final ingredientLines = ingredients
@@ -88,6 +90,8 @@ class SmartRecipeService {
       }
 
       return RecipeGenerationResult(recipes: recipes, rawResponse: rawText);
+    } on NetworkOfflineException {
+      rethrow;
     } catch (e) {
       throw Exception('Recipe generation failed: $e');
     }

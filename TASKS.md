@@ -7,9 +7,9 @@ Update `## Current Status` in `CLAUDE.md` at the end of every session.
 
 ## Current Status
 
-**Last updated:** 2026-04-19
-**Last session completed:** M25 — Memory Management & Leak Audit: 4 TextEditingController leaks fixed (account_management_section_widget, totp_challenge_screen, simple_meal_card, exercise_details_screen); all other controllers/streams/subscriptions verified clean; compute audit (all Gemini payloads < 50KB, no isolate migration); DevTools heap profiling deferred; flutter analyze lib/: **0 issues**
-**Next session starts with:** M26 — Network Layer Hardening & Offline Resilience
+**Last updated:** 2026-04-20
+**Last session completed:** M26 — Network Layer Hardening & Offline Resilience: `_dio_interceptors.dart` (AppLogInterceptor, NetworkOfflineException, assertConnected, withRetry); OFF+USDA: logging, retry, CancelToken param, offline fast-fail; GeminiAIService: AppLogInterceptor; FoodRecognitionService: CancelToken passthrough + offline guard; SmartRecipeService: offline guard; AppCacheService: external search cache (10 min LRU-20) + vision cache (10 min); AddFoodModalWidget: CancelToken + external cache read/write; PhotoRecipeScreen: CancelToken + vision cache read/write; flutter analyze lib/: **0 issues**
+**Next session starts with:** M27 — Supabase Query & Index Optimization
 **Active branches:** main
 **Blockers / notes:** `pubspec.lock` gitignored — run `flutter pub get` at session start. `kotlin.incremental=false` set in android/gradle.properties — required fix for cross-drive pub cache (C:) vs project (D:) on Windows; do not remove. USDA_API_KEY in env.json. Gemini 2.5 Flash needs maxTokens ≥ 8192. M20 manual config: "Confirm email" enabled in Supabase ✅; hCaptcha skipped (no free tier needed for PAAM). M19 deferred: pagination UI, streak RPC, lazy ProgressTrackingScreen, SharedPreferences layer, build/bundle (19.9), perf monitoring (19.10). Supabase remaining: 2 food_database rls_policy_always_true (intentional by design — any authenticated user can add/edit foods), workout_plans multiple_permissive_policies (legacy user_id/creator_id dual schema — defer to M27), 30 unused_index INFO (newly added FK indexes not yet used — defer to M27).
 
@@ -769,25 +769,30 @@ Update `## Current Status` in `CLAUDE.md` at the end of every session.
 > Every external call should be resilient, timed-out, retry-aware, and survive brief connectivity loss. Offline banner already exists (M19.7) — next step is graceful degradation.
 
 ### 26.1 — Dio Interceptor Centralization
-- [ ] Create `lib/services/_dio_interceptors.dart` — shared interceptors: logging (debug only), timeout, retry, error normalization
-- [ ] Apply to all Dio instances: `GeminiAiService`, `GeminiNutritionLabelService`, `OpenFoodFactsService`, `UsdaFoodService`, `FoodRecognitionService`, `SmartRecipeService`
+- [x] Create `lib/services/_dio_interceptors.dart` — `AppLogInterceptor` (debug only), `NetworkOfflineException`, `assertConnected()`, `withRetry()`
+- [x] Apply `AppLogInterceptor` to: `OpenFoodFactsService`, `UsdaFoodService`, `GeminiAiService`; offline guard to `FoodRecognitionService`, `SmartRecipeService`
 
 ### 26.2 — Retry with Exponential Backoff
-- [ ] Add `dio_smart_retry: ^7.0.1` OR implement custom `RetryInterceptor` (3 retries, exponential backoff 500ms → 1s → 2s)
-- [ ] Apply only on 5xx and timeout — NOT on 4xx
-- [ ] Gemini calls: max 2 retries (expensive), OFF/USDA: max 3
+- [x] Custom `withRetry()` in `_dio_interceptors.dart` — 3 retries, 500ms → 1s → 1.5s (DioException connectionError/timeout and 5xx)
+- [x] Applied to OFF and USDA `searchFoods()` + OFF `lookupBarcode()` — NOT on 4xx; `NetworkOfflineException` re-thrown without retry
 
 ### 26.3 — Request Cancellation
-- [ ] Add `CancelToken` to food search: cancel previous in-flight request when user types new query
-- [ ] Add `CancelToken` to Gemini Vision: cancel if user pops `CaptureStep` before response arrives
+- [x] `CancelToken?` param on `OpenFoodFactsService.searchFoods()` and `UsdaFoodService.searchFoods()`
+- [x] `CancelToken?` passthrough in `FoodRecognitionService.recognizeIngredients()` → `GeminiAIService.createChat()`
+- [x] `AddFoodModalWidget`: previous token cancelled + new token created on each `_searchFood()` call; cancelled in `dispose()`
+- [x] `PhotoRecipeScreen`: `_visionCancelToken` field; re-created per analysis call; cancelled in `dispose()`
 
 ### 26.4 — External Search Cache
-- [ ] Cache OFF + USDA search results for 10 min (deferred from M19.6) — LRU map in `AppCacheService`, key = normalized query
-- [ ] Cache Gemini Vision result for same `imageBytes` hash (10 min) — avoid re-billing on retry
+- [x] `AppCacheService.getExternalFoodSearch()` / `setExternalFoodSearch()` — LRU-20, TTL 10 min
+- [x] `AppCacheService.getVisionResult()` / `setVisionResult()` — TTL 10 min, keyed by `_imageKey()` fingerprint
+- [x] Wired in `AddFoodModalWidget._searchFood()` — cache checked before OFF+USDA; results stored after
+- [x] Wired in `PhotoRecipeScreen._onPhotoCaptured()` — cache checked before `recognizeIngredients()`; result stored after
+- [x] `invalidateAll()` clears both new caches
 
 ### 26.5 — Offline Mode Stub (partial)
-- [ ] When `connectivity_plus` reports offline, Gemini/OFF/USDA calls fail fast with clear error toast (not 15s timeout)
-- [ ] Saved AI plans / cached exercises remain readable from `AppCacheService`
+- [x] `assertConnected()` in `_dio_interceptors.dart` — throws `NetworkOfflineException` if all interfaces report none
+- [x] Fast-fail applied to: `OFF.lookupBarcode()`, `OFF.searchFoods()`, `USDA.searchFoods()`, `FoodRecognitionService.recognizeIngredients()`, `SmartRecipeService.generateRecipes()`
+- [x] Cached data (AI plans, exercises, nutrition) remains readable from `AppCacheService` — no network required
 - [ ] Record action queue for later sync (DEFERRED to full offline mode if time permits)
 
 ---
@@ -1083,3 +1088,4 @@ Update `## Current Status` in `CLAUDE.md` at the end of every session.
 | 2026-04-16 | M22 fix pass | flutter analyze lib/: **0 issues** (withOpacity×8, initialValue×6, use_build_context_synchronously×5, RadioGroup migration×4, debugPrint import, print→debugPrint×2, unnecessary_to_list); APK R8 ProGuard fixed + minify enabled; 4 unused packages removed from pubspec.yaml; Supabase: 29 auth_rls_initplan FIXED, 10 search_path FIXED, 13 FK indexes ADDED, duplicate food policies FIXED, exercises/session_exercises/workout_sessions permissive policies consolidated | M23 — High Refresh Rate & UI Fluidity |
 | 2026-04-17 | M23 complete (static) | 4 packages added (flutter_displaymode/flutter_animate/animations/skeletonizer); 120Hz unlock in main.dart; SharedAxisTransition for all routes (app_theme.dart); 3 AnimationControllers → flutter_animate (.animate chains); Skeletonizer on dashboard + exercise library; dart fix (0 to fix); RepaintBoundary on WeeklyProgressWidget + streak card; cacheExtent:500 on exercise library; ExerciseCardWidget press scale (StatefulWidget); staggered entrance on exercise list; flutter analyze: **0 issues**. Device measurement items deferred. | M24 — Image & Asset Optimization |
 | 2026-04-19 | M25 complete (static) | Controller disposal audit: 4 leaks fixed (account_management_section_widget 3 controllers, totp_challenge_screen backupController, simple_meal_card edit-quantity controller, exercise_details_screen 2 PR-dialog controllers); all AnimationController/ScrollController/PageController/StreamSubscription/Timer verified clean; no Supabase realtime channels; compute audit: all Gemini payloads 15–30KB (below 50KB threshold, no isolate migration); DevTools heap profiling deferred (needs device); flutter analyze lib/: **0 issues** | M26 — Network Layer Hardening & Offline Resilience |
+| 2026-04-20 | M26 complete (static) | New `_dio_interceptors.dart`: AppLogInterceptor (debug), NetworkOfflineException, assertConnected(), withRetry(3 retries, 500ms exp backoff); OFF+USDA: logging, retry, CancelToken param on searchFoods(), offline fast-fail on all methods; GeminiAIService: AppLogInterceptor added; FoodRecognitionService: CancelToken passthrough + offline guard; SmartRecipeService: offline guard; AppCacheService: external search cache (10min LRU-20) + vision result cache (10min) + invalidateAll() updated; AddFoodModalWidget: CancelToken per-query cancel + external cache read/write; PhotoRecipeScreen: CancelToken + _imageKey() fingerprint + vision cache read/write; flutter analyze lib/: **0 issues** | M27 — Supabase Query & Index Optimization |

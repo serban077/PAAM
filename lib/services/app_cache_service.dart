@@ -8,17 +8,20 @@ class AppCacheService {
   static final AppCacheService instance = AppCacheService._();
 
   // ── TTL configuration ──────────────────────────────────────────────
-  static const _profileTtl         = Duration(minutes: 5);
-  static const _streakTtl          = Duration(minutes: 10);
-  static const _nutritionTtl       = Duration(minutes: 5);
-  static const _exerciseTtl        = Duration(minutes: 30);
-  static const _measurementsTtl    = Duration(minutes: 5);
-  static const _strengthPrTtl      = Duration(minutes: 5);
-  static const _foodSearchTtl      = Duration(minutes: 3);
-  static const _contributionsTtl   = Duration(minutes: 5);
-  static const _activeWorkoutTtl   = Duration(minutes: 10);
-  static const _weeklyScheduleTtl  = Duration(minutes: 10);
-  static const _foodSearchMax      = 20;
+  static const _profileTtl           = Duration(minutes: 5);
+  static const _streakTtl            = Duration(minutes: 10);
+  static const _nutritionTtl         = Duration(minutes: 5);
+  static const _exerciseTtl          = Duration(minutes: 30);
+  static const _measurementsTtl      = Duration(minutes: 5);
+  static const _strengthPrTtl        = Duration(minutes: 5);
+  static const _foodSearchTtl        = Duration(minutes: 3);
+  static const _contributionsTtl     = Duration(minutes: 5);
+  static const _activeWorkoutTtl     = Duration(minutes: 10);
+  static const _weeklyScheduleTtl    = Duration(minutes: 10);
+  static const _externalSearchTtl    = Duration(minutes: 10);
+  static const _visionCacheTtl       = Duration(minutes: 10);
+  static const _foodSearchMax        = 20;
+  static const _externalSearchMax    = 20;
 
   // ── User profile ───────────────────────────────────────────────────
   Map<String, dynamic>? _userProfile;
@@ -239,6 +242,61 @@ class AppCacheService {
     _weeklyScheduleAt = null;
   }
 
+  // ── External food search LRU (OFF + USDA combined, 10 min TTL) ───
+  final Map<String, _FoodSearchEntry> _externalSearch = {};
+
+  /// Returns cached OFF + USDA results for [query] (case-insensitive) or
+  /// `null` on a cache miss / TTL expiry.
+  List<Map<String, dynamic>>? getExternalFoodSearch(String query) {
+    final key = query.toLowerCase().trim();
+    final entry = _externalSearch[key];
+    if (entry == null) return null;
+    if (DateTime.now().difference(entry.cachedAt) > _externalSearchTtl) {
+      _externalSearch.remove(key);
+      return null;
+    }
+    return entry.results;
+  }
+
+  void setExternalFoodSearch(
+    String query,
+    List<Map<String, dynamic>> results,
+  ) {
+    final key = query.toLowerCase().trim();
+    if (_externalSearch.length >= _externalSearchMax) {
+      _externalSearch.remove(_externalSearch.keys.first); // evict oldest
+    }
+    _externalSearch[key] = _FoodSearchEntry(
+      results: results,
+      cachedAt: DateTime.now(),
+    );
+  }
+
+  // ── Gemini Vision result cache (10 min TTL) ────────────────────────
+  //
+  // Key is a lightweight image fingerprint computed in photo_recipe_screen.dart.
+  // Stores the raw ingredient maps so AppCacheService stays decoupled from
+  // smart_recipe_models.dart.
+  final Map<String, _FoodSearchEntry> _visionCache = {};
+
+  /// Returns cached ingredient maps for [imageKey] or `null` on miss / expiry.
+  List<Map<String, dynamic>>? getVisionResult(String imageKey) {
+    final entry = _visionCache[imageKey];
+    if (entry == null) return null;
+    if (DateTime.now().difference(entry.cachedAt) > _visionCacheTtl) {
+      _visionCache.remove(imageKey);
+      return null;
+    }
+    return entry.results;
+  }
+
+  void setVisionResult(String imageKey, List<Map<String, dynamic>> ingredients) {
+    _visionCache[imageKey] = _FoodSearchEntry(
+      results: ingredients,
+      cachedAt: DateTime.now(),
+    );
+  }
+
   // ── User contributions ─────────────────────────────────────────────
   List<Map<String, dynamic>>? _contributions;
   DateTime? _contributionsAt;
@@ -279,6 +337,8 @@ class AppCacheService {
     _strengthPrs = null;
     _strengthPrsAt = null;
     _foodSearch.clear();
+    _externalSearch.clear();
+    _visionCache.clear();
     _contributions = null;
     _contributionsAt = null;
     _activeWorkout = null;

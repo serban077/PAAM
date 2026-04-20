@@ -1,8 +1,10 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:sizer/sizer.dart';
 
 import '../../data/models/smart_recipe_models.dart';
+import '../../services/app_cache_service.dart';
 import '../../services/food_recognition_service.dart';
 import '../../services/smart_recipe_service.dart';
 import '../../widgets/custom_app_bar.dart';
@@ -23,6 +25,10 @@ class _PhotoRecipeScreenState extends State<PhotoRecipeScreen> {
   final _pageController = PageController();
   final _recognitionService = FoodRecognitionService();
   final _recipeService = SmartRecipeService();
+
+  /// Cancelled on dispose so an in-flight Vision call is aborted when the
+  /// user leaves the screen before the response arrives.
+  CancelToken _visionCancelToken = CancelToken();
 
   int _currentStep = 0;
   static const _totalSteps = 4;
@@ -55,9 +61,35 @@ class _PhotoRecipeScreenState extends State<PhotoRecipeScreen> {
     });
     _goToStep(1);
 
+    // Check vision cache first — avoids re-billing Gemini on retry.
+    final imageKey = _imageKey(bytes);
+    final cachedMaps = AppCacheService.instance.getVisionResult(imageKey);
+    if (cachedMaps != null && mounted) {
+      setState(() {
+        _ingredients = cachedMaps
+            .map((m) => DetectedIngredient.fromMap(m))
+            .toList();
+        _isRecognizing = false;
+      });
+      return;
+    }
+
+    // Issue a fresh cancel token so we can abort this specific call.
+    _visionCancelToken = CancelToken();
+
     try {
-      final result = await _recognitionService.recognizeIngredients(bytes);
+      final result = await _recognitionService.recognizeIngredients(
+        bytes,
+        cancelToken: _visionCancelToken,
+      );
       if (!mounted) return;
+
+      // Store serialised ingredient maps in the vision cache.
+      AppCacheService.instance.setVisionResult(
+        imageKey,
+        result.ingredients.map((i) => i.toMap()).toList(),
+      );
+
       setState(() {
         _ingredients = result.ingredients;
         _isRecognizing = false;
@@ -69,6 +101,22 @@ class _PhotoRecipeScreenState extends State<PhotoRecipeScreen> {
         SnackBar(content: Text('Recognition failed: $e')),
       );
     }
+  }
+
+  /// Lightweight image fingerprint used as the vision-cache key.
+  ///
+  /// Samples up to 32 evenly-spaced bytes plus the total byte count.
+  /// Collisions across different images are astronomically unlikely within
+  /// a single session, which is the only use-case here.
+  String _imageKey(Uint8List bytes) {
+    if (bytes.isEmpty) return 'empty';
+    final step = bytes.length > 32 ? bytes.length ~/ 32 : 1;
+    final buf = StringBuffer('${bytes.length}_');
+    for (int i = 0; i < bytes.length; i += step) {
+      buf.write(bytes[i].toRadixString(16));
+    }
+    final full = buf.toString();
+    return full.length > 40 ? full.substring(0, 40) : full;
   }
 
   // ── Step 2 → 3: Ingredients → Recipes ────────────────────────────────────
@@ -138,6 +186,7 @@ class _PhotoRecipeScreenState extends State<PhotoRecipeScreen> {
 
   @override
   void dispose() {
+    _visionCancelToken.cancel();
     _pageController.dispose();
     super.dispose();
   }

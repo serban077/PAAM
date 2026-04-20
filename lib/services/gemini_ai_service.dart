@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'dart:convert';
 import '../services/supabase_service.dart';
 import '../data/verified_exercises_data.dart';
+import '_dio_interceptors.dart';
 
 class GeminiAIService {
   static final GeminiAIService _instance = GeminiAIService._internal();
@@ -30,6 +31,8 @@ class GeminiAIService {
         receiveTimeout: const Duration(seconds: 60),
       ),
     );
+
+    _dio!.interceptors.add(AppLogInterceptor());
 
     _dio!.interceptors.add(
       InterceptorsWrapper(

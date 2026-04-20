@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:sizer/sizer.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -45,6 +46,7 @@ class _AddFoodModalWidgetState extends State<AddFoodModalWidget>
   String? _lastQuery;
 
   Timer? _debounceTimer;
+  CancelToken? _searchCancelToken;
 
   late final AnimationController _shimmerController;
   late final Animation<double> _shimmerAnimation;
@@ -64,6 +66,7 @@ class _AddFoodModalWidgetState extends State<AddFoodModalWidget>
   @override
   void dispose() {
     _debounceTimer?.cancel();
+    _searchCancelToken?.cancel();
     _shimmerController.dispose();
     _searchController.dispose();
     _servingController.dispose();
@@ -73,6 +76,10 @@ class _AddFoodModalWidgetState extends State<AddFoodModalWidget>
   // ── Search ───────────────────────────────────────────────────────────────
 
   Future<void> _searchFood(String query) async {
+    // Cancel any previous in-flight external requests for the old query.
+    _searchCancelToken?.cancel();
+    _searchCancelToken = CancelToken();
+
     if (query.length < 2) {
       setState(() {
         _searchResults = [];
@@ -117,16 +124,45 @@ class _AddFoodModalWidgetState extends State<AddFoodModalWidget>
     });
 
     // Tier 2 + 3: external APIs always run in parallel — local results already visible above
+    // Check external cache (10-min TTL) before hitting OFF + USDA.
     {
-      final results = await Future.wait([
-        _offService.searchFoods(query, page: 1),
-        _usdaService.searchFoods(query),
-      ]);
+      final cachedExternal =
+          AppCacheService.instance.getExternalFoodSearch(query);
+
+      List<Map<String, dynamic>> offResults;
+      List<Map<String, dynamic>> usdaResults;
+
+      if (cachedExternal != null) {
+        offResults = cachedExternal
+            .where((f) => f['_source'] == 'Open Food Facts')
+            .toList();
+        usdaResults =
+            cachedExternal.where((f) => f['_source'] == 'USDA').toList();
+      } else {
+        final cancelToken = _searchCancelToken;
+        try {
+          final results = await Future.wait([
+            _offService.searchFoods(query, page: 1, cancelToken: cancelToken),
+            _usdaService.searchFoods(query, cancelToken: cancelToken),
+          ]);
+          offResults = results[0];
+          usdaResults = results[1];
+          // Cache raw external results for 10 min.
+          AppCacheService.instance.setExternalFoodSearch(
+            query,
+            [...offResults, ...usdaResults],
+          );
+        } on DioException catch (e) {
+          if (e.type == DioExceptionType.cancel) return;
+          offResults = [];
+          usdaResults = [];
+        } catch (_) {
+          offResults = [];
+          usdaResults = [];
+        }
+      }
 
       if (_lastQuery != query || !mounted) return;
-
-      final offResults = results[0];
-      final usdaResults = results[1];
 
       // Deduplicate: local results take priority; external deduped by name|brand
       final seen = <String>{};
