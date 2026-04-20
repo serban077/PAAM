@@ -61,7 +61,7 @@ Get current user ID: `SupabaseService.instance.client.auth.currentUser!.id`
 - `dietary_preference`: `normal`, `vegetarian`, `vegan`, `gluten_free`, `dairy_free`
 - `gender`: `male`, `female`, `other`, `prefer_not_to_say`
 
-**Stored procedure `generate_workout_plan(user_profile_id)`** — RPC that creates a `workout_plans` row + sessions. Called from `OnboardingSurveyWidget._saveOnboardingData`. Its CASE statement uses English enum values — do not revert to Romanian.
+**Stored procedure `generate_workout_plan(user_profile_id)`** — uses English enum values; called from `OnboardingSurveyWidget._saveOnboardingData`.
 
 ---
 
@@ -69,46 +69,29 @@ Get current user ID: `SupabaseService.instance.client.auth.currentUser!.id`
 
 File: `gemini_ai_service.dart` — read before any AI work.
 
-Generates both workout and nutrition plans in a single call. Returns `AIPlanResponse`.
+Generates workout + nutrition plans. `GeminiClient.createChat(messages, model, maxTokens, temperature, cancelToken?)` handles retry internally (`_withRetry`, 3 attempts, 2s/4s/6s backoff). `AppLogInterceptor` added M26 (debug only).
 
-```dart
-final geminiService = GeminiAIService();
-final plan = await geminiService.generatePersonalizedPlan(
-  userProfile: onboardingData,   // Map from onboarding_responses
-  focusArea: 'full_body',
-  durationWeeks: 4,
-);
-// plan.trainingPlan.days → List<WorkoutDay>
-// plan.nutritionPlan.dailyCalories → int
-```
-
-Prompt engineering is inside `gemini_ai_service.dart` — do not duplicate prompts elsewhere.
+Prompt engineering lives in `gemini_ai_service.dart` — do not duplicate elsewhere.
 Gemini API key: `const String.fromEnvironment('GEMINI_API_KEY')`
 
-**Thinking model gotcha:** `gemini-2.5-flash` is a thinking model — thought parts consume `maxOutputTokens` budget. `GeminiClient.createChat` reads the last non-thought part from the response. For structured output (JSON), use `maxTokens: 8192` minimum to avoid truncation.
+**Thinking model gotcha:** `gemini-2.5-flash` — thought parts consume `maxOutputTokens` budget. Use `maxTokens: 8192` minimum for JSON output to avoid truncation.
 
 ---
 
 ## AINutritionService
 
-File: `ai_nutrition_service.dart` — nutrition-specific AI calls (food search, meal adjustments).
+File: `ai_nutrition_service.dart` — nutrition-specific AI calls.
 Calls Gemini with nutrition-focused prompts. Uses `CalorieCalculatorService` for TDEE.
 
 ---
 
 ## CalorieCalculatorService
 
-Pure calculation service — no API calls, no Supabase. TDEE formula:
-- BMR (Mifflin-St Jeor) × activity multiplier = TDEE
-- Macros split based on user goal (bulk / cut / maintain)
-
----
+Pure math — no I/O. BMR (Mifflin-St Jeor) × activity multiplier = TDEE. Macros split by user goal.
 
 ## BodyMeasurementsService
 
-Reads/writes to `body_measurements` Supabase table.
-Always scope queries to `user_id` — never fetch all users' measurements.
-`getMeasurementHistory(type, limit)` delegates to `getMeasurements(measurementType: type, limit: limit)`.
+Reads/writes `body_measurements`. Always scope to `user_id`. `getMeasurementHistory(type, limit)` delegates to `getMeasurements(measurementType: type, limit: limit)`.
 
 ---
 
@@ -204,91 +187,37 @@ await session.setRememberMe(false)                // persist preference
 
 Singleton in-memory cache with per-field TTL. Usage pattern:
 ```dart
-// Read (returns null on miss or expiry)
 final cached = AppCacheService.instance.getExerciseLibrary();
 if (cached != null) { /* use cache */ return; }
-
-// Write
 AppCacheService.instance.setExerciseLibrary(data);
-
-// Invalidate on mutation
-AppCacheService.instance.invalidateContributions();
+AppCacheService.instance.invalidateContributions(); // after mutation
 ```
-Food search uses LRU via `LinkedHashMap` — evicts oldest when `>= 20` entries. `invalidateAll()` clears everything (call on sign-out). Body measurements and strength PRs cache fields exist but are not yet wired to screens.
+Food search LRU (3 min, max 20). `invalidateAll()` on sign-out.
+
+**M26 additions:**
+- `getExternalFoodSearch(query)` / `setExternalFoodSearch(query, results)` — OFF+USDA combined, 10 min LRU-20
+- `getVisionResult(imageKey)` / `setVisionResult(imageKey, ingredients)` — Gemini Vision result, 10 min; key is `_imageKey()` fingerprint from `PhotoRecipeScreen`
 
 ---
 
 ## WorkoutService / NutritionService
 
-Standard CRUD services for workout sessions and nutrition logs.
-Both follow the same pattern: scope all queries by `user_id`, add `.timeout(15s)`, wrap in try/catch.
-`WorkoutService` uses explicit column projections (no `select('*')`) on all list queries (M19). `NutritionService` applies `.limit(50)` on `getUserMeals()` and `getMyContributions()` (M19).
+Standard CRUD services. Pattern: scope all queries by `user_id`, `.timeout(15s)`, wrap in try/catch.
+`WorkoutService` uses explicit column projections on all list queries. `NutritionService` applies `.limit(50)` on `getUserMeals()` and `getMyContributions()`.
 
-**`WorkoutService.saveCompletedWorkout({sessionId, durationSeconds, setLogs})`** (added M10):
-- Calculates `total_volume_kg` (sum of weight_kg × reps for completed sets)
-- INSERTs `workout_logs` row → gets `workout_log_id`
-- Batch-INSERTs all valid set logs into `workout_set_logs`
-- Calls `_autoDetectPRs()`, returns `{'workoutLog': Map, 'newPRs': List}`
+Key methods:
+- `WorkoutService.saveCompletedWorkout({sessionId, durationSeconds, setLogs})` — INSERTs `workout_logs` + `workout_set_logs`, calls `_autoDetectPRs()`, returns `{'workoutLog', 'newPRs'}`
+- `WorkoutService.getWorkoutSetLogs(workoutLogId)` — SELECTs from `workout_set_logs` joined with `exercises`
+- `NutritionService.submitUserFood(Map food)` — inserts `is_user_contributed=true`; `calories` must be `.round()`; stores `detailed_macros` JSONB (22-field schema)
+- `NutritionService.updateFoodNutrition(foodId, updates)` — UPDATE any food row (any authenticated user via RLS)
+- `NutritionService.cacheExternalFood(Map food)` — strips `_source` key; upserts on `(name, brand)` unique constraint; returns full DB row with `id`
 
-**`WorkoutService._autoDetectPRs(userId, setLogs, sessionId)`** (private, M10):
-- Groups completed set logs by `exercise_id`, finds max `weight_kg` per exercise
-- Compares against existing `strength_progress` max; INSERTs new row if PR beaten
-- Returns list of new PR maps `{exercise_id, weight_kg, reps}`
+**`detailed_macros` JSONB (22 fields, all per 100g, any key nullable):** carbs: `sugar_g/starch_g/polyols_g/fiber_g`; fats: `saturated/mono/polyunsaturated/trans_fat_g`; minerals: `cholesterol_mg/sodium_mg/salt_g/potassium_mg`; vitamins: `calcium_mg/iron_mg/vitamin_a_ug/c_mg/d_ug`. Old records may have `unsaturated_fat_g` — display handles both shapes.
 
-**`WorkoutService.getWorkoutSetLogs(workoutLogId)`** (added M10):
-- SELECTs from `workout_set_logs` joined with `exercises` ordered by `session_exercise_id, set_number`
+**`food_database` critical column types:** `calories` → `integer` (always `.round()`); `brand` → `text nullable` (`null` not `''` — affects `UNIQUE(name,brand)`); `image_front_url` → `text nullable`.
 
-**`WorkoutService.getPlanIdForSession(sessionId)`** (added M10):
-- SELECTs `plan_id` from `workout_sessions` WHERE `id = sessionId`
-
-**`NutritionService.submitUserFood(Map food)`** (added M17):
-- Inserts with `is_user_contributed = true`, `contributed_by = currentUser.id`, `is_verified = false`
-- Stores `detailed_macros` JSONB if present — 22-field shape (see OCR schema below); `calories` must be `.round()` before insert
-- Returns full inserted row
-
-**`NutritionService.updateFoodNutrition(String foodId, Map updates)`** (added M17 OCR upgrade):
-- UPDATE any food_database row (RLS: any authenticated user — policy `authenticated_can_update_food`)
-- Sets `updated_at` automatically; rounds `calories` to integer
-- Returns full updated row
-
-**`NutritionService.getMyContributions()`** (added M17):
-- Selects from `food_database` where `contributed_by = currentUser.id`, ordered by `created_at DESC`
-
-**`NutritionService.deleteContribution(String foodId)`** (added M17):
-- Deletes a contributed food by id; RLS enforces own-rows-only
-
-**`NutritionService.cacheExternalFood(Map externalFood)`** (added M16):
-- Strips the `_source` UI key before writing to DB
-- Upserts on `(name, brand)` unique constraint — returns existing row if already cached
-- Always returns the full DB row including `id` — use this id for `logMeal()`
-- Called from `AddFoodModalWidget._addFood()` when `_source != 'Local'`
-
-**`detailed_macros` JSONB schema (M17 OCR upgrade — 22 fields):**
-All values per 100g/100ml. Any key can be null (omitted means not on label).
-`sugar_g`, `starch_g`, `polyols_g`, `fiber_g` — carb breakdown
-`saturated_fat_g`, `monounsaturated_fat_g`, `polyunsaturated_fat_g`, `trans_fat_g` — fat breakdown
-`cholesterol_mg`, `sodium_mg`, `salt_g`, `potassium_mg` — minerals
-`calcium_mg`, `iron_mg`, `vitamin_a_ug`, `vitamin_c_mg`, `vitamin_d_ug` — vitamins
-Old records may have `unsaturated_fat_g` — display handles both old and new shape.
-
-**`food_database` column types (critical — do not get wrong):**
-- `calories` → `integer` — always call `.round()` before inserting, never pass a double
-- `brand` → `text nullable` — store `null` (not `''`) when brand is empty; affects `UNIQUE(name,brand)` deduplication
-- `image_front_url` → `text nullable` — added M16; stores product image URL from OFF
-
-**Calorie formula (critical — do not change):**
-```
-kcal = food.calories * user_meals.serving_quantity / food.serving_size
-```
-- `serving_quantity` = actual amount in grams (or ml, or portions)
-- `serving_size` = the reference amount the `calories` value is based on (e.g. 100 for 100g foods)
-- Example: potato (87 kcal / 100g) logged at 150g → `87 * 150 / 100 = 130.5 kcal`
-- AI meals use `serving_size = 1` (1 portion) and `serving_quantity = 1` → formula gives full calories
-
-This formula is used in three places that must stay in sync:
-1. Supabase RPC `calculate_daily_nutrition_totals` — fixed M14 (was multiplying instead of dividing)
-2. `SimpleMealCard.totalCalories` getter (inline Dart)
-3. `main_dashboard_initial_page.dart` `_loadDashboardData` inline loop
+**Calorie formula (critical — do not change):** `kcal = food.calories * serving_quantity / serving_size`
+Must stay in sync in 3 places: Supabase RPC `calculate_daily_nutrition_totals`, `SimpleMealCard.totalCalories`, `main_dashboard_initial_page._loadDashboardData`.
 
 ---
 
@@ -296,15 +225,17 @@ This formula is used in three places that must stay in sync:
 
 File: `food_recognition_service.dart` — Gemini Vision ingredient detection from food photos.
 
-Singleton. Sends base64-encoded image to Gemini 2.5 Flash (temperature 0.1, maxTokens 8192) with a structured prompt requesting JSON array of `{name, estimated_quantity_g, category}`.
+Singleton. Sends base64-encoded image to Gemini 2.5 Flash (temperature 0.1, maxTokens 8192).
 
 ```dart
-final service = FoodRecognitionService();
-final result = await service.recognizeIngredients(imageBytes);
+final result = await FoodRecognitionService().recognizeIngredients(
+  imageBytes,
+  cancelToken: cancelToken, // M26: optional — cancel if user leaves screen
+);
 // result.ingredients → List<DetectedIngredient>
 ```
 
-45-second timeout. Strips markdown code fences before JSON parse.
+45-second timeout. Throws `NetworkOfflineException` when offline. Strips markdown code fences before JSON parse.
 Categories: `protein`, `carb`, `fat`, `vegetable`, `fruit`, `dairy`, `condiment`.
 
 ---
@@ -313,16 +244,36 @@ Categories: `protein`, `carb`, `fat`, `vegetable`, `fruit`, `dairy`, `condiment`
 
 File: `smart_recipe_service.dart` — AI recipe generation from detected ingredients.
 
-Singleton. Generates 3–5 diverse protein-rich recipes using ONLY detected ingredients. Fetches user TDEE from `user_profiles.daily_calorie_goal` (best-effort — works without profile).
+Singleton. Generates 3–5 recipes; fetches user TDEE (best-effort, works without profile). Throws `NetworkOfflineException` when offline (M26).
 
 ```dart
-final service = SmartRecipeService();
-final result = await service.generateRecipes(ingredients);
+final result = await SmartRecipeService().generateRecipes(ingredients);
 // result.recipes → List<GeneratedRecipe>
 ```
 
 Gemini 2.5 Flash (temperature 0.7, maxTokens 8192). 45-second timeout.
-Water, salt, pepper, cooking oil are assumed available (not required in photo).
+
+---
+
+## Network Resilience Patterns (M26)
+
+All external HTTP services (`OpenFoodFactsService`, `UsdaFoodService`, `FoodRecognitionService`, `SmartRecipeService`) now share utilities from `_dio_interceptors.dart`:
+
+```dart
+// Offline fast-fail — call at top of any external-API method
+await assertConnected(); // throws NetworkOfflineException immediately
+
+// Retry on network errors / 5xx (NOT 4xx, NOT cancel, NOT offline)
+return await withRetry(() async { ... }, maxRetries: 3, baseDelay: Duration(milliseconds: 500));
+
+// CancelToken — cancel previous in-flight request when user types new query
+CancelToken? _token;
+_token?.cancel();
+_token = CancelToken();
+await service.searchFoods(query, cancelToken: _token);
+```
+
+`GeminiAIService` already has its own `_withRetry()` (2s/4s/6s backoff) — do not replace it; it just gained `AppLogInterceptor` in M26.
 
 ---
 
@@ -344,5 +295,6 @@ Water, salt, pepper, cooking oil are assumed available (not required in photo).
 | `gemini_nutrition_label_service.dart` | 2-step OCR pipeline: ML Kit on-device text recognition → Gemini 2.5 Flash text parsing; falls back to Gemini Vision if ML Kit fails; 22-field schema; `extractNutritionLabel(Uint8List, {String? imagePath})` |
 | `food_recognition_service.dart` | Gemini 2.5 Flash Vision — detects food ingredients from photos; returns `FoodRecognitionResult` with `List<DetectedIngredient>` |
 | `smart_recipe_service.dart` | Gemini AI recipe generation from detected ingredients; fetches user TDEE for macro targeting; returns `RecipeGenerationResult` with `List<GeneratedRecipe>` |
-| `app_cache_service.dart` | In-memory TTL cache singleton (M19). Caches: profile (10min), streak (5min), nutrition (5min), exercise library (30min), body measurements (5min), strength PRs (5min), food search LRU (3min, max 20 entries via LinkedHashMap), contributions (5min). Call `invalidateAll()` on sign-out. |
+| `app_cache_service.dart` | In-memory TTL cache singleton (M19/M26). profile (5min), streak (10min), nutrition (5min), exercise (30min), measurements (5min), PRs (5min), food search LRU (3min/20), external search LRU (10min/20), vision result (10min), contributions (5min). Call `invalidateAll()` on sign-out. |
 | `exercise_db_service.dart` | Free-exercise-db CDN lookup — resolves exercise name to animation frame URLs |
+| `_dio_interceptors.dart` | M26 shared Dio utilities: `AppLogInterceptor` (debug only), `NetworkOfflineException`, `assertConnected()` (throws if offline), `withRetry<T>(fn, maxRetries, baseDelay)` (exp backoff, skips 4xx + cancel) |
