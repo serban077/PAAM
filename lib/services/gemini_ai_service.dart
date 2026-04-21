@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'dart:convert';
 import '../services/supabase_service.dart';
+import '../services/app_cache_service.dart';
 import '../data/verified_exercises_data.dart';
 import '_dio_interceptors.dart';
 
@@ -114,21 +115,12 @@ class GeminiAIService {
       messages: [message],
       model: 'gemini-2.5-flash-lite',
       temperature: 0.7,
-      maxTokens: 4096,
+      maxTokens: 8192,
+      responseMimeType: 'application/json',
     );
 
     try {
-      final cleanedText = response.text.trim();
-      final jsonStart = cleanedText.indexOf('[');
-      final jsonEnd = cleanedText.lastIndexOf(']') + 1;
-
-      if (jsonStart == -1 || jsonEnd <= jsonStart) {
-        throw FormatException('Invalid JSON response');
-      }
-
-      final jsonString = cleanedText.substring(jsonStart, jsonEnd);
-      final exercises = jsonDecode(jsonString) as List;
-
+      final exercises = jsonDecode(response.text) as List;
       return exercises.map((e) => e as Map<String, dynamic>).toList();
     } catch (e) {
       throw Exception('Failed to parse exercises: $e');
@@ -136,12 +128,19 @@ class GeminiAIService {
   }
 
 
-  Future<Map<String, dynamic>> generateWeeklyWorkoutPlan(String userId) async {
-    _initializeService(); // Ensure initialized
-    
-    final userData = await getUserProfileData(userId);
+  Future<Map<String, dynamic>> generateWeeklyWorkoutPlan(
+    String userId, {
+    Map<String, dynamic>? preloadedUserData,
+  }) async {
+    _initializeService();
+
+    final userData = preloadedUserData ?? await getUserProfileData(userId);
     final profile = userData['profile'];
     final onboarding = userData['onboarding'] as Map<String, String>;
+
+    final cacheKey = _buildProfileCacheKey(profile, onboarding);
+    final cached = AppCacheService.instance.getWorkoutPlan(cacheKey);
+    if (cached != null) return cached;
 
     final prompt = _buildWorkoutPlanPrompt(profile, onboarding);
 
@@ -150,24 +149,18 @@ class GeminiAIService {
       messages: [message],
       model: 'gemini-2.5-flash-lite',
       temperature: 0.7,
-      maxTokens: 4096,
+      maxTokens: 8192,
+      responseMimeType: 'application/json',
+      responseSchema: _workoutPlanSchema,
     );
 
     try {
-      final cleanedText = response.text.trim();
-      final jsonStart = cleanedText.indexOf('{');
-      final jsonEnd = cleanedText.lastIndexOf('}') + 1;
+      final parsedPlan = jsonDecode(response.text) as Map<String, dynamic>;
 
-      if (jsonStart == -1 || jsonEnd <= jsonStart) {
-        throw FormatException('Invalid JSON response');
-      }
-
-      final jsonString = cleanedText.substring(jsonStart, jsonEnd);
-      final parsedPlan = jsonDecode(jsonString) as Map<String, dynamic>;
-      
       // Enrich exercises with video URLs from verified database
       final enrichedPlan = _enrichPlanWithVideoUrls(parsedPlan);
-      
+
+      AppCacheService.instance.setWorkoutPlan(cacheKey, enrichedPlan);
       return enrichedPlan;
     } catch (e) {
       throw Exception('Failed to parse workout plan: $e');
@@ -421,12 +414,19 @@ class GeminiAIService {
   }
 
 
-  Future<Map<String, dynamic>> generateNutritionPlan(String userId) async {
-    _initializeService(); // Ensure initialized
-    
-    final userData = await getUserProfileData(userId);
+  Future<Map<String, dynamic>> generateNutritionPlan(
+    String userId, {
+    Map<String, dynamic>? preloadedUserData,
+  }) async {
+    _initializeService();
+
+    final userData = preloadedUserData ?? await getUserProfileData(userId);
     final profile = userData['profile'];
     final onboarding = userData['onboarding'] as Map<String, String>;
+
+    final cacheKey = _buildProfileCacheKey(profile, onboarding);
+    final cached = AppCacheService.instance.getNutritionPlan(cacheKey);
+    if (cached != null) return cached;
 
     final prompt = _buildNutritionPrompt(profile, onboarding);
 
@@ -435,20 +435,15 @@ class GeminiAIService {
       messages: [message],
       model: 'gemini-2.5-flash-lite',
       temperature: 0.7,
-      maxTokens: 4096,
+      maxTokens: 8192,
+      responseMimeType: 'application/json',
+      responseSchema: _nutritionPlanSchema,
     );
 
     try {
-      final cleanedText = response.text.trim();
-      final jsonStart = cleanedText.indexOf('{');
-      final jsonEnd = cleanedText.lastIndexOf('}') + 1;
-
-      if (jsonStart == -1 || jsonEnd <= jsonStart) {
-        throw FormatException('Invalid JSON response');
-      }
-
-      final jsonString = cleanedText.substring(jsonStart, jsonEnd);
-      return jsonDecode(jsonString) as Map<String, dynamic>;
+      final plan = jsonDecode(response.text) as Map<String, dynamic>;
+      AppCacheService.instance.setNutritionPlan(cacheKey, plan);
+      return plan;
     } catch (e) {
       throw Exception('Failed to parse nutrition plan: $e');
     }
@@ -457,16 +452,13 @@ class GeminiAIService {
   /// Generează un plan complet (workout + nutriție) pentru utilizator
   Future<Map<String, dynamic>> generateCompletePlan(String userId) async {
     try {
-      // Generează planul de antrenament
-      final workoutPlan = await generateWeeklyWorkoutPlan(userId);
-      
-      // Save the generated workout plan to database
+      // Single profile fetch — passed to both generators to avoid double Supabase round-trip
+      final userData = await getUserProfileData(userId);
+
+      final workoutPlan = await generateWeeklyWorkoutPlan(userId, preloadedUserData: userData);
       await saveGeneratedPlan(userId, workoutPlan);
-      
-      // Generează planul de nutriție
-      final nutritionPlan = await generateNutritionPlan(userId);
-      
-      // Combină ambele planuri într-un singur răspuns
+      final nutritionPlan = await generateNutritionPlan(userId, preloadedUserData: userData);
+
       return {
         'training_plan': workoutPlan['training_plan'],
         'nutrition_plan': nutritionPlan['nutrition_plan'],
@@ -475,6 +467,161 @@ class GeminiAIService {
     } catch (e) {
       throw Exception('Failed to generate complete plan: $e');
     }
+  }
+
+  // ── Structured output schemas ───────────────────────────────────────
+
+  static const _exerciseItem = {
+    'type': 'OBJECT',
+    'properties': {
+      'exercise_name': {'type': 'STRING'},
+      'sets': {'type': 'INTEGER'},
+      'reps': {'type': 'STRING'},
+      'rest_seconds': {'type': 'INTEGER'},
+      'coaching_tip': {'type': 'STRING'},
+    },
+    'required': ['exercise_name', 'sets', 'reps', 'rest_seconds', 'coaching_tip'],
+  };
+
+  static const _workoutPlanSchema = {
+    'type': 'OBJECT',
+    'properties': {
+      'training_plan': {
+        'type': 'OBJECT',
+        'properties': {
+          'day_1': {'type': 'ARRAY', 'items': _exerciseItem},
+          'day_2': {'type': 'ARRAY', 'items': _exerciseItem},
+          'day_3': {'type': 'ARRAY', 'items': _exerciseItem},
+          'day_4': {'type': 'ARRAY', 'items': _exerciseItem},
+          'day_5': {'type': 'ARRAY', 'items': _exerciseItem},
+          'day_6': {'type': 'ARRAY', 'items': _exerciseItem},
+        },
+      },
+    },
+    'required': ['training_plan'],
+  };
+
+  static const _nutritionPlanSchema = {
+    'type': 'OBJECT',
+    'properties': {
+      'nutrition_plan': {
+        'type': 'OBJECT',
+        'properties': {
+          'daily_calories_goal': {'type': 'INTEGER'},
+          'meals': {
+            'type': 'ARRAY',
+            'items': {
+              'type': 'OBJECT',
+              'properties': {
+                'meal_name': {'type': 'STRING'},
+                'options': {
+                  'type': 'ARRAY',
+                  'items': {
+                    'type': 'OBJECT',
+                    'properties': {
+                      'option_id': {'type': 'INTEGER'},
+                      'description': {'type': 'STRING'},
+                      'calories': {'type': 'INTEGER'},
+                      'protein_g': {'type': 'NUMBER'},
+                      'carbs_g': {'type': 'NUMBER'},
+                      'fat_g': {'type': 'NUMBER'},
+                    },
+                    'required': [
+                      'option_id', 'description', 'calories',
+                      'protein_g', 'carbs_g', 'fat_g',
+                    ],
+                  },
+                },
+              },
+              'required': ['meal_name', 'options'],
+            },
+          },
+        },
+        'required': ['daily_calories_goal', 'meals'],
+      },
+      'notes': {'type': 'STRING'},
+    },
+    'required': ['nutrition_plan', 'notes'],
+  };
+
+  // ── Streaming ──────────────────────────────────────────────────────
+
+  /// Streams incremental JSON tokens for the workout plan.
+  ///
+  /// On a cache hit, yields the full cached JSON at once (instant).
+  /// On a miss, streams tokens from Gemini and writes the enriched plan to
+  /// cache when the stream completes.
+  ///
+  /// The caller should follow up with [generateWeeklyWorkoutPlan] after the
+  /// stream ends — it will return instantly from cache.
+  Stream<String> streamWeeklyWorkoutPlan(String userId) async* {
+    _initializeService();
+
+    final userData = await getUserProfileData(userId);
+    final profile = userData['profile'];
+    final onboarding = userData['onboarding'] as Map<String, String>;
+
+    final cacheKey = _buildProfileCacheKey(profile, onboarding);
+    final cached = AppCacheService.instance.getWorkoutPlan(cacheKey);
+    if (cached != null) {
+      yield jsonEncode(cached);
+      return;
+    }
+
+    final prompt = _buildWorkoutPlanPrompt(profile, onboarding);
+    final fullBuffer = StringBuffer();
+
+    yield* _client!.createChatStream(
+      messages: [Message(role: 'user', content: prompt)],
+      model: 'gemini-2.5-flash-lite',
+      temperature: 0.7,
+      maxTokens: 8192,
+      responseMimeType: 'application/json',
+      responseSchema: _workoutPlanSchema,
+    ).map((chunk) {
+      fullBuffer.write(chunk);
+      return chunk;
+    });
+
+    // After stream completes: enrich + cache so generateWeeklyWorkoutPlan returns instantly
+    try {
+      final parsedPlan = jsonDecode(fullBuffer.toString()) as Map<String, dynamic>;
+      final enrichedPlan = _enrichPlanWithVideoUrls(parsedPlan);
+      AppCacheService.instance.setWorkoutPlan(cacheKey, enrichedPlan);
+    } catch (_) {
+      // Parse failure — caller will handle via generateWeeklyWorkoutPlan error
+    }
+  }
+
+  // ── Profile cache key ──────────────────────────────────────────────
+
+  // Stable djb2 hash of user's plan-affecting profile fields.
+  // Cache key changes whenever fitness goal, equipment, frequency, etc. change.
+  String _buildProfileCacheKey(
+    Map<String, dynamic> profile,
+    Map<String, String> onboarding,
+  ) {
+    final canonical = [
+      profile['age'],
+      profile['gender'],
+      profile['weight_kg'],
+      profile['height_cm'],
+      profile['experience_level'],
+      profile['fitness_goal'],
+      profile['activity_level'],
+      profile['medical_conditions'],
+      profile['equipment_available'],
+      profile['weekly_training_frequency'],
+      profile['dietary_preference'],
+      onboarding['workout_location'] ?? '',
+    ].map((v) => v?.toString() ?? '').join('|');
+
+    int hash = 5381;
+    for (final c in canonical.codeUnits) {
+      hash = ((hash << 5) + hash) ^ c;
+      hash &= 0xFFFFFFFF;
+    }
+    return hash.toRadixString(16).padLeft(8, '0');
   }
 
   String _buildExercisePrompt(
@@ -593,39 +740,6 @@ Bazat pe studii Schoenfeld et al. (2016, 2017, 2021):
    - Obiectiv Forță: 4-6 repetări
    - Obiectiv Rezistență: 12-15+ repetări
 
-### FORMAT RĂSPUNS
-Răspunde DOAR cu un obiect JSON valid, fără text suplimentar. Format EXACT:
-
-{
-  "training_plan": {
-    "day_1": [
-      {
-        "exercise_name": "Barbell Bench Press",
-        "sets": 4,
-        "reps": "8-12",
-        "rest_seconds": 90,
-        "coaching_tip": "Menține umerii retrași și coboară bara controlat până la piept. Nu lăsa bara să sară."
-      },
-      {
-        "exercise_name": "Dumbbell Flyes",
-        "sets": 3,
-        "reps": "10-12",
-        "rest_seconds": 60,
-        "coaching_tip": "Cotii ușor îndoiți, simte întinderea în piept. Nu coborî prea jos."
-      }
-    ],
-    "day_2": [
-      {
-        "exercise_name": "Barbell Squat",
-        "sets": 4,
-        "reps": "8-12",
-        "rest_seconds": 90,
-        "coaching_tip": "Genunchii în linie cu degetele, coboară până coapsele sunt paralele cu solul."
-      }
-    ]
-  }
-}
-
 ### CERINȚE IMPORTANTE
 - Creează exact $daysPerWeek zile (day_1, day_2, day_3, etc.)
 - Fiecare zi trebuie să aibă 4-6 exerciții
@@ -645,56 +759,38 @@ Răspunde DOAR cu un obiect JSON valid, fără text suplimentar. Format EXACT:
         return '''
 **PUSH / PULL / LEGS Split**
 - Zi 1 - PUSH (Împingere): Piept + Umeri + Triceps
-  * Exerciții: Barbell Bench Press, Overhead Press, Dumbbell Flyes, Dumbbell Lateral Raises, Tricep Dips
 - Zi 2 - PULL (Tragere): Spate + Biceps
-  * Exerciții: Pull-Ups, Barbell Rows, Single-Arm Dumbbell Row, Barbell Bicep Curls
 - Zi 3 - LEGS: Picioare + Abdomen
-  * Exerciții: Barbell Squat, Romanian Deadlift, Lunges, Plank, Crunches
 ''';
       case 4:
         return '''
 **UPPER / LOWER Split**
 - Zi 1 - UPPER PUSH: Piept + Umeri + Triceps
-  * Exerciții: Barbell Bench Press, Overhead Press, Incline Dumbbell Press, Dumbbell Lateral Raises, Tricep Dips
 - Zi 2 - LOWER: Picioare + Abdomen
-  * Exerciții: Barbell Squat, Romanian Deadlift, Leg Press, Plank, Hanging Leg Raises
 - Zi 3 - UPPER PULL: Spate + Biceps
-  * Exerciții: Pull-Ups, Barbell Deadlift, Barbell Rows, Face Pulls, Barbell Bicep Curls
 - Zi 4 - LOWER + CORE: Picioare (variante) + Abdomen
-  * Exerciții: Bulgarian Split Squat, Lunges, Leg Press, Russian Twists, Mountain Climbers
 ''';
       case 5:
         return '''
 **BRO SPLIT (Clasic)**
 - Zi 1 - CHEST + TRICEPS: Piept + Triceps
-  * Exerciții: Barbell Bench Press, Incline Dumbbell Press, Dumbbell Flyes, Tricep Dips, Overhead Tricep Extension
 - Zi 2 - BACK + BICEPS: Spate + Biceps
-  * Exerciții: Barbell Deadlift, Pull-Ups, Barbell Rows, Single-Arm Dumbbell Row, Barbell Bicep Curls
 - Zi 3 - LEGS: Picioare
-  * Exerciții: Barbell Squat, Romanian Deadlift, Leg Press, Bulgarian Split Squat, Lunges
 - Zi 4 - SHOULDERS + ABS: Umeri + Abdomen
-  * Exerciții: Overhead Press, Dumbbell Lateral Raises, Dumbbell Front Raises, Face Pulls, Plank, Hanging Leg Raises
 - Zi 5 - FULL BODY / ARMS: Mix sau Focus Brațe
-  * Exerciții: Push-Ups, Pull-Ups, Barbell Squat, Alternating Dumbbell Curls, Cable Bicep Curls
 ''';
       case 6:
         return '''
 **PUSH / PULL / LEGS x2 (Avansat)**
 - Zi 1 - PUSH A: Piept + Umeri + Triceps (Focus Forță)
-  * Exerciții: Barbell Bench Press, Overhead Press, Incline Dumbbell Press, Dumbbell Lateral Raises, Tricep Dips
 - Zi 2 - PULL A: Spate + Biceps (Focus Forță)
-  * Exerciții: Barbell Deadlift, Pull-Ups, Barbell Rows, Face Pulls, Barbell Bicep Curls
 - Zi 3 - LEGS A: Picioare + Abdomen (Focus Forță)
-  * Exerciții: Barbell Squat, Romanian Deadlift, Leg Press, Plank, Hanging Leg Raises
 - Zi 4 - PUSH B: Piept + Umeri + Triceps (Focus Hipertrofie)
-  * Exerciții: Incline Dumbbell Press, Dumbbell Flyes, Dumbbell Front Raises, Overhead Tricep Extension, Push-Ups
 - Zi 5 - PULL B: Spate + Biceps (Focus Hipertrofie)
-  * Exerciții: Lat Pulldown, Single-Arm Dumbbell Row, Face Pulls, Alternating Dumbbell Curls, Cable Bicep Curls
 - Zi 6 - LEGS B: Picioare + Abdomen (Focus Hipertrofie)
-  * Exerciții: Bulgarian Split Squat, Lunges, Leg Press, Russian Twists, Mountain Climbers, Crunches
 ''';
       default:
-        return _getSplitGuide(3); // Default to 3-day split
+        return _getSplitGuide(3);
     }
   }
 
@@ -710,71 +806,13 @@ PROFIL: ${_buildUserProfileString(profile, onboarding)}
 CERINȚE:
 1. Calculează necesarul caloric pentru obiectiv: ${profile['fitness_goal'] ?? 'general'}
 2. Distribuie optim macronutrienții pentru obiectiv
-3. Creează exemple de mese pentru o zi completă (Mic dejun, Prânz, Gustare, Cină)
-4. Pentru FIECARE masă, oferă 2-3 OPȚIUNI diferite
+3. Creează mese pentru o zi completă (Mic dejun, Prânz, Gustare, Cină, eventual Gustare seara)
+4. Pentru FIECARE masă, oferă 2-3 OPȚIUNI diferite cu descrieri DETALIATE cu gramaje
 5. Respectă preferințele: ${profile['dietary_preference'] ?? 'normal'}
 6. Evită alergenele: ${profile['medical_conditions'] ?? 'niciuna'}
 7. Include sincronizarea meselor în raport cu antrenamentele
 8. Toate denumirile meselor, descrierile alimentelor în LIMBA ROMÂNĂ
-
-Răspunde DOAR cu un obiect JSON valid, fără text suplimentar. Format EXACT:
-
-{
-  "nutrition_plan": {
-    "daily_calories_goal": 2300,
-    "meals": [
-      {
-        "meal_name": "Mic dejun",
-        "options": [
-          {
-            "option_id": 1,
-            "description": "Omletă cu 3 ouă și spanac (150g), pâine integrală (50g), avocado (50g)",
-            "calories": 420,
-            "protein_g": 35,
-            "carbs_g": 25,
-            "fat_g": 22
-          },
-          {
-            "option_id": 2,
-            "description": "Ovăz (80g) cu lapte (200ml), banană (100g), nuci (20g)",
-            "calories": 450,
-            "protein_g": 18,
-            "carbs_g": 62,
-            "fat_g": 12
-          }
-        ]
-      },
-      {
-        "meal_name": "Prânz",
-        "options": [
-          {
-            "option_id": 1,
-            "description": "Piept de pui la grătar (200g), orez brun (150g), salată mixtă (100g)",
-            "calories": 520,
-            "protein_g": 48,
-            "carbs_g": 55,
-            "fat_g": 8
-          },
-          {
-            "option_id": 2,
-            "description": "Somon la cuptor (180g), cartofi dulci (200g), broccoli (150g)",
-            "calories": 510,
-            "protein_g": 42,
-            "carbs_g": 48,
-            "fat_g": 14
-          }
-        ]
-      }
-    ]
-  },
-  "notes": "Bea minimum 2.5L apă pe zi. Consultă medicul înainte de a începe planul."
-}
-
-IMPORTANT:
-- Creează 4-5 mese pe zi (Mic dejun, Prânz, Gustare, Cină, eventual Gustare seara)
-- Fiecare masă trebuie să aibă 2-3 opțiuni
-- Fiecare opțiune trebuie să includă descrierea DETALIATĂ cu gramaje
-- Calculează corect caloriile și macronutrienții pentru fiecare opțiune
+9. Calculează corect caloriile și macronutrienții pentru fiecare opțiune
 ''';
   }
 
@@ -841,6 +879,8 @@ class GeminiClient {
     int maxTokens = 1024,
     double temperature = 1.0,
     CancelToken? cancelToken,
+    String? responseMimeType,
+    Map<String, dynamic>? responseSchema,
   }) async {
     return _withRetry(() async {
       try {
@@ -859,14 +899,22 @@ class GeminiClient {
 
         final endpoint = _getEndpointMethod(model);
 
+        final generationConfig = <String, dynamic>{
+          'maxOutputTokens': maxTokens,
+          'temperature': temperature,
+        };
+        if (responseMimeType != null) {
+          generationConfig['responseMimeType'] = responseMimeType;
+        }
+        if (responseSchema != null) {
+          generationConfig['responseSchema'] = responseSchema;
+        }
+
         final response = await dio.post(
           '/models/$model$endpoint',
           data: {
             'contents': contents,
-            'generationConfig': {
-              'maxOutputTokens': maxTokens,
-              'temperature': temperature,
-            },
+            'generationConfig': generationConfig,
             'safetySettings': _getSafetySettings(),
           },
           cancelToken: cancelToken,
@@ -930,6 +978,82 @@ class GeminiClient {
         'threshold': 'BLOCK_LOW_AND_ABOVE',
       },
     ];
+  }
+
+  /// Streams raw text tokens from Gemini using Server-Sent Events.
+  ///
+  /// Yields each incremental text chunk as it arrives. The caller is
+  /// responsible for assembling the full text when the stream ends.
+  /// Does NOT retry on mid-stream failures (unlike [createChat]).
+  Stream<String> createChatStream({
+    required List<Message> messages,
+    String model = 'gemini-2.5-flash-lite',
+    int maxTokens = 8192,
+    double temperature = 1.0,
+    String? responseMimeType,
+    Map<String, dynamic>? responseSchema,
+    CancelToken? cancelToken,
+  }) async* {
+    final contents = messages.map((m) => {
+      'role': m.role,
+      'parts': m.content is String ? [{'text': m.content}] : m.content,
+    }).toList();
+
+    final generationConfig = <String, dynamic>{
+      'maxOutputTokens': maxTokens,
+      'temperature': temperature,
+    };
+    if (responseMimeType != null) generationConfig['responseMimeType'] = responseMimeType;
+    if (responseSchema != null) generationConfig['responseSchema'] = responseSchema;
+
+    final response = await dio.post(
+      '/models/$model:streamGenerateContent',
+      queryParameters: {'alt': 'sse'},
+      data: {
+        'contents': contents,
+        'generationConfig': generationConfig,
+        'safetySettings': _getSafetySettings(),
+      },
+      options: Options(responseType: ResponseType.stream),
+      cancelToken: cancelToken,
+    );
+
+    final responseBody = response.data as ResponseBody;
+    final lineBuffer = StringBuffer();
+
+    await for (final chunk in responseBody.stream) {
+      final rawChunk = utf8.decode(chunk, allowMalformed: true);
+      lineBuffer.write(rawChunk);
+
+      String buffered = lineBuffer.toString();
+      // Process complete SSE events separated by double newline
+      while (buffered.contains('\n\n')) {
+        final idx = buffered.indexOf('\n\n');
+        final event = buffered.substring(0, idx).trim();
+        buffered = buffered.substring(idx + 2);
+        lineBuffer.clear();
+        lineBuffer.write(buffered);
+
+        if (!event.startsWith('data: ')) continue;
+        final jsonStr = event.substring(6).trim();
+        if (jsonStr == '[DONE]') return;
+
+        try {
+          final parsed = jsonDecode(jsonStr) as Map<String, dynamic>;
+          final candidates = parsed['candidates'] as List?;
+          if (candidates == null || candidates.isEmpty) continue;
+          final parts = candidates[0]['content']?['parts'] as List?;
+          if (parts == null) continue;
+          for (final part in parts) {
+            if (part['thought'] != true && part['text'] != null) {
+              yield part['text'] as String;
+            }
+          }
+        } catch (_) {
+          // Malformed SSE chunk — skip silently
+        }
+      }
+    }
   }
 }
 

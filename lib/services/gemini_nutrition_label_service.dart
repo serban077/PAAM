@@ -16,36 +16,9 @@ class GeminiNutritionLabelService {
   static const String _textPrompt = '''
 You are a nutritional label parser. You receive RAW TEXT extracted via OCR from a food product's nutritional label.
 
-Your job: identify and extract ALL nutritional values from the per-100g or per-100ml column.
-
-Return ONLY a valid JSON object with these exact keys (use null if the value is not found in the text):
-{
-  "calories": <number or null>,
-  "protein_g": <number or null>,
-  "carbs_g": <number or null>,
-  "sugar_g": <number or null>,
-  "starch_g": <number or null>,
-  "polyols_g": <number or null>,
-  "fat_g": <number or null>,
-  "saturated_fat_g": <number or null>,
-  "monounsaturated_fat_g": <number or null>,
-  "polyunsaturated_fat_g": <number or null>,
-  "trans_fat_g": <number or null>,
-  "fiber_g": <number or null>,
-  "salt_g": <number or null>,
-  "sodium_mg": <number or null>,
-  "cholesterol_mg": <number or null>,
-  "potassium_mg": <number or null>,
-  "calcium_mg": <number or null>,
-  "iron_mg": <number or null>,
-  "vitamin_a_ug": <number or null>,
-  "vitamin_c_mg": <number or null>,
-  "vitamin_d_ug": <number or null>,
-  "serving_size_g": <number or null>
-}
+Your job: identify and extract ALL nutritional values from the per-100g or per-100ml column. Use null for any value not found in the text.
 
 CRITICAL RULES:
-- Output ONLY the JSON object. No markdown, no explanation, no code fences.
 - All numeric values must be plain numbers with dots as decimal separator (not strings, not commas). Example: 3,2 → 3.2
 - EUROPEAN LABELS use COMMA as decimal separator (e.g. "3,2 g" means 3.2). Always convert commas to dots in your output.
 - Labels may have TWO columns: per 100g/100ml AND per serving/portion. ALWAYS use the per-100g or per-100ml column (the first/smaller values column). Ignore the per-serving column.
@@ -84,36 +57,9 @@ RULES FOR MISSING VALUES:
   // ── Fallback prompt for image-based parsing (when ML Kit fails) ──────────
 
   static const String _imagePrompt = '''
-You are a nutritional label reader. Extract ALL nutritional values from the food label in the image.
-
-Return ONLY a valid JSON object with these exact keys (all values from the per-100g or per-100ml column, use null if not found):
-{
-  "calories": <number or null>,
-  "protein_g": <number or null>,
-  "carbs_g": <number or null>,
-  "sugar_g": <number or null>,
-  "starch_g": <number or null>,
-  "polyols_g": <number or null>,
-  "fat_g": <number or null>,
-  "saturated_fat_g": <number or null>,
-  "monounsaturated_fat_g": <number or null>,
-  "polyunsaturated_fat_g": <number or null>,
-  "trans_fat_g": <number or null>,
-  "fiber_g": <number or null>,
-  "salt_g": <number or null>,
-  "sodium_mg": <number or null>,
-  "cholesterol_mg": <number or null>,
-  "potassium_mg": <number or null>,
-  "calcium_mg": <number or null>,
-  "iron_mg": <number or null>,
-  "vitamin_a_ug": <number or null>,
-  "vitamin_c_mg": <number or null>,
-  "vitamin_d_ug": <number or null>,
-  "serving_size_g": <number or null>
-}
+You are a nutritional label reader. Extract ALL nutritional values from the food label in the image. Use null for any value not clearly visible.
 
 Rules:
-- Output ONLY the JSON object. No markdown, no explanation, no code fences.
 - All numeric values must be plain numbers with dots as decimal separator. European labels use commas (3,2 → output 3.2).
 - If the label has TWO columns (per 100g/ml AND per serving), ALWAYS use the per-100g/100ml column.
 - Per 100ml and per 100g are treated identically.
@@ -139,6 +85,37 @@ Rules:
     }
   }
 
+  // ── Structured output schema for all 22 nutrition fields ────────────────
+
+  static const _nutritionSchema = {
+    'type': 'OBJECT',
+    'properties': {
+      'calories':                  {'type': 'NUMBER'},
+      'protein_g':                 {'type': 'NUMBER'},
+      'carbs_g':                   {'type': 'NUMBER'},
+      'fat_g':                     {'type': 'NUMBER'},
+      'sugar_g':                   {'type': 'NUMBER', 'nullable': true},
+      'starch_g':                  {'type': 'NUMBER', 'nullable': true},
+      'polyols_g':                 {'type': 'NUMBER', 'nullable': true},
+      'saturated_fat_g':           {'type': 'NUMBER', 'nullable': true},
+      'monounsaturated_fat_g':     {'type': 'NUMBER', 'nullable': true},
+      'polyunsaturated_fat_g':     {'type': 'NUMBER', 'nullable': true},
+      'trans_fat_g':               {'type': 'NUMBER', 'nullable': true},
+      'fiber_g':                   {'type': 'NUMBER', 'nullable': true},
+      'salt_g':                    {'type': 'NUMBER', 'nullable': true},
+      'sodium_mg':                 {'type': 'NUMBER', 'nullable': true},
+      'cholesterol_mg':            {'type': 'NUMBER', 'nullable': true},
+      'potassium_mg':              {'type': 'NUMBER', 'nullable': true},
+      'calcium_mg':                {'type': 'NUMBER', 'nullable': true},
+      'iron_mg':                   {'type': 'NUMBER', 'nullable': true},
+      'vitamin_a_ug':              {'type': 'NUMBER', 'nullable': true},
+      'vitamin_c_mg':              {'type': 'NUMBER', 'nullable': true},
+      'vitamin_d_ug':              {'type': 'NUMBER', 'nullable': true},
+      'serving_size_g':            {'type': 'NUMBER', 'nullable': true},
+    },
+    'required': ['calories', 'protein_g', 'carbs_g', 'fat_g'],
+  };
+
   // ── Step 2a: Parse OCR text with Gemini ──────────────────────────────────
 
   Future<Map<String, dynamic>?> _parseNutritionText(String rawText) async {
@@ -153,9 +130,11 @@ Rules:
                 '$_textPrompt\n\n--- RAW OCR TEXT START ---\n$rawText\n--- RAW OCR TEXT END ---',
           ),
         ],
-        model: 'gemini-2.5-flash',
+        model: 'gemini-2.5-flash-lite',
         temperature: 0.0,
-        maxTokens: 8192,
+        maxTokens: 4096,
+        responseMimeType: 'application/json',
+        responseSchema: _nutritionSchema,
       ).timeout(const Duration(seconds: 45));
 
       return _parseJsonResponse(response.text);
@@ -190,7 +169,9 @@ Rules:
         ],
         model: 'gemini-2.5-flash',
         temperature: 0.0,
-        maxTokens: 8192,
+        maxTokens: 4096,
+        responseMimeType: 'application/json',
+        responseSchema: _nutritionSchema,
       ).timeout(const Duration(seconds: 45));
 
       return _parseJsonResponse(response.text);
@@ -203,25 +184,10 @@ Rules:
   // ── JSON parsing + validation ────────────────────────────────────────────
 
   Map<String, dynamic>? _parseJsonResponse(String rawText) {
-    debugPrint('[OCR] Raw Gemini response (first 500 chars): ${rawText.length > 500 ? rawText.substring(0, 500) : rawText}');
-
-    String jsonText = rawText.trim();
-
-    // Always extract JSON between first { and last } — handles code fences,
-    // leading text, trailing explanation, thinking tags, etc.
-    final start = jsonText.indexOf('{');
-    final end = jsonText.lastIndexOf('}');
-    if (start == -1 || end == -1 || end <= start) {
-      debugPrint('[OCR] No JSON object found in response');
-      return null;
-    }
-    jsonText = jsonText.substring(start, end + 1);
-
     try {
-      final Map<String, dynamic> data =
-          jsonDecode(jsonText) as Map<String, dynamic>;
+      final data = jsonDecode(rawText) as Map<String, dynamic>;
 
-      // Validate required fields
+      // Validate required fields are non-null
       final requiredKeys = ['calories', 'protein_g', 'carbs_g', 'fat_g'];
       for (final key in requiredKeys) {
         if (data[key] == null) {
@@ -230,11 +196,10 @@ Rules:
         }
       }
 
-      debugPrint('[OCR] Parsed successfully: cal=${data['calories']} p=${data['protein_g']} c=${data['carbs_g']} f=${data['fat_g']}');
+      debugPrint('[OCR] Parsed: cal=${data['calories']} p=${data['protein_g']} c=${data['carbs_g']} f=${data['fat_g']}');
       return data;
     } catch (e) {
       debugPrint('[OCR] JSON decode failed: $e');
-      debugPrint('[OCR] Attempted to parse: ${jsonText.length > 300 ? jsonText.substring(0, 300) : jsonText}');
       return null;
     }
   }

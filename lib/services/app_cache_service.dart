@@ -320,6 +320,50 @@ class AppCacheService {
     _contributionsAt = null;
   }
 
+  // ── AI Plan cache (24h TTL, keyed by profile hash) ───────────────
+  static const _aiPlanTtl = Duration(hours: 24);
+  final Map<String, _AIPlanCacheEntry> _workoutPlanCache = {};
+  final Map<String, _AIPlanCacheEntry> _nutritionPlanCache = {};
+
+  Map<String, dynamic>? getWorkoutPlan(String profileHash) {
+    final entry = _workoutPlanCache[profileHash];
+    if (entry == null) return null;
+    if (DateTime.now().difference(entry.cachedAt) > _aiPlanTtl) {
+      _workoutPlanCache.remove(profileHash);
+      return null;
+    }
+    return entry.plan;
+  }
+
+  void setWorkoutPlan(String profileHash, Map<String, dynamic> plan) {
+    _workoutPlanCache[profileHash] = _AIPlanCacheEntry(
+      plan: plan,
+      cachedAt: DateTime.now(),
+    );
+  }
+
+  Map<String, dynamic>? getNutritionPlan(String profileHash) {
+    final entry = _nutritionPlanCache[profileHash];
+    if (entry == null) return null;
+    if (DateTime.now().difference(entry.cachedAt) > _aiPlanTtl) {
+      _nutritionPlanCache.remove(profileHash);
+      return null;
+    }
+    return entry.plan;
+  }
+
+  void setNutritionPlan(String profileHash, Map<String, dynamic> plan) {
+    _nutritionPlanCache[profileHash] = _AIPlanCacheEntry(
+      plan: plan,
+      cachedAt: DateTime.now(),
+    );
+  }
+
+  void invalidateAIPlanCache() {
+    _workoutPlanCache.clear();
+    _nutritionPlanCache.clear();
+  }
+
   // ── Global ─────────────────────────────────────────────────────────
 
   void invalidateAll() {
@@ -345,6 +389,7 @@ class AppCacheService {
     _activeWorkoutAt = null;
     _weeklySchedule = null;
     _weeklyScheduleAt = null;
+    invalidateAIPlanCache();
   }
 }
 
@@ -374,4 +419,11 @@ class _FoodSearchEntry {
   final DateTime cachedAt;
 
   const _FoodSearchEntry({required this.results, required this.cachedAt});
+}
+
+class _AIPlanCacheEntry {
+  final Map<String, dynamic> plan;
+  final DateTime cachedAt;
+
+  const _AIPlanCacheEntry({required this.plan, required this.cachedAt});
 }

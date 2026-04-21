@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:developer' as dev;
 
 import '../data/models/smart_recipe_models.dart';
 import '_dio_interceptors.dart';
@@ -14,6 +13,48 @@ class SmartRecipeService {
   factory SmartRecipeService() => _instance;
 
   SmartRecipeService._internal();
+
+  static const _recipeSchema = {
+    'type': 'ARRAY',
+    'items': {
+      'type': 'OBJECT',
+      'properties': {
+        'name': {'type': 'STRING'},
+        'description': {'type': 'STRING'},
+        'prep_time_minutes': {'type': 'INTEGER'},
+        'cook_time_minutes': {'type': 'INTEGER'},
+        'servings': {'type': 'INTEGER'},
+        'difficulty': {'type': 'STRING'},
+        'ingredients': {
+          'type': 'ARRAY',
+          'items': {
+            'type': 'OBJECT',
+            'properties': {
+              'name': {'type': 'STRING'},
+              'quantity_g': {'type': 'NUMBER'},
+              'display_unit': {'type': 'STRING'},
+            },
+            'required': ['name', 'quantity_g', 'display_unit'],
+          },
+        },
+        'steps': {'type': 'ARRAY', 'items': {'type': 'STRING'}},
+        'macros_per_serving': {
+          'type': 'OBJECT',
+          'properties': {
+            'calories': {'type': 'NUMBER'},
+            'protein_g': {'type': 'NUMBER'},
+            'carbs_g': {'type': 'NUMBER'},
+            'fat_g': {'type': 'NUMBER'},
+          },
+          'required': ['calories', 'protein_g', 'carbs_g', 'fat_g'],
+        },
+      },
+      'required': [
+        'name', 'description', 'prep_time_minutes', 'cook_time_minutes',
+        'servings', 'difficulty', 'ingredients', 'steps', 'macros_per_serving',
+      ],
+    },
+  };
 
   /// Generates 3-5 diverse recipes using ONLY the provided ingredients.
   ///
@@ -47,36 +88,17 @@ class SmartRecipeService {
             ],
             model: 'gemini-2.5-flash',
             temperature: 0.7,
-            maxTokens: 16384,
+            maxTokens: 8192,
+            responseMimeType: 'application/json',
+            responseSchema: _recipeSchema,
           )
           .timeout(const Duration(seconds: 120));
 
-      final rawText = response.text.trim();
-      dev.log('SmartRecipeService raw length: ${rawText.length}');
-      dev.log('SmartRecipeService raw start: ${rawText.substring(0, rawText.length.clamp(0, 300))}');
-
-      if (rawText.isEmpty) {
+      if (response.text.isEmpty) {
         throw Exception('Gemini returned empty response — try again');
       }
 
-      final jsonStr = _extractJson(rawText);
-      dev.log('SmartRecipeService extracted JSON length: ${jsonStr.length}');
-
-      dynamic parsed;
-      try {
-        parsed = jsonDecode(jsonStr);
-      } on FormatException catch (e) {
-        dev.log('JSON parse failed, attempting repair: $e');
-        try {
-          final repaired = _repairJson(jsonStr);
-          dev.log('Repaired JSON length: ${repaired.length}');
-          parsed = jsonDecode(repaired);
-        } catch (repairError) {
-          dev.log('Repair also failed: $repairError');
-          dev.log('Raw JSON (last 200 chars): ${jsonStr.substring((jsonStr.length - 200).clamp(0, jsonStr.length))}');
-          rethrow;
-        }
-      }
+      final parsed = jsonDecode(response.text);
 
       List<GeneratedRecipe> recipes = [];
       if (parsed is List) {
@@ -89,7 +111,7 @@ class SmartRecipeService {
             .toList();
       }
 
-      return RecipeGenerationResult(recipes: recipes, rawResponse: rawText);
+      return RecipeGenerationResult(recipes: recipes, rawResponse: response.text);
     } on NetworkOfflineException {
       rethrow;
     } catch (e) {
@@ -130,121 +152,6 @@ RULES:
 2. Each recipe uses a subset — not all ingredients required.
 3. Prioritize high-protein. Keep steps short (max 5 steps per recipe).
 4. "difficulty": "easy", "medium", or "hard".
-
-Return ONLY a JSON array, no markdown, no explanation. Schema:
-[{"name":"...","description":"short","prep_time_minutes":10,"cook_time_minutes":20,"servings":2,"difficulty":"easy","ingredients":[{"name":"...","quantity_g":200,"display_unit":"g"}],"steps":["Step 1","Step 2"],"macros_per_serving":{"calories":450.0,"protein_g":35.0,"carbs_g":40.0,"fat_g":12.0}}]
 ''';
-  }
-
-  String _extractJson(String raw) {
-    var s = raw.trim();
-
-    // Remove markdown code fences
-    if (s.startsWith('```')) {
-      final firstNewline = s.indexOf('\n');
-      if (firstNewline != -1) {
-        s = s.substring(firstNewline + 1);
-      }
-      if (s.endsWith('```')) {
-        s = s.substring(0, s.length - 3);
-      }
-      return s.trim();
-    }
-
-    // If response doesn't start with [ or {, find the first JSON
-    // array or object boundary
-    if (!s.startsWith('[') && !s.startsWith('{')) {
-      final arrayStart = s.indexOf('[');
-      final objectStart = s.indexOf('{');
-
-      int start = -1;
-      if (arrayStart >= 0 && objectStart >= 0) {
-        start = arrayStart < objectStart ? arrayStart : objectStart;
-      } else if (arrayStart >= 0) {
-        start = arrayStart;
-      } else if (objectStart >= 0) {
-        start = objectStart;
-      }
-
-      if (start >= 0) {
-        s = s.substring(start);
-      }
-    }
-
-    // Remove any trailing text after the last ] or }
-    final lastBracket = s.lastIndexOf(']');
-    final lastBrace = s.lastIndexOf('}');
-    final lastClose = lastBracket > lastBrace ? lastBracket : lastBrace;
-    if (lastClose >= 0 && lastClose < s.length - 1) {
-      s = s.substring(0, lastClose + 1);
-    }
-
-    return s.trim();
-  }
-
-  /// Attempts to repair truncated JSON from Gemini by closing unclosed
-  /// brackets and removing incomplete trailing elements.
-  String _repairJson(String json) {
-    var s = json.trim();
-
-    // Find the last successfully closed recipe object — look for the last
-    // complete "}" that closes a recipe entry.
-    // Strategy: try to find the last '}' that ends a complete recipe,
-    // then close the array.
-    final lastCompleteObj = s.lastIndexOf('}');
-    if (lastCompleteObj == -1) throw const FormatException('No JSON object found');
-
-    // Walk back and count braces to find where a complete object ends.
-    // We try parsing progressively shorter substrings.
-    // Find the position right after the last complete recipe object.
-    int braceDepth = 0;
-    int bracketDepth = 0;
-    bool inString = false;
-    bool escaped = false;
-    int lastObjEnd = -1;
-
-    for (int i = 0; i < s.length; i++) {
-      final c = s[i];
-      if (escaped) {
-        escaped = false;
-        continue;
-      }
-      if (c == '\\' && inString) {
-        escaped = true;
-        continue;
-      }
-      if (c == '"') {
-        inString = !inString;
-        continue;
-      }
-      if (inString) continue;
-
-      if (c == '[') bracketDepth++;
-      if (c == ']') bracketDepth--;
-      if (c == '{') braceDepth++;
-      if (c == '}') {
-        braceDepth--;
-        // When we return to brace depth 0 while inside a top-level array,
-        // this marks the end of a complete recipe object.
-        if (braceDepth == 0 && bracketDepth == 1) {
-          lastObjEnd = i;
-        }
-      }
-    }
-
-    if (lastObjEnd > 0) {
-      // Truncate after the last complete object and close the array
-      s = '${s.substring(0, lastObjEnd + 1)}]';
-    } else {
-      // Brute-force: close all unclosed brackets/braces
-      for (int i = 0; i < braceDepth; i++) {
-        s += '}';
-      }
-      for (int i = 0; i < bracketDepth; i++) {
-        s += ']';
-      }
-    }
-
-    return s;
   }
 }

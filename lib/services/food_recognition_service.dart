@@ -20,10 +20,23 @@ class FoodRecognitionService {
 
   FoodRecognitionService._internal();
 
+  static const _ingredientSchema = {
+    'type': 'ARRAY',
+    'items': {
+      'type': 'OBJECT',
+      'properties': {
+        'name': {'type': 'STRING'},
+        'estimated_quantity_g': {'type': 'NUMBER'},
+        'category': {'type': 'STRING'},
+      },
+      'required': ['name', 'estimated_quantity_g', 'category'],
+    },
+  };
+
   static const String _prompt = '''
 You are a food ingredient recognition system. Analyze this photo and identify ALL individual food items visible. This may be a fridge, pantry, countertop, or single dish photo.
 
-Return a JSON array. For each item:
+For each item:
 - "name": the actual food/ingredient in English (lowercase). For packaged products, identify what the product IS (e.g. "arrabbiata pasta sauce" not just "jar", "truffle mayo" not just "sauce", "ketchup", "eggs", "milk", "cheese slices"). Read labels/brands to be specific.
 - "estimated_quantity_g": estimated total weight in grams. For packaged items, estimate from container size (standard jar ~400g, egg carton of 10 ~600g, milk bottle 1L ~1000g, ketchup bottle ~450g, mayo jar ~230g, beer can ~330ml).
 - "category": one of "protein", "carb", "fat", "vegetable", "fruit", "dairy", "condiment"
@@ -33,8 +46,7 @@ RULES:
 - READ visible brand names and product labels to identify items accurately.
 - For packaged items behind other items, include them if you can identify them.
 - If the same food appears multiple times (e.g. 2 cartons of eggs), combine the quantity.
-- If no food items are visible, return an empty array: []
-- Return ONLY valid JSON (an array), no markdown fences, no explanation.
+- If no food items are visible, return an empty array.
 ''';
 
   /// Analyzes an image and returns detected food ingredients.
@@ -71,16 +83,14 @@ RULES:
             ],
             model: 'gemini-2.5-flash',
             temperature: 0.1,
-            maxTokens: 8192,
+            maxTokens: 2048,
             cancelToken: cancelToken,
+            responseMimeType: 'application/json',
+            responseSchema: _ingredientSchema,
           )
           .timeout(const Duration(seconds: 45));
 
-      final rawText = response.text.trim();
-
-      // Strip markdown code fences if present
-      final jsonStr = _extractJson(rawText);
-      final parsed = jsonDecode(jsonStr);
+      final parsed = jsonDecode(response.text);
 
       if (parsed is List) {
         final ingredients = parsed
@@ -89,13 +99,8 @@ RULES:
             .toList();
         return FoodRecognitionResult(
           ingredients: ingredients,
-          rawResponse: rawText,
+          rawResponse: response.text,
         );
-      }
-
-      // If the model wrapped the array in an object
-      if (parsed is Map<String, dynamic> && parsed['ingredients'] is List) {
-        return FoodRecognitionResult.fromMap(parsed);
       }
 
       return const FoodRecognitionResult(ingredients: []);
@@ -104,21 +109,5 @@ RULES:
     } catch (e) {
       throw Exception('Food recognition failed: $e');
     }
-  }
-
-  /// Strips markdown code fences and extracts the JSON content.
-  String _extractJson(String raw) {
-    var s = raw.trim();
-    // Remove ```json ... ``` wrapping
-    if (s.startsWith('```')) {
-      final firstNewline = s.indexOf('\n');
-      if (firstNewline != -1) {
-        s = s.substring(firstNewline + 1);
-      }
-      if (s.endsWith('```')) {
-        s = s.substring(0, s.length - 3);
-      }
-    }
-    return s.trim();
   }
 }

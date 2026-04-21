@@ -69,12 +69,32 @@ Get current user ID: `SupabaseService.instance.client.auth.currentUser!.id`
 
 File: `gemini_ai_service.dart` — read before any AI work.
 
-Generates workout + nutrition plans. `GeminiClient.createChat(messages, model, maxTokens, temperature, cancelToken?)` handles retry internally (`_withRetry`, 3 attempts, 2s/4s/6s backoff). `AppLogInterceptor` added M26 (debug only).
+Generates workout + nutrition plans. `GeminiClient.createChat(messages, model, maxTokens, temperature, cancelToken?, responseMimeType?, responseSchema?)` handles retry internally (`_withRetry`, 3 attempts, 2s/4s/6s backoff). `AppLogInterceptor` added M26 (debug only).
 
 Prompt engineering lives in `gemini_ai_service.dart` — do not duplicate elsewhere.
 Gemini API key: `const String.fromEnvironment('GEMINI_API_KEY')`
 
 **Thinking model gotcha:** `gemini-2.5-flash` — thought parts consume `maxOutputTokens` budget. Use `maxTokens: 8192` minimum for JSON output to avoid truncation.
+
+**Structured output (M28):** Pass `responseMimeType: 'application/json'` + `responseSchema: {...}` to `createChat()` to eliminate free-text JSON extraction. Schema uses Gemini's OpenAPI subset (uppercase types: `STRING`, `INTEGER`, `NUMBER`, `ARRAY`, `OBJECT`). Add `'nullable': true` to optional numeric fields. All plan/recipe/vision calls now use structured output.
+
+**AI plan cache (M28):** `generateWeeklyWorkoutPlan` and `generateNutritionPlan` check `AppCacheService` before calling Gemini. Cache key = djb2 hash of user's fitness-affecting profile fields (goal, frequency, equipment, etc.), 24h TTL. `generateCompletePlan` fetches user profile once and passes it to both generators to avoid the former double Supabase round-trip.
+
+**SDK decision (M28):** No migration to `google_generative_ai` package. Custom `GeminiClient` is sufficient — it already has retry, cancel, v1beta routing, thinking-part filtering, and structured output via `generationConfig`.
+
+**M28 Model assignments:**
+
+| Call | Model | maxTokens |
+|---|---|---|
+| `generateWeeklyWorkoutPlan` | gemini-2.5-flash-lite | 8192 |
+| `generateNutritionPlan` | gemini-2.5-flash-lite | 8192 |
+| `getPersonalizedExercises` | gemini-2.5-flash-lite | 8192 |
+| `FoodRecognitionService.recognizeIngredients` | gemini-2.5-flash | 2048 |
+| `SmartRecipeService.generateRecipes` | gemini-2.5-flash | 8192 |
+| `GeminiNutritionLabelService` text path | gemini-2.5-flash-lite | 4096 |
+| `GeminiNutritionLabelService` vision fallback | gemini-2.5-flash | 4096 |
+
+Flash-Lite is ~5× cheaper per token than Flash. Flash-Lite is NOT available for multimodal (image) calls — always use Flash for those.
 
 ---
 

@@ -24,6 +24,7 @@ class _AIWorkoutGeneratorState extends State<AIWorkoutGenerator> {
   CancelToken? _cancelToken;
   String _progressMessage = '';
   double _progressValue = 0.0;
+  String _streamingText = '';
 
   final _geminiService = GeminiAIService();
 
@@ -39,6 +40,7 @@ class _AIWorkoutGeneratorState extends State<AIWorkoutGenerator> {
       _hasError = false;
       _errorMessage = '';
       _generatedPlan = null;
+      _streamingText = '';
       _progressValue = 0.0;
       _progressMessage = 'Analyzing your profile...';
     });
@@ -50,10 +52,22 @@ class _AIWorkoutGeneratorState extends State<AIWorkoutGenerator> {
       if (user == null) throw Exception('Not authenticated');
 
       setState(() {
-        _progressValue = 0.3;
+        _progressValue = 0.1;
         _progressMessage = 'Generating your personalized workout plan...';
       });
 
+      // Stream tokens for live preview — cache is written on stream completion
+      await for (final chunk in _geminiService.streamWeeklyWorkoutPlan(user.id)) {
+        if (!mounted) return;
+        setState(() {
+          _streamingText += chunk;
+          _progressValue = (_streamingText.length / 3000).clamp(0.1, 0.9);
+        });
+      }
+
+      if (!mounted) return;
+
+      // Cache was populated by the stream; this returns instantly
       final plan = await _geminiService.generateWeeklyWorkoutPlan(user.id);
 
       setState(() {
@@ -61,18 +75,21 @@ class _AIWorkoutGeneratorState extends State<AIWorkoutGenerator> {
         _progressMessage = 'Plan generated successfully!';
         _generatedPlan = plan;
         _isGenerating = false;
+        _streamingText = '';
       });
     } on GeminiException catch (e) {
       setState(() {
         _isGenerating = false;
         _hasError = true;
         _errorMessage = e.message;
+        _streamingText = '';
       });
     } catch (e) {
       setState(() {
         _isGenerating = false;
         _hasError = true;
         _errorMessage = 'An error occurred: ${e.toString()}';
+        _streamingText = '';
       });
     }
   }
@@ -147,6 +164,7 @@ class _AIWorkoutGeneratorState extends State<AIWorkoutGenerator> {
                 progressValue: _progressValue,
                 progressMessage: _progressMessage,
                 onCancel: _cancelGeneration,
+                streamingText: _streamingText.isNotEmpty ? _streamingText : null,
               )
             : _hasError
             ? _buildErrorView(theme)

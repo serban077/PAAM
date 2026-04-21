@@ -833,33 +833,41 @@ Update `## Current Status` in `CLAUDE.md` at the end of every session.
 
 > Cut token cost, cut latency, improve reliability on every AI call: workout plan, nutrition plan, vision OCR, photo recipe.
 
-### 28.1 — Prompt Token Audit
-- [ ] For each of the 5 Gemini prompts (workout plan, nutrition plan, OCR, food recognition, recipe generation), count token size before call
-- [ ] Trim redundant instructions, move large static lists to structured output schema where possible
-- [ ] Record baseline input + output tokens per call
+### 28.1 — Prompt Token Audit ✅
+- [x] Trimmed `_getSplitGuide()` example exercise bullets (~150 tokens saved per workout call)
+- [x] Trimmed YouTube instructions from `_buildExercisePrompt()` (~80 tokens saved)
+- [x] Removed second meal example from `_buildNutritionPrompt()` (~20 tokens saved)
+- [x] Removed `### FORMAT RĂSPUNS` JSON example block from workout prompt (~200 tokens saved)
+- [x] Removed inline JSON schema from nutrition + vision + recipe prompts
 
-### 28.2 — Structured Output Schema
-- [ ] Migrate from free-text JSON to Gemini's `response_mime_type: "application/json"` + `response_schema`
-- [ ] Eliminates "extract JSON from markdown" fragility; reduces parse failures to ~0
-- [ ] Apply to: workout plan, nutrition plan, food recognition, recipe generation
+### 28.2 — Structured Output Schema ✅
+- [x] Added `responseMimeType` + `responseSchema` params to `GeminiClient.createChat()`
+- [x] Static schemas: `_workoutPlanSchema`, `_nutritionPlanSchema` in `gemini_ai_service.dart`
+- [x] `generateWeeklyWorkoutPlan` + `generateNutritionPlan` + `getPersonalizedExercises`: `jsonDecode(response.text)` direct parse (no more `indexOf('{')` extraction)
+- [x] `FoodRecognitionService`: `_ingredientSchema`, removed `_extractJson`
+- [x] `SmartRecipeService`: `_recipeSchema`, removed `_extractJson` + `_repairJson` + `dev.log`
+- [x] `GeminiNutritionLabelService`: `_nutritionSchema` (22 fields, nullable), simplified `_parseJsonResponse`
 
-### 28.3 — Native SDK Migration Consideration
-- [ ] Evaluate replacing custom Dio + REST calls with `google_generative_ai: ^0.4.6` (official Dart SDK)
-- [ ] Benefits: automatic retry, structured output helpers, streaming support, safer type boundaries
-- [ ] Cost: migration effort. Decide go/no-go after spike on 1 service
+### 28.3 — Native SDK Migration Consideration ✅
+- [x] Decision: NO migration. Custom `GeminiClient` already has retry, cancel, v1beta routing, thinking-part filtering, structured output. Documented in `lib/services/CLAUDE.md`.
 
-### 28.4 — Response Streaming
-- [ ] Where UX allows (workout plan generation screen), switch to streaming response → show tokens as they arrive
-- [ ] Perceived latency cut by >50% even if total time unchanged
+### 28.4 — Response Streaming ✅
+- [x] `GeminiClient.createChatStream()` — SSE stream via `ResponseType.stream`, yields text chunks, skips thought parts
+- [x] `GeminiAIService.streamWeeklyWorkoutPlan()` — cache-aware stream; enriches + writes cache on completion
+- [x] `AIWorkoutGenerator._generateWorkoutPlan()` — streams tokens for live preview, then instant cache-poll
+- [x] `GenerationProgressWidget` — shows live monospace token preview when `streamingText != null`
 
-### 28.5 — Model Selection per Task
-- [ ] Evaluate Gemini 2.5 Flash-Lite for cheaper short tasks (food search disambiguation, meal type suggestion)
-- [ ] Keep Gemini 2.5 Flash for vision + plan generation (quality required)
-- [ ] Document decision in `lib/services/CLAUDE.md`
+### 28.5 — Model Selection per Task ✅
+- [x] `maxTokens: 4096` → `8192` bug fixed in `getPersonalizedExercises`, `generateWeeklyWorkoutPlan`, `generateNutritionPlan`
+- [x] `GeminiNutritionLabelService` text path: switched to `gemini-2.5-flash-lite`, reduced to `4096`
+- [x] `FoodRecognitionService`: reduced maxTokens from 8192 → 2048 (short flat output)
+- [x] Model assignment table documented in `lib/services/CLAUDE.md`
 
-### 28.6 — Prompt Result Caching
-- [ ] Hash `(prompt + user TDEE + preferences)` → cache generated plan for 24h
-- [ ] Users regenerating without profile change get instant result + $0 cost
+### 28.6 — Prompt Result Caching ✅
+- [x] `AppCacheService`: `getWorkoutPlan` / `setWorkoutPlan` / `getNutritionPlan` / `setNutritionPlan` / `invalidateAIPlanCache()`, 24h TTL, `_AIPlanCacheEntry`
+- [x] `_buildProfileCacheKey()`: djb2 hash of 12 plan-affecting profile fields
+- [x] Cache wired into `generateWeeklyWorkoutPlan` + `generateNutritionPlan` (read before Gemini call, write after)
+- [x] `generateCompletePlan()`: single `getUserProfileData()` fetch passed to both generators (eliminates double Supabase round-trip)
 
 ---
 

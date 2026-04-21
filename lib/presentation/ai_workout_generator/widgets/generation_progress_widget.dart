@@ -5,12 +5,14 @@ class GenerationProgressWidget extends StatefulWidget {
   final double progressValue;
   final String progressMessage;
   final VoidCallback onCancel;
+  final String? streamingText;
 
   const GenerationProgressWidget({
     super.key,
     required this.progressValue,
     required this.progressMessage,
     required this.onCancel,
+    this.streamingText,
   });
 
   @override
@@ -116,34 +118,72 @@ class _GenerationProgressWidgetState extends State<GenerationProgressWidget>
             ),
           ),
           SizedBox(height: 3.h),
-          // Shimmer skeleton cards — preview of upcoming workout plan
-          Text(
-            'Preparing your workout plan...',
-            style: theme.textTheme.labelMedium?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-          SizedBox(height: 2.h),
-          AnimatedBuilder(
-            animation: _shimmerAnimation,
-            builder: (context, child) {
-              return Column(
-                children: List.generate(3, (index) {
-                  return Padding(
-                    padding: EdgeInsets.only(bottom: 2.h),
-                    child: Opacity(
-                      opacity: (index == 0)
-                          ? _shimmerAnimation.value
-                          : (index == 1)
-                              ? (_shimmerAnimation.value * 0.85).clamp(0.1, 0.6)
-                              : (_shimmerAnimation.value * 0.7).clamp(0.1, 0.6),
-                      child: _buildSkeletonCard(theme),
+          if (widget.streamingText != null && widget.streamingText!.isNotEmpty)
+            // Live token preview while streaming
+            Container(
+              width: double.infinity,
+              padding: EdgeInsets.all(3.w),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surfaceContainerHighest.withAlpha(180),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: theme.colorScheme.primary.withAlpha(51),
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Generating...',
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: theme.colorScheme.primary,
+                      fontWeight: FontWeight.w600,
                     ),
-                  );
-                }),
-              );
-            },
-          ),
+                  ),
+                  SizedBox(height: 1.h),
+                  Text(
+                    widget.streamingText!,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                      fontFamily: 'monospace',
+                      fontSize: 10.sp,
+                    ),
+                    maxLines: 8,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            )
+          else ...[
+            // Shimmer skeleton cards — shown before streaming starts
+            Text(
+              'Preparing your workout plan...',
+              style: theme.textTheme.labelMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+            SizedBox(height: 2.h),
+            AnimatedBuilder(
+              animation: _shimmerAnimation,
+              builder: (context, child) {
+                return Column(
+                  children: List.generate(3, (index) {
+                    return Padding(
+                      padding: EdgeInsets.only(bottom: 2.h),
+                      child: Opacity(
+                        opacity: (index == 0)
+                            ? _shimmerAnimation.value
+                            : (index == 1)
+                                ? (_shimmerAnimation.value * 0.85).clamp(0.1, 0.6)
+                                : (_shimmerAnimation.value * 0.7).clamp(0.1, 0.6),
+                        child: _buildSkeletonCard(theme),
+                      ),
+                    );
+                  }),
+                );
+              },
+            ),
+          ],
         ],
       ),
     );
