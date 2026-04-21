@@ -1,4 +1,7 @@
+import 'dart:async';
+import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../services/analytics_service.dart';
 import '../services/supabase_service.dart';
 import '../services/app_cache_service.dart';
 
@@ -21,7 +24,9 @@ class AuthService {
         captchaToken: captchaToken,
       ).timeout(const Duration(seconds: 15));
       return response;
-    } catch (error) {
+    } catch (error, stack) {
+      unawaited(Sentry.captureException(error, stackTrace: stack,
+          hint: Hint.withMap({'service': 'AuthService', 'method': 'signUp'})));
       throw Exception('Sign-up failed: $error');
     }
   }
@@ -36,8 +41,14 @@ class AuthService {
         email: email,
         password: password,
       ).timeout(const Duration(seconds: 15));
+      if (response.user != null) {
+        unawaited(
+            AnalyticsService.instance.identify(response.user!.id));
+      }
       return response;
-    } catch (error) {
+    } catch (error, stack) {
+      unawaited(Sentry.captureException(error, stackTrace: stack,
+          hint: Hint.withMap({'service': 'AuthService', 'method': 'signIn'})));
       throw Exception('Sign-in failed: $error');
     }
   }
@@ -46,8 +57,11 @@ class AuthService {
   Future<void> signOut() async {
     try {
       AppCacheService.instance.invalidateAll();
+      unawaited(AnalyticsService.instance.reset());
       await _client.auth.signOut().timeout(const Duration(seconds: 10));
-    } catch (error) {
+    } catch (error, stack) {
+      unawaited(Sentry.captureException(error, stackTrace: stack,
+          hint: Hint.withMap({'service': 'AuthService', 'method': 'signOut'})));
       throw Exception('Sign-out failed: $error');
     }
   }
@@ -77,7 +91,10 @@ class AuthService {
         throw Exception('No authenticated user found');
       }
       await _client.from('user_profiles').update(profileData).eq('id', userId);
-    } catch (error) {
+    } catch (error, stack) {
+      unawaited(Sentry.captureException(error, stackTrace: stack,
+          hint: Hint.withMap(
+              {'service': 'AuthService', 'method': 'updateUserProfile'})));
       throw Exception('Profile update failed: $error');
     }
   }
@@ -96,7 +113,10 @@ class AuthService {
           .maybeSingle()
           .timeout(const Duration(seconds: 10));
       return response;
-    } catch (error) {
+    } catch (error, stack) {
+      unawaited(Sentry.captureException(error, stackTrace: stack,
+          hint: Hint.withMap(
+              {'service': 'AuthService', 'method': 'getUserProfile'})));
       throw Exception('Failed to fetch profile: $error');
     }
   }
@@ -108,7 +128,12 @@ class AuthService {
         type: OtpType.signup,
         email: email,
       ).timeout(const Duration(seconds: 15));
-    } catch (error) {
+    } catch (error, stack) {
+      unawaited(Sentry.captureException(error, stackTrace: stack,
+          hint: Hint.withMap({
+            'service': 'AuthService',
+            'method': 'resendConfirmationEmail'
+          })));
       throw Exception('Resend confirmation failed: $error');
     }
   }
@@ -120,7 +145,10 @@ class AuthService {
           .refreshSession()
           .timeout(const Duration(seconds: 15));
       return response.user;
-    } catch (error) {
+    } catch (error, stack) {
+      unawaited(Sentry.captureException(error, stackTrace: stack,
+          hint: Hint.withMap(
+              {'service': 'AuthService', 'method': 'refreshSession'})));
       throw Exception('Session refresh failed: $error');
     }
   }
@@ -131,7 +159,10 @@ class AuthService {
       await _client.auth
           .resetPasswordForEmail(email)
           .timeout(const Duration(seconds: 15));
-    } catch (error) {
+    } catch (error, stack) {
+      unawaited(Sentry.captureException(error, stackTrace: stack,
+          hint: Hint.withMap(
+              {'service': 'AuthService', 'method': 'resetPassword'})));
       throw Exception('Password reset failed: $error');
     }
   }
@@ -142,7 +173,10 @@ class AuthService {
       await _client.auth
           .updateUser(UserAttributes(password: newPassword))
           .timeout(const Duration(seconds: 15));
-    } catch (error) {
+    } catch (error, stack) {
+      unawaited(Sentry.captureException(error, stackTrace: stack,
+          hint: Hint.withMap(
+              {'service': 'AuthService', 'method': 'updatePassword'})));
       throw Exception('Password update failed: $error');
     }
   }
@@ -153,18 +187,19 @@ class AuthService {
     required String password,
   }) async {
     try {
-      // Re-authenticate first for security
       await _client.auth.signInWithPassword(
         email: email,
         password: password,
       ).timeout(const Duration(seconds: 15));
 
-      // Cascade-delete all user data + auth row
       await _client.rpc('delete_my_account').timeout(const Duration(seconds: 15));
 
       AppCacheService.instance.invalidateAll();
       await _client.auth.signOut().timeout(const Duration(seconds: 10));
-    } catch (error) {
+    } catch (error, stack) {
+      unawaited(Sentry.captureException(error, stackTrace: stack,
+          hint: Hint.withMap(
+              {'service': 'AuthService', 'method': 'deleteAccount'})));
       throw Exception('Account deletion failed: $error');
     }
   }

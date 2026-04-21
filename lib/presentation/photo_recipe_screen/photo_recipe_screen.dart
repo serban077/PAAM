@@ -1,9 +1,11 @@
+import 'dart:async';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:sizer/sizer.dart';
 
 import '../../data/models/smart_recipe_models.dart';
+import '../../services/analytics_service.dart';
 import '../../services/app_cache_service.dart';
 import '../../services/food_recognition_service.dart';
 import '../../services/smart_recipe_service.dart';
@@ -135,6 +137,8 @@ class _PhotoRecipeScreenState extends State<PhotoRecipeScreen> {
         _recipes = result.recipes;
         _isGenerating = false;
       });
+      unawaited(AnalyticsService.instance.track('photo_recipe_generated',
+          {'recipe_count': result.recipes.length}));
     } catch (e) {
       if (!mounted) return;
       setState(() {

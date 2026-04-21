@@ -3,6 +3,7 @@ import 'package:sizer/sizer.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../routes/app_routes.dart';
+import '../../services/analytics_service.dart';
 import '../../services/auth_service.dart';
 import '../../services/biometric_service.dart';
 import '../../services/mfa_service.dart';
@@ -25,6 +26,7 @@ class _SecuritySettingsScreenState extends State<SecuritySettingsScreen> {
   bool _isBiometricEnabled = false;
   bool _isTotpEnabled = false;
   String? _verifiedFactorId;
+  bool _isAnalyticsEnabled = true;
   bool _isLoading = true;
 
   @override
@@ -41,6 +43,7 @@ class _SecuritySettingsScreenState extends State<SecuritySettingsScreen> {
         _biometricService.isBiometricEnabled,
         _mfaService.isTotpEnabled,
         _mfaService.verifiedFactorId,
+        AnalyticsService.instance.isOptedOut(),
       ]);
       if (!mounted) return;
       setState(() {
@@ -48,6 +51,7 @@ class _SecuritySettingsScreenState extends State<SecuritySettingsScreen> {
         _isBiometricEnabled = results[1] as bool;
         _isTotpEnabled = results[2] as bool;
         _verifiedFactorId = results[3] as String?;
+        _isAnalyticsEnabled = !(results[4] as bool);
         _isLoading = false;
       });
     } catch (_) {
@@ -270,6 +274,9 @@ class _SecuritySettingsScreenState extends State<SecuritySettingsScreen> {
                 _SectionHeader(title: 'Sessions'),
                 _buildSessionsCard(scheme),
                 SizedBox(height: 2.h),
+                _SectionHeader(title: 'Analytics'),
+                _buildAnalyticsCard(scheme),
+                SizedBox(height: 2.h),
                 _SectionHeader(title: 'Account'),
                 _buildAccountCard(scheme),
                 SizedBox(height: 4.h),
@@ -447,6 +454,27 @@ class _SecuritySettingsScreenState extends State<SecuritySettingsScreen> {
             onTap: _signOutAllDevices,
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildAnalyticsCard(ColorScheme scheme) {
+    return Card(
+      margin: EdgeInsets.zero,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      child: SwitchListTile(
+        secondary: CustomIconWidget(
+          iconName: 'analytics',
+          color: scheme.primary,
+          size: 22,
+        ),
+        title: const Text('Help improve the app'),
+        subtitle: const Text('Share anonymous usage data'),
+        value: _isAnalyticsEnabled,
+        onChanged: (enabled) async {
+          setState(() => _isAnalyticsEnabled = enabled);
+          await AnalyticsService.instance.setOptOut(!enabled);
+        },
       ),
     );
   }

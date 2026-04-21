@@ -1,8 +1,10 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:sizer/sizer.dart';
 
 import '../../../core/app_export.dart';
 import '../../../routes/app_routes.dart';
+import '../../../services/analytics_service.dart';
 import '../../../services/supabase_service.dart';
 import '../../../services/gemini_ai_service.dart';
 
@@ -291,6 +293,7 @@ class _OnboardingSurveyWidgetState extends State<OnboardingSurveyWidget> {
         if (widget.isEditing) {
           Navigator.pop(context, true); // Return true to indicate update
         } else {
+          unawaited(AnalyticsService.instance.track('onboarding_completed'));
           Navigator.pushReplacementNamed(context, AppRoutes.mainDashboard);
         }
       }

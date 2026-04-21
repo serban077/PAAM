@@ -2,8 +2,11 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:in_app_review/in_app_review.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sizer/sizer.dart';
 
+import '../../services/analytics_service.dart';
 import '../../services/supabase_service.dart';
 import '../../services/workout_service.dart';
 import '../../widgets/custom_icon_widget.dart';
@@ -212,6 +215,10 @@ class _ActiveWorkoutSessionState extends State<ActiveWorkoutSession> {
         setLogs: flatLogs,
       );
 
+      unawaited(AnalyticsService.instance.trackFirstOnce(
+          'first_workout_logged', 'analytics_first_workout_logged'));
+      unawaited(_maybeRequestReview());
+
       if (!mounted) return;
 
       navigator.pushReplacement(
@@ -240,6 +247,44 @@ class _ActiveWorkoutSessionState extends State<ActiveWorkoutSession> {
       messenger.showSnackBar(
         SnackBar(content: Text('Failed to save workout: $e')),
       );
+    }
+  }
+
+  // ── in-app review ─────────────────────────────────────────────────
+
+  Future<void> _maybeRequestReview() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      if (prefs.getBool('review_asked') == true) return;
+
+      final user = SupabaseService.instance.client.auth.currentUser;
+      if (user == null) return;
+      final signupDate = DateTime.tryParse(user.createdAt) ?? DateTime.now();
+      if (DateTime.now().difference(signupDate).inDays < 7) return;
+
+      final count = await _getCompletedWorkoutCount();
+      if (count < 3) return;
+
+      final review = InAppReview.instance;
+      if (await review.isAvailable()) {
+        await review.requestReview();
+        await prefs.setBool('review_asked', true);
+      }
+    } catch (_) {}
+  }
+
+  Future<int> _getCompletedWorkoutCount() async {
+    try {
+      final userId = SupabaseService.instance.client.auth.currentUser?.id;
+      if (userId == null) return 0;
+      final res = await SupabaseService.instance.client
+          .from('workout_logs')
+          .select('id')
+          .eq('user_id', userId)
+          .count();
+      return res.count;
+    } catch (_) {
+      return 0;
     }
   }
 

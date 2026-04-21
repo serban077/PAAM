@@ -1,7 +1,9 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 
 import '../data/models/smart_recipe_models.dart';
 import '_dio_interceptors.dart';
@@ -61,6 +63,7 @@ RULES:
     CancelToken? cancelToken,
   }) async {
     await assertConnected();
+    final txn = Sentry.startTransaction('food-recognition', 'task');
     try {
       final base64Image = base64Encode(imageBytes);
       final client = GeminiAIService().client;
@@ -97,17 +100,25 @@ RULES:
             .map((e) =>
                 DetectedIngredient.fromMap(e as Map<String, dynamic>))
             .toList();
+        txn.status = const SpanStatus.ok();
         return FoodRecognitionResult(
           ingredients: ingredients,
           rawResponse: response.text,
         );
       }
 
+      txn.status = const SpanStatus.ok();
       return const FoodRecognitionResult(ingredients: []);
     } on NetworkOfflineException {
+      txn.status = const SpanStatus.cancelled();
       rethrow;
-    } catch (e) {
+    } catch (e, stack) {
+      txn.status = const SpanStatus.internalError();
+      unawaited(Sentry.captureException(e, stackTrace: stack,
+          hint: Hint.withMap({'service': 'FoodRecognitionService', 'method': 'recognizeIngredients'})));
       throw Exception('Food recognition failed: $e');
+    } finally {
+      await txn.finish();
     }
   }
 }

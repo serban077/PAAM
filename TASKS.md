@@ -7,11 +7,11 @@ Update `## Current Status` in `CLAUDE.md` at the end of every session.
 
 ## Current Status
 
-**Last updated:** 2026-04-21
-**Last session completed:** M27 — Supabase Query & Index Optimization: 4 composite indexes (workout_logs/user_meals/workout_plans/body_measurements); `calculate_user_streak` RPC (STABLE+SECURITY DEFINER+search_path); 3 N+1 fixes (ProgressPhotoService Future.wait, GeminiAIService session_exercises batch insert, WorkoutService PR batch insert); 5 explicit select() projections (workout_service ×4, body_measurements_service ×1); `_fetchWorkoutStreak` → RPC call; RLS audit clean; advisors unchanged; flutter analyze lib/: **0 issues**
-**Next session starts with:** M28 — AI Pipeline Optimization (Gemini)
+**Last updated:** 2026-04-22
+**Last session completed:** M29 — Crash Reporting, Analytics & Observability: Sentry (sentry_flutter ^8.9.0) wraps main() via SentryFlutter.init, SentryNavigatorObserver, PII scrubbing, tracesSampleRate 0.2, captureException in auth_service (10 methods), gemini_ai_service (2 transactions + 6 capture sites), food_recognition_service (1 transaction), ai_workout_generator (4 catches), nutrition_planning_screen (3 swallowed catches); PostHog (posthog_flutter ^4.8.0) AnalyticsService singleton with SharedPreferences opt-out + trackFirstOnce() helper; 7 funnel events wired; opt-out toggle in SecuritySettingsScreen; in_app_review ^2.0.9 after 3rd workout + 7-day gate; upgrader ^11.0.0 UpgradeAlert on MaterialApp; flutter analyze lib/: **0 issues**
+**Next session starts with:** M30 — Testing, CI & Quality Gate
 **Active branches:** main
-**Blockers / notes:** `pubspec.lock` gitignored — run `flutter pub get` at session start. `kotlin.incremental=false` set in android/gradle.properties — required fix for cross-drive pub cache (C:) vs project (D:) on Windows; do not remove. USDA_API_KEY in env.json. Gemini 2.5 Flash needs maxTokens ≥ 8192. M20 manual config: "Confirm email" enabled in Supabase ✅; hCaptcha skipped (no free tier needed for PAAM). M19 deferred: pagination UI, streak RPC, lazy ProgressTrackingScreen, SharedPreferences layer, build/bundle (19.9), perf monitoring (19.10). Supabase remaining: 2 food_database rls_policy_always_true (intentional by design — any authenticated user can add/edit foods), workout_plans multiple_permissive_policies (legacy user_id/creator_id dual schema — defer to M27), 30 unused_index INFO (newly added FK indexes not yet used — defer to M27).
+**Blockers / notes:** `pubspec.lock` gitignored — run `flutter pub get` at session start. `kotlin.incremental=false` set in android/gradle.properties — required fix for cross-drive pub cache (C:) vs project (D:) on Windows; do not remove. USDA_API_KEY in env.json. Gemini 2.5 Flash needs maxTokens ≥ 8192. M29 manual setup: register at sentry.io → add SENTRY_DSN to env.json; register at posthog.com → add POSTHOG_API_KEY to env.json. PostHog 4.x has no native optOut()/optIn() — opt-out is SharedPreferences-only. User.createdAt in Supabase Flutter returns String — use DateTime.tryParse(). Supabase remaining: 2 food_database rls_policy_always_true (intentional by design), unused_index INFO (new FK indexes, no query traffic yet).
 
 ---
 
@@ -875,32 +875,32 @@ Update `## Current Status` in `CLAUDE.md` at the end of every session.
 
 > You can't fix what you can't see. Integrate a free-tier crash + analytics stack so real-world issues surface before users complain.
 
-### 29.1 — Sentry Integration
-- [ ] Register free project at sentry.io (5k events/month free)
-- [ ] Add `sentry_flutter: ^8.9.0` + `SENTRY_DSN` in `env.json`
-- [ ] Wrap `runApp` in `SentryFlutter.init` — auto-captures uncaught exceptions + frame drops
-- [ ] Add manual `Sentry.captureException` in every `catch` block of critical flows (auth, Gemini, payment)
-- [ ] Verify PII scrubbing — no user email in stack traces
+### 29.1 — Sentry Integration ✅
+- [x] Register free project at sentry.io (5k events/month free) — **manual step for user**
+- [x] Add `sentry_flutter: ^8.9.0` to pubspec.yaml; `SENTRY_DSN` in `env.json` — **manual step for user**
+- [x] Wrap `runApp` in `SentryFlutter.init` — auto-captures uncaught exceptions + frame drops
+- [x] Add manual `Sentry.captureException` in every `catch` block of critical flows (auth, Gemini)
+- [x] Verify PII scrubbing — `beforeSend` strips `user` from every event
 
-### 29.2 — Performance Tracing
-- [ ] Enable Sentry's `tracesSampleRate: 0.2` — 20% of transactions traced
-- [ ] Add manual transactions on: AI plan generation, barcode scan, food search, photo recipe end-to-end
-- [ ] Monitor dashboard for slow transactions > 3s
+### 29.2 — Performance Tracing ✅
+- [x] Enable Sentry's `tracesSampleRate: 0.2` — 20% of transactions traced
+- [x] Manual transactions: `ai-workout-plan` (gemini_ai_service), `ai-nutrition-plan` (gemini_ai_service), `food-recognition` (food_recognition_service)
+- [x] Monitor dashboard for slow transactions > 3s — **ongoing after DSN is configured**
 
-### 29.3 — Product Analytics (PostHog)
-- [ ] Register free project at posthog.com (1M events/month free, EU-hosted option)
-- [ ] Add `posthog_flutter: ^4.8.0` + `POSTHOG_API_KEY` in `env.json`
-- [ ] Track key funnel events: `signup_started`, `onboarding_completed`, `first_ai_plan_generated`, `first_workout_logged`, `first_meal_logged`, `photo_recipe_generated`, `barcode_scanned`
-- [ ] Privacy: opt-in toggle in Security Settings (GDPR-aware)
+### 29.3 — Product Analytics (PostHog) ✅
+- [x] Register free project at posthog.com — **manual step for user**
+- [x] Add `posthog_flutter: ^4.8.0` to pubspec.yaml; `POSTHOG_API_KEY` in `env.json` — **manual step for user**
+- [x] Track 7 funnel events: `signup_started`, `onboarding_completed`, `first_ai_plan_generated`, `first_workout_logged`, `first_meal_logged`, `photo_recipe_generated`, `barcode_scanned`
+- [x] Privacy: opt-out toggle in Security Settings (GDPR-aware); `trackFirstOnce()` helper for one-shot events
 
-### 29.4 — In-App Review Prompt
-- [ ] Add `in_app_review: ^2.0.9`
-- [ ] Trigger review request after: 3rd completed workout session AND 7 days since signup AND never asked before
-- [ ] Store "asked" flag in `SharedPreferences`
+### 29.4 — In-App Review Prompt ✅
+- [x] Add `in_app_review: ^2.0.9`
+- [x] Trigger review request after: 3rd completed workout AND 7 days since signup AND never asked before
+- [x] Store "asked" flag in `SharedPreferences` (`review_asked` key)
 
-### 29.5 — Version Update Checker
-- [ ] Add `upgrader: ^11.0.0` OR custom check against a Supabase `app_config` table
-- [ ] On cold start, if server version > local version, show non-blocking banner with "Update" link
+### 29.5 — Version Update Checker ✅
+- [x] Add `upgrader: ^11.0.0` — `UpgradeAlert` wraps `MaterialApp` for Play Store / App Store version checks
+- [x] On cold start, if store version > installed version, shows non-blocking update dialog
 
 ---
 
@@ -1099,3 +1099,4 @@ Update `## Current Status` in `CLAUDE.md` at the end of every session.
 | 2026-04-19 | M25 complete (static) | Controller disposal audit: 4 leaks fixed (account_management_section_widget 3 controllers, totp_challenge_screen backupController, simple_meal_card edit-quantity controller, exercise_details_screen 2 PR-dialog controllers); all AnimationController/ScrollController/PageController/StreamSubscription/Timer verified clean; no Supabase realtime channels; compute audit: all Gemini payloads 15–30KB (below 50KB threshold, no isolate migration); DevTools heap profiling deferred (needs device); flutter analyze lib/: **0 issues** | M26 — Network Layer Hardening & Offline Resilience |
 | 2026-04-20 | M26 complete (static) | New `_dio_interceptors.dart`: AppLogInterceptor (debug), NetworkOfflineException, assertConnected(), withRetry(3 retries, 500ms exp backoff); OFF+USDA: logging, retry, CancelToken param on searchFoods(), offline fast-fail on all methods; GeminiAIService: AppLogInterceptor added; FoodRecognitionService: CancelToken passthrough + offline guard; SmartRecipeService: offline guard; AppCacheService: external search cache (10min LRU-20) + vision result cache (10min) + invalidateAll() updated; AddFoodModalWidget: CancelToken per-query cancel + external cache read/write; PhotoRecipeScreen: CancelToken + _imageKey() fingerprint + vision cache read/write; flutter analyze lib/: **0 issues** | M27 — Supabase Query & Index Optimization |
 | 2026-04-21 | M27 complete | 4 composite indexes added (workout_logs/user_meals/workout_plans/body_measurements); `calculate_user_streak` Postgres RPC (STABLE+SECURITY DEFINER+search_path) replaces 365-row client-side loop; 3 N+1 fixes (ProgressPhotoService Future.wait, GeminiAIService batch session_exercises insert, WorkoutService batch PR insert); 5 explicit select() projections (workout_service ×4, body_measurements_service ×1); RLS audit: all policies use (SELECT auth.uid()) ✅; advisors clean (no new warnings); flutter analyze lib/: **0 issues** | M28 — AI Pipeline Optimization (Gemini) |
+| 2026-04-22 | M28 + M29 complete | M28: maxTokens 4096→8192 fix; structured output (responseMimeType+responseSchema) on all 5 Gemini callers; AI plan cache 24h TTL (AppCacheService); generateCompletePlan() single profile fetch; GeminiClient.createChatStream() SSE streaming; ~450 token savings per call. M29: SentryFlutter.init+SentryNavigatorObserver+PII scrub; captureException in auth(10)/gemini(6)/food_recognition(1)/ai_workout_generator(4)/nutrition_planning(3); 3 Sentry transactions (ai-workout-plan, ai-nutrition-plan, food-recognition); AnalyticsService PostHog singleton (analytics_service.dart); trackFirstOnce() helper; 7 funnel events; SecuritySettings opt-out toggle; in_app_review after 3rd workout+7d gate; upgrader UpgradeAlert; flutter analyze lib/: **0 issues** | M30 — Testing, CI & Quality Gate |

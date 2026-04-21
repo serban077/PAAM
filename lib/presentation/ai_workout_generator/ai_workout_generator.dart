@@ -1,7 +1,10 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:sizer/sizer.dart';
 import 'package:dio/dio.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 
+import '../../services/analytics_service.dart';
 import '../../services/gemini_ai_service.dart';
 import '../../services/supabase_service.dart';
 import './widgets/generation_progress_widget.dart';
@@ -77,14 +80,20 @@ class _AIWorkoutGeneratorState extends State<AIWorkoutGenerator> {
         _isGenerating = false;
         _streamingText = '';
       });
-    } on GeminiException catch (e) {
+      unawaited(AnalyticsService.instance.trackFirstOnce(
+          'first_ai_plan_generated', 'analytics_first_ai_plan_generated'));
+    } on GeminiException catch (e, stack) {
+      unawaited(Sentry.captureException(e, stackTrace: stack,
+          hint: Hint.withMap({'screen': 'AIWorkoutGenerator', 'method': '_generateWorkoutPlan'})));
       setState(() {
         _isGenerating = false;
         _hasError = true;
         _errorMessage = e.message;
         _streamingText = '';
       });
-    } catch (e) {
+    } catch (e, stack) {
+      unawaited(Sentry.captureException(e, stackTrace: stack,
+          hint: Hint.withMap({'screen': 'AIWorkoutGenerator', 'method': '_generateWorkoutPlan'})));
       setState(() {
         _isGenerating = false;
         _hasError = true;
@@ -123,13 +132,17 @@ class _AIWorkoutGeneratorState extends State<AIWorkoutGenerator> {
         _personalizedExercises = exercises;
         _isGenerating = false;
       });
-    } on GeminiException catch (e) {
+    } on GeminiException catch (e, stack) {
+      unawaited(Sentry.captureException(e, stackTrace: stack,
+          hint: Hint.withMap({'screen': 'AIWorkoutGenerator', 'method': '_generatePersonalizedExercises'})));
       setState(() {
         _isGenerating = false;
         _hasError = true;
         _errorMessage = e.message;
       });
-    } catch (e) {
+    } catch (e, stack) {
+      unawaited(Sentry.captureException(e, stackTrace: stack,
+          hint: Hint.withMap({'screen': 'AIWorkoutGenerator', 'method': '_generatePersonalizedExercises'})));
       setState(() {
         _isGenerating = false;
         _hasError = true;

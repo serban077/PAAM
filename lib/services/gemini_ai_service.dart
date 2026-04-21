@@ -1,6 +1,8 @@
+import 'dart:async';
+import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
-import 'dart:convert';
+import 'package:sentry_flutter/sentry_flutter.dart';
 import '../services/supabase_service.dart';
 import '../services/app_cache_service.dart';
 import '../data/verified_exercises_data.dart';
@@ -94,7 +96,9 @@ class GeminiAIService {
       }
 
       return {'profile': profileResponse, 'onboarding': onboardingMap};
-    } catch (e) {
+    } catch (e, stack) {
+      unawaited(Sentry.captureException(e, stackTrace: stack,
+          hint: Hint.withMap({'service': 'GeminiAIService', 'method': 'getUserProfileData'})));
       throw Exception('Failed to fetch user data: $e');
     }
   }
@@ -122,7 +126,9 @@ class GeminiAIService {
     try {
       final exercises = jsonDecode(response.text) as List;
       return exercises.map((e) => e as Map<String, dynamic>).toList();
-    } catch (e) {
+    } catch (e, stack) {
+      unawaited(Sentry.captureException(e, stackTrace: stack,
+          hint: Hint.withMap({'service': 'GeminiAIService', 'method': 'getPersonalizedExercises', 'context': 'json_parse'})));
       throw Exception('Failed to parse exercises: $e');
     }
   }
@@ -142,28 +148,32 @@ class GeminiAIService {
     final cached = AppCacheService.instance.getWorkoutPlan(cacheKey);
     if (cached != null) return cached;
 
-    final prompt = _buildWorkoutPlanPrompt(profile, onboarding);
-
-    final message = Message(role: 'user', content: prompt);
-    final response = await _client!.createChat(
-      messages: [message],
-      model: 'gemini-2.5-flash-lite',
-      temperature: 0.7,
-      maxTokens: 8192,
-      responseMimeType: 'application/json',
-      responseSchema: _workoutPlanSchema,
-    );
-
+    final txn = Sentry.startTransaction('ai-workout-plan', 'task');
     try {
+      final prompt = _buildWorkoutPlanPrompt(profile, onboarding);
+
+      final message = Message(role: 'user', content: prompt);
+      final response = await _client!.createChat(
+        messages: [message],
+        model: 'gemini-2.5-flash-lite',
+        temperature: 0.7,
+        maxTokens: 8192,
+        responseMimeType: 'application/json',
+        responseSchema: _workoutPlanSchema,
+      );
+
       final parsedPlan = jsonDecode(response.text) as Map<String, dynamic>;
-
-      // Enrich exercises with video URLs from verified database
       final enrichedPlan = _enrichPlanWithVideoUrls(parsedPlan);
-
       AppCacheService.instance.setWorkoutPlan(cacheKey, enrichedPlan);
+      txn.status = const SpanStatus.ok();
       return enrichedPlan;
-    } catch (e) {
+    } catch (e, stack) {
+      txn.status = const SpanStatus.internalError();
+      unawaited(Sentry.captureException(e, stackTrace: stack,
+          hint: Hint.withMap({'service': 'GeminiAIService', 'method': 'generateWeeklyWorkoutPlan'})));
       throw Exception('Failed to parse workout plan: $e');
+    } finally {
+      await txn.finish();
     }
   }
 
@@ -320,8 +330,10 @@ class GeminiAIService {
             'is_active': true,
           });
 
-    } catch (e) {
+    } catch (e, stack) {
       debugPrint('Error saving generated plan: $e');
+      unawaited(Sentry.captureException(e, stackTrace: stack,
+          hint: Hint.withMap({'service': 'GeminiAIService', 'method': 'saveGeneratedPlan'})));
       throw Exception('Could not save plan to database: $e');
     }
   }
@@ -428,24 +440,31 @@ class GeminiAIService {
     final cached = AppCacheService.instance.getNutritionPlan(cacheKey);
     if (cached != null) return cached;
 
-    final prompt = _buildNutritionPrompt(profile, onboarding);
-
-    final message = Message(role: 'user', content: prompt);
-    final response = await _client!.createChat(
-      messages: [message],
-      model: 'gemini-2.5-flash-lite',
-      temperature: 0.7,
-      maxTokens: 8192,
-      responseMimeType: 'application/json',
-      responseSchema: _nutritionPlanSchema,
-    );
-
+    final txn = Sentry.startTransaction('ai-nutrition-plan', 'task');
     try {
+      final prompt = _buildNutritionPrompt(profile, onboarding);
+
+      final message = Message(role: 'user', content: prompt);
+      final response = await _client!.createChat(
+        messages: [message],
+        model: 'gemini-2.5-flash-lite',
+        temperature: 0.7,
+        maxTokens: 8192,
+        responseMimeType: 'application/json',
+        responseSchema: _nutritionPlanSchema,
+      );
+
       final plan = jsonDecode(response.text) as Map<String, dynamic>;
       AppCacheService.instance.setNutritionPlan(cacheKey, plan);
+      txn.status = const SpanStatus.ok();
       return plan;
-    } catch (e) {
+    } catch (e, stack) {
+      txn.status = const SpanStatus.internalError();
+      unawaited(Sentry.captureException(e, stackTrace: stack,
+          hint: Hint.withMap({'service': 'GeminiAIService', 'method': 'generateNutritionPlan'})));
       throw Exception('Failed to parse nutrition plan: $e');
+    } finally {
+      await txn.finish();
     }
   }
 
@@ -464,7 +483,9 @@ class GeminiAIService {
         'nutrition_plan': nutritionPlan['nutrition_plan'],
         'notes': nutritionPlan['notes'] ?? 'Plan generat de AI personalizat pentru tine. Consultă medicul înainte de a începe.',
       };
-    } catch (e) {
+    } catch (e, stack) {
+      unawaited(Sentry.captureException(e, stackTrace: stack,
+          hint: Hint.withMap({'service': 'GeminiAIService', 'method': 'generateCompletePlan'})));
       throw Exception('Failed to generate complete plan: $e');
     }
   }
@@ -1049,8 +1070,9 @@ class GeminiClient {
               yield part['text'] as String;
             }
           }
-        } catch (_) {
-          // Malformed SSE chunk — skip silently
+        } catch (e, s) {
+          unawaited(Sentry.captureException(e, stackTrace: s,
+              hint: Hint.withMap({'service': 'GeminiClient', 'method': 'createChatStream', 'context': 'sse_json_parse'})));
         }
       }
     }

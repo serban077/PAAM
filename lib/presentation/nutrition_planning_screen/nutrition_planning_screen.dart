@@ -1,10 +1,13 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:sizer/sizer.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:intl/intl.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 
 import '../../routes/app_routes.dart';
+import '../../services/analytics_service.dart';
 import '../../services/nutrition_service.dart';
 import '../../services/supabase_service.dart';
 import '../../services/app_cache_service.dart';
@@ -105,7 +108,9 @@ class _NutritionPlanningScreenState extends State<NutritionPlanningScreen> {
         _dailyGoal = goal;
         _isLoading = false;
       });
-    } catch (e) {
+    } catch (e, stack) {
+      unawaited(Sentry.captureException(e, stackTrace: stack,
+          hint: Hint.withMap({'screen': 'NutritionPlanningScreen', 'method': '_loadNutritionData'})));
       setState(() => _isLoading = false);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -148,6 +153,8 @@ class _NutritionPlanningScreenState extends State<NutritionPlanningScreen> {
           Navigator.pop(context);
           _cache.invalidateNutrition(_dateKey);
           _loadNutritionData(forceRefresh: true);
+          unawaited(AnalyticsService.instance.trackFirstOnce(
+              'first_meal_logged', 'analytics_first_meal_logged'));
         },
       ),
     );
@@ -181,7 +188,9 @@ class _NutritionPlanningScreenState extends State<NutritionPlanningScreen> {
           ),
         );
       }
-    } catch (e) {
+    } catch (e, stack) {
+      unawaited(Sentry.captureException(e, stackTrace: stack,
+          hint: Hint.withMap({'screen': 'NutritionPlanningScreen', 'method': '_editMealQuantity', 'mealId': mealId})));
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
@@ -198,7 +207,9 @@ class _NutritionPlanningScreenState extends State<NutritionPlanningScreen> {
         _meals.removeWhere((m) => m['id'] == mealId);
         _recalculateTotals();
       });
-    } catch (e) {
+    } catch (e, stack) {
+      unawaited(Sentry.captureException(e, stackTrace: stack,
+          hint: Hint.withMap({'screen': 'NutritionPlanningScreen', 'method': '_deleteMeal', 'mealId': mealId})));
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error deleting meal: $e')),

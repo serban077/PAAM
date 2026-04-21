@@ -43,6 +43,10 @@ dependencies:
   qr_flutter: ^4.1.0
   flutter_secure_storage: ^9.2.2
   webview_flutter: ^4.9.0
+  sentry_flutter: ^8.9.0
+  posthog_flutter: ^4.8.0
+  in_app_review: ^2.0.9
+  upgrader: ^11.0.0
 dev_dependencies:
   flutter_test:    # CRITICAL: Required for Flutter project testing - DO NOT REMOVE
     sdk: flutter   # CRITICAL: Required for Flutter project testing - DO NOT REMOVE

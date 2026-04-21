@@ -1,7 +1,9 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:sizer/sizer.dart';
 
 import '../../../core/app_export.dart';
+import '../../../services/analytics_service.dart';
 import '../../../widgets/password_strength_indicator.dart';
 
 class RegisterFormWidget extends StatefulWidget {
@@ -46,6 +48,7 @@ class _RegisterFormWidgetState extends State<RegisterFormWidget> {
         );
         return;
       }
+      unawaited(AnalyticsService.instance.track('signup_started'));
       widget.onRegister(
         _emailController.text.trim(),
         _passwordController.text,

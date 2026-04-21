@@ -1,8 +1,10 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:sizer/sizer.dart';
 
+import '../../../../services/analytics_service.dart';
 import '../../../../services/open_food_facts_service.dart';
 import '../../../../services/supabase_service.dart';
 import 'product_found_screen.dart';
@@ -124,6 +126,8 @@ class _BarcodeScannerPageState extends State<BarcodeScannerPage>
       // Step 4 — not found anywhere → go to ProductNotFoundScreen so user
       // can contribute the missing product.
       if (food == null) {
+        unawaited(AnalyticsService.instance
+            .track('barcode_scanned', {'found': false}));
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
@@ -134,6 +138,8 @@ class _BarcodeScannerPageState extends State<BarcodeScannerPage>
       }
 
       // Step 5 — found → navigate to full product page (replaces scanner)
+      unawaited(AnalyticsService.instance
+          .track('barcode_scanned', {'found': true}));
       if (!mounted) return;
       Navigator.pushReplacement(
         context,
