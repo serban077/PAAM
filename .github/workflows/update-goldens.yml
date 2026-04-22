@@ -1,0 +1,40 @@
+name: Update Goldens
+
+on:
+  workflow_dispatch:  # manual trigger only
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 'stable'
+          cache: true
+
+      - name: Create env.json stub
+        run: |
+          echo '{
+            "SUPABASE_URL": "https://placeholder.supabase.co",
+            "SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiJ9.placeholder",
+            "GEMINI_API_KEY": "placeholder",
+            "SENTRY_DSN": "",
+            "POSTHOG_API_KEY": "",
+            "USDA_API_KEY": "placeholder",
+            "STRIPE_PUBLISHABLE_KEY": "placeholder"
+          }' > env.json
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Generate golden files
+        run: flutter test test/golden/ --update-goldens
+
+      - name: Commit updated goldens
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "chore: update golden files [skip ci]"
+          file_pattern: "test/golden/goldens/*.png"

@@ -51,4 +51,7 @@ app.*.map.json
 android/app/.cxx
 emv.json
 env.json
-env.json
+
+# Test coverage (generated on demand)
+coverage/
+*.lcov

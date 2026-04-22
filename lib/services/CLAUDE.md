@@ -415,3 +415,18 @@ await service.searchFoods(query, cancelToken: _token);
 | `exercise_db_service.dart` | Free-exercise-db CDN lookup — resolves exercise name to animation frame URLs |
 | `_dio_interceptors.dart` | M26 shared Dio utilities: `AppLogInterceptor` (debug only), `NetworkOfflineException`, `assertConnected()` (throws if offline), `withRetry<T>(fn, maxRetries, baseDelay)` (exp backoff, skips 4xx + cancel) |
 | `analytics_service.dart` | M29 PostHog singleton — `track()`, `trackFirstOnce()`, `identify()`, `reset()`, `setOptOut()`. SharedPreferences-based opt-out. EU-hosted. |
+
+---
+
+## Testing Services (M30)
+
+**Pure-logic services** (no I/O): test directly — no mocks. `CalorieCalculatorService` all-static; `AppCacheService` singleton — call `AppCacheService.instance.invalidateAll()` in `setUp()` to reset between tests.
+
+**Supabase-dependent services** (`AuthService`, `NutritionService`, etc.): field initializers call `SupabaseService.instance.client` at construction, which throws if Supabase is not initialized. Pattern for widget tests that load these screens:
+```dart
+setUpAll(() async {
+  SharedPreferences.setMockInitialValues({});
+  try { await Supabase.initialize(url: 'https://test.supabase.co', anonKey: 'eyJ...placeholder'); } catch (_) {}
+});
+```
+Unit tests for these services are deferred (M30 partial) — require complex mocking of the singleton pattern.

@@ -112,6 +112,46 @@ Keep every file under 300 lines.
 
 ---
 
+---
+
+## TEST & CI REFERENCE (added M30)
+
+### One-time developer setup (run after cloning)
+```bash
+bash scripts/setup-hooks.sh   # installs pre-commit hook at .git/hooks/pre-commit
+```
+
+### Pre-commit hook behavior
+- Runs `flutter analyze lib/ --no-fatal-infos`
+- Runs `dart format --set-exit-if-changed lib/`
+- Blocks commit if either fails. Fix: `dart format lib/` then re-stage.
+
+### Running tests locally
+```bash
+flutter pub get
+flutter test test/unit/              # pure logic — always run before committing
+flutter test test/widget/            # UI tests (needs no device)
+flutter test test/unit/ test/widget/ --coverage   # with lcov report
+# DO NOT run --update-goldens locally (platform mismatch)
+```
+
+### Golden file workflow
+- Goldens are generated on `ubuntu-latest` in CI only.
+- To update goldens: push a commit → go to GitHub → Actions → "Update Goldens" → Run workflow.
+- The action commits new PNGs back to the branch automatically.
+- Locally, `flutter test test/golden/` will FAIL if no PNG files exist — that is expected on Windows.
+
+### CI pipeline (GitHub Actions)
+- Triggers: push + PR to `main`
+- Jobs: `flutter pub get` → `flutter analyze lib/` → unit tests → widget tests → golden tests (continue-on-error) → coverage upload
+- Golden test failures do NOT block CI (pending first-run generation via `update-goldens` workflow).
+
+### Coverage
+- Report generated at `coverage/lcov.info` (gitignored, generated on demand).
+- Targets: services ≥ 40%, overall ≥ 25%.
+
+---
+
 ### STEP 5 — Session summary
 
 ```

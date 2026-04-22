@@ -53,6 +53,8 @@ dev_dependencies:
   flutter_lints: ^5.0.0 # CRITICAL: Required for code quality - DO NOT REMOVE
   flutter_launcher_icons: ^0.14.1
   flutter_native_splash: ^2.4.1
+  mocktail: ^1.0.4
+  coverage: ^1.9.2
 
 flutter_launcher_icons:
   android: "launcher_icon"

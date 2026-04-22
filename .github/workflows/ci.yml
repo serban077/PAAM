@@ -1,0 +1,53 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 'stable'
+          cache: true
+
+      - name: Create env.json stub
+        run: |
+          echo '{
+            "SUPABASE_URL": "https://placeholder.supabase.co",
+            "SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiJ9.placeholder",
+            "GEMINI_API_KEY": "placeholder",
+            "SENTRY_DSN": "",
+            "POSTHOG_API_KEY": "",
+            "USDA_API_KEY": "placeholder",
+            "STRIPE_PUBLISHABLE_KEY": "placeholder"
+          }' > env.json
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Analyze
+        run: flutter analyze lib/ --no-fatal-infos
+
+      - name: Unit tests
+        run: flutter test test/unit/ --coverage
+
+      - name: Widget tests
+        run: flutter test test/widget/ --coverage
+
+      - name: Golden tests (no update)
+        run: flutter test test/golden/ --coverage
+        continue-on-error: true  # goldens must be generated first via update-goldens workflow
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@v4
+        with:
+          files: coverage/lcov.info
+        continue-on-error: true  # don't fail CI if codecov token not configured
