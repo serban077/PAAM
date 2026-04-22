@@ -431,6 +431,17 @@ Shimmer is shown while `_isLoading == true`; replaced with real content on data 
 - `ScaffoldMessenger` captured before `await` gaps in all 3 `onUpdate` callbacks — fixes `use_build_context_synchronously`
 - `_goalDisplay` / `_activityDisplay` static const maps on the state class for badge labels
 
+**M29 Analytics opt-out toggle in SecuritySettingsScreen** (2026-04-22):
+- State field: `bool _isAnalyticsEnabled = true`
+- Load in `_loadState()` via `Future.wait`: `AnalyticsService.instance.isOptedOut().then((v) => !v)`
+- New card section between Sessions and Account — `_buildAnalyticsCard()` returns a `Card` with `SwitchListTile`
+- Toggle calls `AnalyticsService.instance.setOptOut(!value)`
+
+**M29 In-app review + analytics in ActiveWorkoutSession** (2026-04-22):
+- After `saveCompletedWorkout()` succeeds: `trackFirstOnce('first_workout_logged', ...)` then `await _maybeRequestReview()`
+- `_maybeRequestReview()`: guard by `review_asked` prefs flag → 7-day signup age (`DateTime.tryParse(user.createdAt)` — `User.createdAt` is a `String` in Supabase Flutter, not `DateTime`) → `_getCompletedWorkoutCount() >= 3` → `InAppReview.isAvailable()` → `requestReview()` → set flag
+- `_getCompletedWorkoutCount()`: `.from('workout_logs').select('id').eq('user_id', uid).count()` → `.count` int
+
 **M23 Animation & Performance patterns** (2026-04-17):
 - **flutter_animate** replaces hand-rolled `AnimationController` for entrance animations:
   - One-shot entrance: `widget.animate().fade(duration:500.ms).slideY(begin:0.06, end:0)` — plays once on insertion

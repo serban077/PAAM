@@ -291,6 +291,86 @@ Gemini 2.5 Flash (temperature 0.7, maxTokens 8192). 45-second timeout.
 
 ---
 
+## AnalyticsService (M29)
+
+File: `analytics_service.dart` — PostHog product analytics singleton.
+
+```dart
+// Initialize once in main() after Supabase init
+await AnalyticsService.instance.initialize();
+
+// After sign-in
+await AnalyticsService.instance.identify(userId);
+
+// Fire an event (no-op if opted out or not initialized)
+unawaited(AnalyticsService.instance.track('event_name', {'key': value}));
+
+// Fire once per lifetime (SharedPreferences flag guard)
+unawaited(AnalyticsService.instance.trackFirstOnce(
+  'first_ai_plan_generated',
+  'analytics_first_ai_plan_generated',
+));
+
+// On sign-out
+await AnalyticsService.instance.reset();
+
+// Opt-out (SecuritySettingsScreen toggle)
+await AnalyticsService.instance.setOptOut(true);
+```
+
+**PostHog 4.x gotchas:**
+- No native `optOut()` / `optIn()` methods — opt-out is SharedPreferences-only (`_isOptedOut` bool checked before every `track()` call)
+- EU-hosted: `https://eu.posthog.com` (GDPR-friendly)
+- API key: `const String.fromEnvironment('POSTHOG_API_KEY')`
+
+**7 tracked funnel events:**
+
+| Event | File | Trigger |
+|---|---|---|
+| `signup_started` | `register_form_widget.dart` | Form submit tap |
+| `onboarding_completed` | `onboarding_survey_widget.dart` | After `_saveOnboardingData()` |
+| `first_ai_plan_generated` | `ai_workout_generator.dart` | After plan saved; fires once via `trackFirstOnce` |
+| `first_workout_logged` | `active_workout_session.dart` | After `saveCompletedWorkout()`; fires once |
+| `first_meal_logged` | `nutrition_planning_screen.dart` | After first `logMeal()`; fires once |
+| `photo_recipe_generated` | `photo_recipe_screen.dart` | After recipes step loads; every use |
+| `barcode_scanned` | `barcode_scanner_page.dart` | After barcode resolved (found or not found) |
+
+---
+
+## Sentry Patterns (M29)
+
+```dart
+import 'dart:async';
+import 'package:sentry_flutter/sentry_flutter.dart';
+
+// In catch blocks — always capture stack trace
+} catch (e, stack) {
+  unawaited(Sentry.captureException(e, stackTrace: stack,
+      hint: Hint.withMap({'service': 'MyService', 'method': 'methodName'})));
+  rethrow; // or setState error
+}
+
+// Performance transaction around a slow operation
+final txn = Sentry.startTransaction('operation-name', 'task');
+try {
+  // ... do work ...
+  txn.status = const SpanStatus.ok();
+  return result;
+} catch (e, stack) {
+  txn.status = const SpanStatus.internalError();
+  unawaited(Sentry.captureException(e, stackTrace: stack));
+  rethrow;
+} finally {
+  await txn.finish();
+}
+```
+
+Active transactions: `ai-workout-plan` (gemini_ai_service), `ai-nutrition-plan` (gemini_ai_service), `food-recognition` (food_recognition_service).
+
+PII scrubbing: `beforeSend` in `main.dart` strips `user` from every event — no email/identity in Sentry.
+
+---
+
 ## Network Resilience Patterns (M26)
 
 All external HTTP services (`OpenFoodFactsService`, `UsdaFoodService`, `FoodRecognitionService`, `SmartRecipeService`) now share utilities from `_dio_interceptors.dart`:
@@ -334,3 +414,4 @@ await service.searchFoods(query, cancelToken: _token);
 | `app_cache_service.dart` | In-memory TTL cache singleton (M19/M26). profile (5min), streak (10min), nutrition (5min), exercise (30min), measurements (5min), PRs (5min), food search LRU (3min/20), external search LRU (10min/20), vision result (10min), contributions (5min). Call `invalidateAll()` on sign-out. |
 | `exercise_db_service.dart` | Free-exercise-db CDN lookup — resolves exercise name to animation frame URLs |
 | `_dio_interceptors.dart` | M26 shared Dio utilities: `AppLogInterceptor` (debug only), `NetworkOfflineException`, `assertConnected()` (throws if offline), `withRetry<T>(fn, maxRetries, baseDelay)` (exp backoff, skips 4xx + cancel) |
+| `analytics_service.dart` | M29 PostHog singleton — `track()`, `trackFirstOnce()`, `identify()`, `reset()`, `setOptOut()`. SharedPreferences-based opt-out. EU-hosted. |
