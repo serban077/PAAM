@@ -67,7 +67,8 @@ class GeminiAIService {
         modelId.startsWith('imagen-') ||
         modelId.contains('image-preview') ||
         modelId.contains('tts') ||
-        modelId.contains('live');
+        modelId.contains('live') ||
+        modelId.startsWith('gemini-3'); // v1 only serves stable 2.x releases
   }
 
   GeminiClient get client {
@@ -117,7 +118,7 @@ class GeminiAIService {
     final message = Message(role: 'user', content: prompt);
     final response = await _client!.createChat(
       messages: [message],
-      model: 'gemini-2.5-flash-lite',
+      model: 'gemini-3.1-flash-lite',
       temperature: 0.7,
       maxTokens: 8192,
       responseMimeType: 'application/json',
@@ -155,7 +156,7 @@ class GeminiAIService {
       final message = Message(role: 'user', content: prompt);
       final response = await _client!.createChat(
         messages: [message],
-        model: 'gemini-2.5-flash-lite',
+        model: 'gemini-3.1-flash-lite',
         temperature: 0.7,
         maxTokens: 8192,
         responseMimeType: 'application/json',
@@ -447,7 +448,7 @@ class GeminiAIService {
       final message = Message(role: 'user', content: prompt);
       final response = await _client!.createChat(
         messages: [message],
-        model: 'gemini-2.5-flash-lite',
+        model: 'gemini-3.1-flash-lite',
         temperature: 0.7,
         maxTokens: 8192,
         responseMimeType: 'application/json',
@@ -594,7 +595,7 @@ class GeminiAIService {
 
     yield* _client!.createChatStream(
       messages: [Message(role: 'user', content: prompt)],
-      model: 'gemini-2.5-flash-lite',
+      model: 'gemini-3.1-flash-lite',
       temperature: 0.7,
       maxTokens: 8192,
       responseMimeType: 'application/json',
@@ -1008,7 +1009,7 @@ class GeminiClient {
   /// Does NOT retry on mid-stream failures (unlike [createChat]).
   Stream<String> createChatStream({
     required List<Message> messages,
-    String model = 'gemini-2.5-flash-lite',
+    String model = 'gemini-3.1-flash-lite',
     int maxTokens = 8192,
     double temperature = 1.0,
     String? responseMimeType,

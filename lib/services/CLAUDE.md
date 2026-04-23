@@ -82,19 +82,22 @@ Gemini API key: `const String.fromEnvironment('GEMINI_API_KEY')`
 
 **SDK decision (M28):** No migration to `google_generative_ai` package. Custom `GeminiClient` is sufficient — it already has retry, cancel, v1beta routing, thinking-part filtering, and structured output via `generationConfig`.
 
-**M28 Model assignments:**
+**M32 Model assignments:**
 
 | Call | Model | maxTokens |
 |---|---|---|
-| `generateWeeklyWorkoutPlan` | gemini-2.5-flash-lite | 8192 |
-| `generateNutritionPlan` | gemini-2.5-flash-lite | 8192 |
-| `getPersonalizedExercises` | gemini-2.5-flash-lite | 8192 |
-| `FoodRecognitionService.recognizeIngredients` | gemini-2.5-flash | 2048 |
-| `SmartRecipeService.generateRecipes` | gemini-2.5-flash | 8192 |
-| `GeminiNutritionLabelService` text path | gemini-2.5-flash-lite | 4096 |
-| `GeminiNutritionLabelService` vision fallback | gemini-2.5-flash | 4096 |
+| `generateWeeklyWorkoutPlan` | gemini-3.1-flash-lite | 8192 |
+| `generateNutritionPlan` | gemini-3.1-flash-lite | 8192 |
+| `getPersonalizedExercises` | gemini-3.1-flash-lite | 8192 |
+| `streamWeeklyWorkoutPlan` / `createChatStream` default | gemini-3.1-flash-lite | 8192 |
+| `FoodRecognitionService.recognizeIngredients` | gemini-3-flash | 2048 |
+| `SmartRecipeService.generateRecipes` | gemini-3-flash | 8192 |
+| `GeminiNutritionLabelService` text path | gemini-3.1-flash-lite | 4096 |
+| `GeminiNutritionLabelService` vision fallback | gemini-3-flash | 4096 |
 
-Flash-Lite is ~5× cheaper per token than Flash. Flash-Lite is NOT available for multimodal (image) calls — always use Flash for those.
+Flash-Lite is ~5× cheaper per token than Flash and has a 500 RPD tier vs Flash's 20 RPD. Flash-Lite is NOT suitable for multimodal (image) calls — always use Flash for those.
+
+**Gemini 3.x endpoint routing (M32):** `_requiresV1Beta` now matches `modelId.startsWith('gemini-3')` — all 3.x models (and future 3.1-pro, etc.) route through `/v1beta` automatically. The v1 endpoint only serves stable 2.x releases. Adding new 3.x model strings does not require any call-site change.
 
 ---
 
@@ -257,11 +260,11 @@ Must stay in sync in 3 places: Supabase RPC `calculate_daily_nutrition_totals`, 
 
 ---
 
-## FoodRecognitionService (M18)
+## FoodRecognitionService (M18, rewritten M32)
 
 File: `food_recognition_service.dart` — Gemini Vision ingredient detection from food photos.
 
-Singleton. Sends base64-encoded image to Gemini 2.5 Flash (temperature 0.1, maxTokens 8192).
+Singleton. Sends base64-encoded image to Gemini 3 Flash (temperature 0.1, maxTokens 2048).
 
 ```dart
 final result = await FoodRecognitionService().recognizeIngredients(
@@ -271,23 +274,37 @@ final result = await FoodRecognitionService().recognizeIngredients(
 // result.ingredients → List<DetectedIngredient>
 ```
 
-45-second timeout. Throws `NetworkOfflineException` when offline. Strips markdown code fences before JSON parse.
+45-second timeout. Throws `NetworkOfflineException` when offline.
 Categories: `protein`, `carb`, `fat`, `vegetable`, `fruit`, `dairy`, `condiment`.
+
+**Prompt source (M32):** assembled from `kFoodRecognitionPrompt` in `_ai_prompts.dart` — do NOT inline the prompt text. The prompt is split into atomic documentation sections (ROLE / TASK / OUTPUT FIELD SPEC / IDENTIFICATION RULES / QUANTITY ESTIMATION TABLE / AMBIGUITY PROTOCOL / CATEGORY MAPPING / FEW-SHOT EXAMPLES) so the model does one thing per section.
 
 ---
 
-## SmartRecipeService (M18)
+## SmartRecipeService (M18, rewritten M32)
 
 File: `smart_recipe_service.dart` — AI recipe generation from detected ingredients.
 
-Singleton. Generates 3–5 recipes; fetches user TDEE (best-effort, works without profile). Throws `NetworkOfflineException` when offline (M26).
+Singleton. Generates up to 3 recipes; `_fetchUserContext` pulls `daily_calorie_goal` + `fitness_goal` + `dietary_preference` from `user_profiles` (best-effort — works without profile). Throws `NetworkOfflineException` when offline (M26).
 
 ```dart
 final result = await SmartRecipeService().generateRecipes(ingredients);
 // result.recipes → List<GeneratedRecipe>
 ```
 
-Gemini 2.5 Flash (temperature 0.7, maxTokens 8192). 45-second timeout.
+Gemini 3 Flash (temperature 0.7, maxTokens 8192). 120-second timeout.
+
+**Prompt source (M32):** prompt is built by `buildRecipePrompt()` in `_ai_prompts.dart` — do NOT inline policy. The prompt enforces:
+- Hard per-serving constraints (`RecipeConstraints`): protein ≥ 25g (35g muscle_gain), fat ≤ 20g (25g muscle_gain), sat fat ≤ 5g, added sugar ≤ 10g, sodium ≤ 600mg, fiber ≥ 5g
+- Ingredient blocklist (`kBlockedIngredients`)
+- Per-100g macro guards (`kMacroGuardsPer100g`)
+- Preferred sources bias (`kPreferredSources`)
+- Taste boosters (`kTasteBoosters`) — methods never include deep-frying
+- Dietary overrides (vegan / vegetarian / gluten_free / dairy_free)
+
+Recipe names / descriptions / steps are emitted in Romanian; ingredient names stay lowercase English to match `DetectedIngredient.name`.
+
+**Extended schema (M32):** every recipe additionally returns `warning` (nullable string), `macro_compliance` (bool, true iff every hard constraint passed), `blocklisted_ingredients_skipped` (array of blocked items the client had but were refused), `protein_density` (g protein per 100 kcal). Consumed by `GeneratedRecipe.fromMap` with safe defaults; UI surface deferred to M33.
 
 ---
 
@@ -414,6 +431,7 @@ await service.searchFoods(query, cancelToken: _token);
 | `app_cache_service.dart` | In-memory TTL cache singleton (M19/M26). profile (5min), streak (10min), nutrition (5min), exercise (30min), measurements (5min), PRs (5min), food search LRU (3min/20), external search LRU (10min/20), vision result (10min), contributions (5min). Call `invalidateAll()` on sign-out. |
 | `exercise_db_service.dart` | Free-exercise-db CDN lookup — resolves exercise name to animation frame URLs |
 | `_dio_interceptors.dart` | M26 shared Dio utilities: `AppLogInterceptor` (debug only), `NetworkOfflineException`, `assertConnected()` (throws if offline), `withRetry<T>(fn, maxRetries, baseDelay)` (exp backoff, skips 4xx + cancel) |
+| `_ai_prompts.dart` | M32 shared AI policy constants + prompt fragments: `kBlockedIngredients`, `kMacroGuardsPer100g`, `kPreferredSources`, `kTasteBoosters`, `kQuantityReferenceG`, `RecipeConstraints`, `kFoodRecognitionPrompt`, `buildRecipePrompt({ingredientLines, macroContext, fitnessGoal, dietaryPreference})`. Single source of truth — update here, never inline in callers. |
 | `analytics_service.dart` | M29 PostHog singleton — `track()`, `trackFirstOnce()`, `identify()`, `reset()`, `setOptOut()`. SharedPreferences-based opt-out. EU-hosted. |
 
 ---

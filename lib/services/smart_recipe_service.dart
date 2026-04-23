@@ -1,12 +1,14 @@
 import 'dart:convert';
 
 import '../data/models/smart_recipe_models.dart';
+import '_ai_prompts.dart';
 import '_dio_interceptors.dart';
 import 'gemini_ai_service.dart';
 import 'supabase_service.dart';
 
 /// Generates protein-rich recipes from a list of detected ingredients using
-/// Gemini AI, incorporating the user's daily macro targets.
+/// Gemini AI, with nutrition policy (blocklist, macro guards, preferred
+/// sources) centralized in [lib/services/_ai_prompts.dart].
 class SmartRecipeService {
   static final SmartRecipeService _instance = SmartRecipeService._internal();
 
@@ -48,37 +50,48 @@ class SmartRecipeService {
           },
           'required': ['calories', 'protein_g', 'carbs_g', 'fat_g'],
         },
+        'warning': {'type': 'STRING', 'nullable': true},
+        'macro_compliance': {'type': 'BOOLEAN'},
+        'blocklisted_ingredients_skipped': {
+          'type': 'ARRAY',
+          'items': {'type': 'STRING'},
+        },
+        'protein_density': {'type': 'NUMBER'},
       },
       'required': [
         'name', 'description', 'prep_time_minutes', 'cook_time_minutes',
         'servings', 'difficulty', 'ingredients', 'steps', 'macros_per_serving',
+        'macro_compliance', 'blocklisted_ingredients_skipped',
+        'protein_density',
       ],
     },
   };
 
-  /// Generates 3-5 diverse recipes using ONLY the provided ingredients.
+  /// Generates up to 3 diverse recipes using ONLY the provided ingredients.
   ///
-  /// Fetches the user's daily calorie/macro targets from Supabase and includes
-  /// them in the prompt so recipes align with the user's goals.
+  /// Fetches the user's daily calorie/macro targets, fitness_goal, and
+  /// dietary_preference from Supabase and injects them into the prompt so
+  /// recipes align with the user's goals and the nutrition policy in
+  /// [_ai_prompts.dart].
   Future<RecipeGenerationResult> generateRecipes(
     List<DetectedIngredient> ingredients,
   ) async {
     await assertConnected();
     try {
-      // Build ingredient list string
       final ingredientLines = ingredients
-          .map((i) => '- ${i.name}: ~${i.estimatedQuantityG.round()}g (${i.category})')
+          .map((i) =>
+              '- ${i.name}: ~${i.estimatedQuantityG.round()}g (${i.category})')
           .join('\n');
 
-      // Fetch user macro targets (best-effort — works without them)
-      String macroContext = '';
-      try {
-        macroContext = await _fetchUserMacroContext();
-      } catch (_) {
-        // Proceed without macro targets
-      }
+      // Best-effort user context — prompt still works with defaults.
+      final ctx = await _fetchUserContext();
 
-      final prompt = _buildPrompt(ingredientLines, macroContext);
+      final prompt = buildRecipePrompt(
+        ingredientLines: ingredientLines,
+        macroContext: ctx.macroContext,
+        fitnessGoal: ctx.fitnessGoal,
+        dietaryPreference: ctx.dietaryPreference,
+      );
 
       final client = GeminiAIService().client;
       final response = await client
@@ -86,7 +99,7 @@ class SmartRecipeService {
             messages: [
               Message(role: 'user', content: prompt),
             ],
-            model: 'gemini-2.5-flash',
+            model: 'gemini-3-flash',
             temperature: 0.7,
             maxTokens: 8192,
             responseMimeType: 'application/json',
@@ -119,39 +132,52 @@ class SmartRecipeService {
     }
   }
 
-  Future<String> _fetchUserMacroContext() async {
+  Future<_UserRecipeContext> _fetchUserContext() async {
+    const fallback = _UserRecipeContext(
+      macroContext: '',
+      fitnessGoal: 'general_fitness',
+      dietaryPreference: 'normal',
+    );
+
     final userId = SupabaseService.instance.client.auth.currentUser?.id;
-    if (userId == null) return '';
+    if (userId == null) return fallback;
 
-    final profile = await SupabaseService.instance.client
-        .from('user_profiles')
-        .select('daily_calorie_goal')
-        .eq('id', userId)
-        .maybeSingle()
-        .timeout(const Duration(seconds: 10));
+    try {
+      final profile = await SupabaseService.instance.client
+          .from('user_profiles')
+          .select('daily_calorie_goal, fitness_goal, dietary_preference')
+          .eq('id', userId)
+          .maybeSingle()
+          .timeout(const Duration(seconds: 10));
 
-    if (profile == null) return '';
+      if (profile == null) return fallback;
 
-    final calorieGoal = profile['daily_calorie_goal'] ?? 2000;
-    final proteinG = (calorieGoal * 0.30 / 4).round();
-    final carbsG = (calorieGoal * 0.40 / 4).round();
-    final fatG = (calorieGoal * 0.30 / 9).round();
+      final calorieGoal = profile['daily_calorie_goal'] ?? 2000;
+      final proteinG = (calorieGoal * 0.30 / 4).round();
+      final carbsG = (calorieGoal * 0.40 / 4).round();
+      final fatG = (calorieGoal * 0.30 / 9).round();
 
-    return '\nUser\'s daily targets: $calorieGoal kcal, ${proteinG}g protein, ${carbsG}g carbs, ${fatG}g fat.';
+      return _UserRecipeContext(
+        macroContext:
+            "User's daily targets: $calorieGoal kcal, ${proteinG}g protein, ${carbsG}g carbs, ${fatG}g fat.",
+        fitnessGoal: profile['fitness_goal']?.toString() ?? 'general_fitness',
+        dietaryPreference:
+            profile['dietary_preference']?.toString() ?? 'normal',
+      );
+    } catch (_) {
+      return fallback;
+    }
   }
+}
 
-  String _buildPrompt(String ingredientLines, String macroContext) {
-    return '''
-You are a chef and nutritionist. Generate exactly 3 recipes using ONLY these ingredients:
+class _UserRecipeContext {
+  final String macroContext;
+  final String fitnessGoal;
+  final String dietaryPreference;
 
-$ingredientLines
-$macroContext
-
-RULES:
-1. Use ONLY listed ingredients (water, salt, pepper, oil are assumed available).
-2. Each recipe uses a subset — not all ingredients required.
-3. Prioritize high-protein. Keep steps short (max 5 steps per recipe).
-4. "difficulty": "easy", "medium", or "hard".
-''';
-  }
+  const _UserRecipeContext({
+    required this.macroContext,
+    required this.fitnessGoal,
+    required this.dietaryPreference,
+  });
 }

@@ -8,8 +8,8 @@ Update `## Current Status` in `CLAUDE.md` at the end of every session.
 ## Current Status
 
 **Last updated:** 2026-04-23
-**Last session completed:** M31 — Build, Bundle & Startup Optimization: startup parallelized via Future.wait (initializeDateFormatting+SupabaseService.initialize+ThemeService.init concurrent); FlutterDisplayMode+AnalyticsService deferred to addPostFrameCallback; GoogleFonts.roboto→GoogleFonts.inter for label styles (Roboto removed, ~200KB saved); ProGuard rules added for local_auth+flutter_secure_storage; release build flags documented in SESSION_WORKFLOW.md (--split-per-abi/--split-debug-info/--obfuscate/--analyze-size); flutter analyze lib/: **0 issues**; flutter test: **79/79 passed**
-**Next session starts with:** M32 — Accessibility & Final Polish
+**Last session completed:** M32 — AI Food Recognition & Recipe Generation Overhaul: swapped to gemini-3.1-flash-lite (workout/nutrition/exercises/streaming/nutrition-label text) and gemini-3-flash (food recognition vision + recipe generation + nutrition-label vision fallback); `_requiresV1Beta` now routes all `gemini-3*` to `/v1beta`; new `lib/services/_ai_prompts.dart` centralizes blocklist/macro-guards/preferred-sources/taste-boosters/quantity-table + `RecipeConstraints` + `buildRecipePrompt()`; food recognition prompt restructured into documentation sections (ROLE/TASK/SPEC/RULES/TABLE/AMBIGUITY/CATEGORIES/EXAMPLES); recipe prompt adds hard per-serving constraints, ingredient blocklist, macro guards, preferred sources, dietary overrides, failure modes; `GeneratedRecipe` schema + model extended with `warning`/`macro_compliance`/`blocklisted_ingredients_skipped`/`protein_density`; flutter analyze lib/: **0 issues**; flutter test: **79/79 passed**
+**Next session starts with:** M33 — Accessibility & Final Polish
 **Active branches:** main
 **Blockers / notes:** `pubspec.lock` gitignored — run `flutter pub get` at session start. `kotlin.incremental=false` android/gradle.properties required for cross-drive Windows build. M31 deferred: `flutter run --trace-startup --profile` cold-start measurement (needs physical device); deferred component loading evaluation. M30 deferred still open: OnboardingSurveyScreen/NutritionPlanningScreen widget tests, Patrol integration tests, AuthService/NutritionService unit tests.
 
@@ -989,65 +989,137 @@ Update `## Current Status` in `CLAUDE.md` at the end of every session.
 
 ---
 
-## Milestone 32 — Accessibility & Final Polish
+## Milestone 32 — AI Food Recognition & Recipe Generation Overhaul
+
+> Swap to newer Gemini models, split prompts into documentation-style atomic sections, and enforce nutrition policy (blocklist, macro guards, preferred sources) derived from the MDM Chișinău 2019 nutrition guide. Recipes must now self-report compliance.
+
+### 32.1 — Model Swap Across AI Services
+- [x] `GeminiAIService.generateWeeklyWorkoutPlan` → `gemini-3.1-flash-lite`
+- [x] `GeminiAIService.generateNutritionPlan` → `gemini-3.1-flash-lite`
+- [x] `GeminiAIService.getPersonalizedExercises` → `gemini-3.1-flash-lite`
+- [x] `GeminiAIService.streamWeeklyWorkoutPlan` → `gemini-3.1-flash-lite`
+- [x] `GeminiClient.createChatStream` default → `gemini-3.1-flash-lite`
+- [x] `FoodRecognitionService.recognizeIngredients` → `gemini-3-flash`
+- [x] `SmartRecipeService.generateRecipes` → `gemini-3-flash`
+- [x] `GeminiNutritionLabelService` text path → `gemini-3.1-flash-lite`
+- [x] `GeminiNutritionLabelService` vision fallback → `gemini-3-flash`
+- [x] Extend `_requiresV1Beta` predicate to match `gemini-3*` prefix (v1 serves only stable 2.x releases)
+
+### 32.2 — Centralize Nutrition Policy
+- [x] New file `lib/services/_ai_prompts.dart` with:
+  - [x] `kBlockedIngredients` — processed sugar, bad fats, processed meat, bad dairy, sugary sauces, ultra-processed snacks, refined grains (full list)
+  - [x] `kMacroGuardsPer100g` — per-100g skip thresholds (sauce sugar, dairy sugar, snack sat fat, snack sugar, processed meat sodium, trans fat)
+  - [x] `kPreferredSources` — lean protein, fatty fish, plant protein, whole carbs, healthy fats, vegetables, fruits
+  - [x] `kTasteBoosters` — herbs, spices, umami/acid, cooking techniques
+  - [x] `kQuantityReferenceG` — Vision anchors (jar ~400g, egg carton ~600g, etc.)
+  - [x] `RecipeConstraints` class — minProteinG=25 (35 for muscle_gain), maxFatG=20 (25 for muscle_gain), maxSatFatG=5, maxAddedSugarG=10, maxSodiumMg=600, minFiberG=5
+
+### 32.3 — Food Recognition Prompt Rewrite (documentation style)
+- [x] `kFoodRecognitionPrompt` const with sections:
+  - [x] ROLE — one-line identity
+  - [x] TASK — single atomic instruction
+  - [x] OUTPUT FIELD SPEC — name / estimated_quantity_g / category with examples
+  - [x] IDENTIFICATION RULES — read labels, merge duplicates, skip non-food
+  - [x] QUANTITY ESTIMATION TABLE — anchor weights
+  - [x] AMBIGUITY PROTOCOL — what to do when uncertain
+  - [x] CATEGORY MAPPING — explicit food→category mapping
+  - [x] FEW-SHOT EXAMPLES — 2 contrasting examples (full fridge + empty shelf)
+- [x] `food_recognition_service.dart` imports `_ai_prompts.dart` and aliases `_prompt = kFoodRecognitionPrompt`
+
+### 32.4 — Recipe Generation Prompt Rewrite (hard constraints)
+- [x] Prompt sections in `_ai_prompts.dart`:
+  - [x] ROLE + TASK (Romanian output language explicitly required)
+  - [x] USER CONTEXT (ingredients, macro targets, fitness_goal, dietary_preference)
+  - [x] HARD CONSTRAINTS per serving — protein min/max, fat min/max, sat fat, sugar, sodium, fiber
+  - [x] INGREDIENT BLOCKLIST — from `kBlockedIngredients`
+  - [x] MACRO GUARDS — from `kMacroGuardsPer100g`
+  - [x] PREFERRED SOURCES — from `kPreferredSources`
+  - [x] TASTE BOOSTERS — from `kTasteBoosters`
+  - [x] DIETARY OVERRIDES — vegan/vegetarian/gluten_free/dairy_free
+  - [x] FAILURE MODES — explicit self-check rules
+- [x] `buildRecipePrompt()` stitches sections + user context
+- [x] `smart_recipe_service.dart._fetchUserContext` now returns a 3-tuple (macro context, fitness_goal, dietary_preference) instead of just a string
+
+### 32.5 — Extended Recipe Schema
+- [x] Gemini `_recipeSchema` adds `warning` (STRING nullable), `macro_compliance` (BOOLEAN), `blocklisted_ingredients_skipped` (ARRAY<STRING>), `protein_density` (NUMBER)
+- [x] `required` list updated (warning stays optional)
+- [x] `GeneratedRecipe` model gains `warning` / `macroCompliance` / `blocklistedIngredientsSkipped` / `proteinDensity` with safe defaults in `fromMap`
+- [x] `toMap` round-trips every new field
+- [ ] UI surface for `warning` + skipped-ingredients in recipe detail — **deferred to M33**
+
+### 32.6 — Verification & Documentation
+- [x] `flutter analyze lib/` → 0 issues
+- [x] `flutter test test/unit/ test/widget/` → 79/79 passed
+- [x] Update `lib/services/CLAUDE.md` model-assignments table (M28 → M32) and service inventory
+- [x] Update root `CLAUDE.md` last session + next session markers
+- [x] Commit as `feat(m32): AI food recognition & recipe generation overhaul`
+
+---
+
+## Milestone 33 — Accessibility & Final Polish
 
 > Make the app usable by everyone (TalkBack, VoiceOver, larger touch targets, sufficient contrast) and apply the last round of visual polish before regression.
 
-### 32.1 — Semantics Labels
+### 33.1 — Semantics Labels
 - [ ] Every icon-only `IconButton` → add `tooltip` + `Semantics(label: ...)`
 - [ ] Every `GestureDetector` with no visible text → add semantic label
 - [ ] Run with screen reader on 1 happy path (login → dashboard → add meal)
 
-### 32.2 — Touch Target Audit
+### 33.2 — Touch Target Audit
 - [ ] Verify every tappable region ≥ 48×48 logical pixels (Material guideline)
 - [ ] Automated check via `flutter_test` semantics assertions
 
-### 32.3 — Contrast & Color
+### 33.3 — Contrast & Color
 - [ ] Run every text + background combo through WCAG AA checker (4.5:1 normal text, 3:1 large text)
 - [ ] Fix any failure in `app_theme.dart` (both light + dark per CLAUDE.md rule)
 
-### 32.4 — Dynamic Text Scale (selective)
+### 33.4 — Dynamic Text Scale (selective)
 - [ ] CLAUDE.md locks `textScaler: 1.0` — confirmed correct for this project
 - [ ] But: allow scale **only inside specific screens** where layout can handle it (ExerciseDetail, Settings) via localized `MediaQuery` override — evaluate per screen
 
-### 32.5 — Haptic Consistency
+### 33.5 — Haptic Consistency
 - [ ] Audit every primary action → ensure `HapticFeedback.lightImpact()` on success, `mediumImpact()` on destructive confirm
 
-### 32.6 — Dark Mode Visual Pass
+### 33.6 — Dark Mode Visual Pass
 - [ ] Screenshot every screen in dark mode → fix any hardcoded color that slipped through
 - [ ] Fix any `Colors.white` / `Colors.black` literal — use theme tokens
 
+### 33.7 — Recipe Compliance UI Surface (from M32)
+- [ ] Surface `warning` on recipe detail card when `macro_compliance == false`
+- [ ] Show `blocklisted_ingredients_skipped` as a "skipped for health" chip list on recipe detail
+- [ ] Show `protein_density` near the protein macro chip
+
 ---
 
-## Milestone 33 — Regression, Smoke Test & Release Readiness
+## Milestone 34 — Regression, Smoke Test & Release Readiness
 
 > The final milestone before release. Re-run every measurement from M22, walk through every user flow manually, sign a checklist.
 
-### 33.1 — Baseline Re-measurement
+### 34.1 — Baseline Re-measurement
 - [ ] Re-run all metrics from M22.1–M22.4
 - [ ] Produce `docs/AUDIT_RESULTS.md` — side-by-side: baseline → final. Commit only if every metric is better or unchanged.
 
-### 33.2 — End-to-End Manual Walkthrough
+### 34.2 — End-to-End Manual Walkthrough
 - [ ] Signup → email verification → onboarding → first AI plan → first workout → first meal → progress photo → security settings → signout
 - [ ] Record any UX rough edge in `docs/SMOKE_TEST.md` (table format: screen / issue / severity / fixed?)
 
-### 33.3 — Device Matrix
+### 34.3 — Device Matrix
 - [ ] Test on 1 low-end Android (< 3GB RAM)
 - [ ] Test on 1 mid-range Android (90/120Hz display)
 - [ ] Test on 1 iOS device or simulator
 - [ ] Test on a small screen (375px width)
 
-### 33.4 — Network Condition Matrix
+### 34.4 — Network Condition Matrix
 - [ ] Offline: correct banner + graceful degradation
 - [ ] Slow 3G (Chrome DevTools network throttling via dev menu): all flows still complete without crash
 - [ ] Airplane mode mid-workout: local logs survive
 
-### 33.5 — Release Build Verification
+### 34.5 — Release Build Verification
 - [ ] `flutter build apk --release` → install → happy path works
 - [ ] Verify `env.json` secrets NOT leaked in `strings.xml` / `Info.plist`
 - [ ] Verify Sentry DSN is scoped to release project, not dev
 
-### 33.6 — Sign-off
+### 34.6 — Sign-off
 - [ ] Update `CLAUDE.md` current status with final metrics
 - [ ] Tag release commit
 - [ ] Archive audit docs in `docs/`

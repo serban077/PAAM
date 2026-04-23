@@ -95,6 +95,11 @@ class GeneratedRecipe {
   final List<RecipeIngredientLine> ingredients;
   final List<String> steps;
   final Map<String, double> macrosPerServing;
+  // M32 — compliance metadata from the recipe AI.
+  final String? warning;
+  final bool macroCompliance;
+  final List<String> blocklistedIngredientsSkipped;
+  final double proteinDensity; // g protein per 100 kcal
 
   const GeneratedRecipe({
     required this.name,
@@ -106,6 +111,10 @@ class GeneratedRecipe {
     required this.ingredients,
     required this.steps,
     required this.macrosPerServing,
+    this.warning,
+    this.macroCompliance = false,
+    this.blocklistedIngredientsSkipped = const [],
+    this.proteinDensity = 0.0,
   });
 
   double get calories => macrosPerServing['calories'] ?? 0;
@@ -119,6 +128,8 @@ class GeneratedRecipe {
     final rawSteps = map['steps'] as List<dynamic>? ?? [];
     final rawMacros =
         map['macros_per_serving'] as Map<String, dynamic>? ?? {};
+    final rawSkipped =
+        map['blocklisted_ingredients_skipped'] as List<dynamic>? ?? [];
 
     return GeneratedRecipe(
       name: map['name'] as String? ?? 'Unnamed Recipe',
@@ -134,6 +145,11 @@ class GeneratedRecipe {
       macrosPerServing: rawMacros.map(
         (k, v) => MapEntry(k, (v as num?)?.toDouble() ?? 0.0),
       ),
+      warning: map['warning'] as String?,
+      macroCompliance: map['macro_compliance'] as bool? ?? false,
+      blocklistedIngredientsSkipped:
+          rawSkipped.map((e) => e.toString()).toList(),
+      proteinDensity: (map['protein_density'] as num?)?.toDouble() ?? 0.0,
     );
   }
 
@@ -147,6 +163,10 @@ class GeneratedRecipe {
         'ingredients': ingredients.map((e) => e.toMap()).toList(),
         'steps': steps,
         'macros_per_serving': macrosPerServing,
+        'warning': warning,
+        'macro_compliance': macroCompliance,
+        'blocklisted_ingredients_skipped': blocklistedIngredientsSkipped,
+        'protein_density': proteinDensity,
       };
 }
 

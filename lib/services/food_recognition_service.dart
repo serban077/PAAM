@@ -6,6 +6,7 @@ import 'package:dio/dio.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 
 import '../data/models/smart_recipe_models.dart';
+import '_ai_prompts.dart';
 import '_dio_interceptors.dart';
 import 'gemini_ai_service.dart';
 
@@ -35,21 +36,8 @@ class FoodRecognitionService {
     },
   };
 
-  static const String _prompt = '''
-You are a food ingredient recognition system. Analyze this photo and identify ALL individual food items visible. This may be a fridge, pantry, countertop, or single dish photo.
-
-For each item:
-- "name": the actual food/ingredient in English (lowercase). For packaged products, identify what the product IS (e.g. "arrabbiata pasta sauce" not just "jar", "truffle mayo" not just "sauce", "ketchup", "eggs", "milk", "cheese slices"). Read labels/brands to be specific.
-- "estimated_quantity_g": estimated total weight in grams. For packaged items, estimate from container size (standard jar ~400g, egg carton of 10 ~600g, milk bottle 1L ~1000g, ketchup bottle ~450g, mayo jar ~230g, beer can ~330ml).
-- "category": one of "protein", "carb", "fat", "vegetable", "fruit", "dairy", "condiment"
-
-RULES:
-- Only include food/drink items. Ignore non-food objects (bowls, plates, shelves, appliances).
-- READ visible brand names and product labels to identify items accurately.
-- For packaged items behind other items, include them if you can identify them.
-- If the same food appears multiple times (e.g. 2 cartons of eggs), combine the quantity.
-- If no food items are visible, return an empty array.
-''';
+  // Prompt assembled from lib/services/_ai_prompts.dart — do not inline policy.
+  static const String _prompt = kFoodRecognitionPrompt;
 
   /// Analyzes an image and returns detected food ingredients.
   ///
@@ -84,7 +72,7 @@ RULES:
                 ],
               ),
             ],
-            model: 'gemini-2.5-flash',
+            model: 'gemini-3-flash',
             temperature: 0.1,
             maxTokens: 2048,
             cancelToken: cancelToken,
