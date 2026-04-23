@@ -104,6 +104,7 @@ class SmartRecipeService {
             maxTokens: 8192,
             responseMimeType: 'application/json',
             responseSchema: _recipeSchema,
+            thinkingBudget: 2048,
           )
           .timeout(const Duration(seconds: 120));
 

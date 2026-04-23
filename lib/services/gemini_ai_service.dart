@@ -117,7 +117,7 @@ class GeminiAIService {
     final message = Message(role: 'user', content: prompt);
     final response = await _client!.createChat(
       messages: [message],
-      model: 'gemini-2.5-flash-lite',
+      model: 'gemini-3.1-flash-lite-preview',
       temperature: 0.7,
       maxTokens: 8192,
       responseMimeType: 'application/json',
@@ -155,7 +155,7 @@ class GeminiAIService {
       final message = Message(role: 'user', content: prompt);
       final response = await _client!.createChat(
         messages: [message],
-        model: 'gemini-2.5-flash-lite',
+        model: 'gemini-3.1-flash-lite-preview',
         temperature: 0.7,
         maxTokens: 8192,
         responseMimeType: 'application/json',
@@ -447,7 +447,7 @@ class GeminiAIService {
       final message = Message(role: 'user', content: prompt);
       final response = await _client!.createChat(
         messages: [message],
-        model: 'gemini-2.5-flash-lite',
+        model: 'gemini-3.1-flash-lite-preview',
         temperature: 0.7,
         maxTokens: 8192,
         responseMimeType: 'application/json',
@@ -594,7 +594,7 @@ class GeminiAIService {
 
     yield* _client!.createChatStream(
       messages: [Message(role: 'user', content: prompt)],
-      model: 'gemini-2.5-flash-lite',
+      model: 'gemini-3.1-flash-lite-preview',
       temperature: 0.7,
       maxTokens: 8192,
       responseMimeType: 'application/json',
@@ -902,6 +902,7 @@ class GeminiClient {
     CancelToken? cancelToken,
     String? responseMimeType,
     Map<String, dynamic>? responseSchema,
+    int? thinkingBudget,
   }) async {
     return _withRetry(() async {
       try {
@@ -929,6 +930,14 @@ class GeminiClient {
         }
         if (responseSchema != null) {
           generationConfig['responseSchema'] = responseSchema;
+        }
+        // thinkingBudget: 0 disables reasoning on thinking models
+        // (2.5+/3.x Flash) so thought tokens don't eat maxOutputTokens.
+        // Positive value caps reasoning; -1 = dynamic. Omitted = default.
+        if (thinkingBudget != null) {
+          generationConfig['thinkingConfig'] = {
+            'thinkingBudget': thinkingBudget,
+          };
         }
 
         final response = await dio.post(
@@ -1008,7 +1017,7 @@ class GeminiClient {
   /// Does NOT retry on mid-stream failures (unlike [createChat]).
   Stream<String> createChatStream({
     required List<Message> messages,
-    String model = 'gemini-2.5-flash-lite',
+    String model = 'gemini-3.1-flash-lite-preview',
     int maxTokens = 8192,
     double temperature = 1.0,
     String? responseMimeType,

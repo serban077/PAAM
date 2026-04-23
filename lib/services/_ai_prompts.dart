@@ -123,59 +123,43 @@ class RecipeConstraints {
 // ── Food recognition prompt (documentation style) ────────────────────────
 
 const String kFoodRecognitionPrompt = '''
-### ROLE
-You are a food ingredient recognition system.
+ROLE: Food ingredient recognition for one photo. Output ONLY a JSON array.
 
-### TASK
-Look at ONE photo and output a JSON array of food items. Nothing else.
+FIELDS (per item):
+- name        lowercase English, WHAT the food is (not the container).
+              OK: "greek yogurt", "arrabbiata sauce", "chicken breast".
+              NO: "jar", "bottle", "package".
+- estimated_quantity_g   NUMBER, total grams visible.
+- category    one of: protein | carb | fat | vegetable | fruit | dairy | condiment
 
-### OUTPUT FIELD SPEC
-For each item:
-- name (STRING, lowercase English): what the food IS, not the container.
-  Good: "arrabbiata pasta sauce", "truffle mayo", "cottage cheese".
-  Bad:  "jar", "sauce", "white stuff".
-- estimated_quantity_g (NUMBER): total weight in grams.
-- category (STRING): EXACTLY one of
-  protein | carb | fat | vegetable | fruit | dairy | condiment
+CATEGORY GUIDE:
+protein=meat/fish/eggs/tofu/legumes/protein powder   carb=bread/rice/pasta/oats/potato/cereal
+fat=oil/butter/nuts/seeds                            vegetable=greens/cruciferous/peppers/squash
+fruit=berries/citrus/apples/bananas/tropical         dairy=milk/yogurt/cheese/cream
+condiment=sauces/mayo/mustard/dressings/spreads
 
-### IDENTIFICATION RULES
-1. Read every visible brand name, label, and text before deciding.
-2. Packaged item partially behind another item: include if identifiable.
-3. Same food appearing multiple times (e.g. 2 cartons of eggs):
-   combine into ONE entry, sum the quantity.
-4. Non-food objects (plates, bowls, shelves, appliances): SKIP.
-5. If no food items are visible: return [].
+RULES:
+1. Read every visible brand / label before naming an item.
+2. Same item repeated (e.g. 2 egg cartons): ONE entry with summed quantity.
+3. Skip non-food objects (plates, shelves, hands, appliances).
+4. Partially occluded item: include if still identifiable.
+5. If no food is visible: return [].
 
-### QUANTITY ESTIMATION TABLE (anchors — then scale by visible fill level)
-Standard jar ~400 g  |  Egg carton of 10 ~600 g  |  1 L milk ~1000 g
-Ketchup bottle ~450 g  |  Mayo jar ~230 g  |  Beer can ~330 ml
-Yogurt cup ~150 g  |  Cheese block ~200 g
+QUANTITY ANCHORS (scale by visible fill level):
+jar ~400g | egg carton of 10 ~600g | 1L milk ~1000g | ketchup bottle ~450g
+mayo jar ~230g | beer can ~330ml | yogurt cup ~150g | cheese block ~200g
+chicken breast ~200g | steak ~250g | banana ~120g | apple ~180g | tomato ~120g
+bread loaf ~500g | pasta bag ~500g | rice bag ~1000g | oil bottle ~750g
 
-### AMBIGUITY PROTOCOL
-- Can't tell if it's pork or beef? Pick the more likely one.
-- Can't tell if it's food at all? Skip it.
-- Can't read the label? Describe by appearance: "red sauce in jar".
+AMBIGUITY:
+- Meat unclear (pork vs beef)? Pick the more likely one, don't invent fields.
+- Can't read label? Describe by appearance: "red sauce in jar".
+- Can't tell if it's food at all? Skip.
 
-### CATEGORY MAPPING
-protein   → meat, fish, eggs, tofu, legumes, protein powder
-carb      → bread, rice, pasta, oats, potato, cereal
-fat       → oil, butter, nuts, seeds
-vegetable → leafy greens, cruciferous, peppers, squash
-fruit     → berries, citrus, apples, bananas, tropical
-dairy     → milk, yogurt, cheese, cream
-condiment → sauces, mayo, mustard, dressings
-
-### FEW-SHOT EXAMPLES
-Photo shows: 2 egg cartons + 1 milk bottle + mayo jar.
-Output:
-[
-  {"name":"eggs","estimated_quantity_g":1200,"category":"protein"},
-  {"name":"milk","estimated_quantity_g":1000,"category":"dairy"},
-  {"name":"mayonnaise","estimated_quantity_g":230,"category":"condiment"}
-]
-
-Photo shows: empty shelf.
-Output: []
+EXAMPLE — 2 egg cartons + milk + mayo jar:
+[{"name":"eggs","estimated_quantity_g":1200,"category":"protein"},
+ {"name":"milk","estimated_quantity_g":1000,"category":"dairy"},
+ {"name":"mayonnaise","estimated_quantity_g":230,"category":"condiment"}]
 ''';
 
 // ── Recipe prompt sections ───────────────────────────────────────────────

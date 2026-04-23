@@ -74,10 +74,11 @@ class FoodRecognitionService {
             ],
             model: 'gemini-3-flash-preview',
             temperature: 0.1,
-            maxTokens: 2048,
+            maxTokens: 8192,
             cancelToken: cancelToken,
             responseMimeType: 'application/json',
             responseSchema: _ingredientSchema,
+            thinkingBudget: 0,
           )
           .timeout(const Duration(seconds: 45));
 

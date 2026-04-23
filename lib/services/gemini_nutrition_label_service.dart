@@ -132,9 +132,10 @@ Rules:
         ],
         model: 'gemini-3.1-flash-lite-preview',
         temperature: 0.0,
-        maxTokens: 4096,
+        maxTokens: 8192,
         responseMimeType: 'application/json',
         responseSchema: _nutritionSchema,
+        thinkingBudget: 0,
       ).timeout(const Duration(seconds: 45));
 
       return _parseJsonResponse(response.text);
@@ -169,9 +170,10 @@ Rules:
         ],
         model: 'gemini-3-flash-preview',
         temperature: 0.0,
-        maxTokens: 4096,
+        maxTokens: 8192,
         responseMimeType: 'application/json',
         responseSchema: _nutritionSchema,
+        thinkingBudget: 512,
       ).timeout(const Duration(seconds: 45));
 
       return _parseJsonResponse(response.text);
