@@ -99,7 +99,7 @@ class SmartRecipeService {
             messages: [
               Message(role: 'user', content: prompt),
             ],
-            model: 'gemini-3-flash',
+            model: 'gemini-2.5-flash',
             temperature: 0.7,
             maxTokens: 8192,
             responseMimeType: 'application/json',

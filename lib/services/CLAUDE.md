@@ -86,18 +86,18 @@ Gemini API key: `const String.fromEnvironment('GEMINI_API_KEY')`
 
 | Call | Model | maxTokens |
 |---|---|---|
-| `generateWeeklyWorkoutPlan` | gemini-3.1-flash-lite | 8192 |
-| `generateNutritionPlan` | gemini-3.1-flash-lite | 8192 |
-| `getPersonalizedExercises` | gemini-3.1-flash-lite | 8192 |
-| `streamWeeklyWorkoutPlan` / `createChatStream` default | gemini-3.1-flash-lite | 8192 |
-| `FoodRecognitionService.recognizeIngredients` | gemini-3-flash | 2048 |
-| `SmartRecipeService.generateRecipes` | gemini-3-flash | 8192 |
-| `GeminiNutritionLabelService` text path | gemini-3.1-flash-lite | 4096 |
-| `GeminiNutritionLabelService` vision fallback | gemini-3-flash | 4096 |
+| `generateWeeklyWorkoutPlan` | gemini-2.5-flash-lite | 8192 |
+| `generateNutritionPlan` | gemini-2.5-flash-lite | 8192 |
+| `getPersonalizedExercises` | gemini-2.5-flash-lite | 8192 |
+| `streamWeeklyWorkoutPlan` / `createChatStream` default | gemini-2.5-flash-lite | 8192 |
+| `FoodRecognitionService.recognizeIngredients` | gemini-2.5-flash | 2048 |
+| `SmartRecipeService.generateRecipes` | gemini-2.5-flash | 8192 |
+| `GeminiNutritionLabelService` text path | gemini-2.5-flash-lite | 4096 |
+| `GeminiNutritionLabelService` vision fallback | gemini-2.5-flash | 4096 |
 
-Flash-Lite is ~5× cheaper per token than Flash and has a 500 RPD tier vs Flash's 20 RPD. Flash-Lite is NOT suitable for multimodal (image) calls — always use Flash for those.
+Flash-Lite is ~5× cheaper per token than Flash. Flash-Lite is NOT suitable for multimodal (image) calls — always use Flash for those.
 
-**Gemini 3.x endpoint routing (M32):** `_requiresV1Beta` now matches `modelId.startsWith('gemini-3')` — all 3.x models (and future 3.1-pro, etc.) route through `/v1beta` automatically. The v1 endpoint only serves stable 2.x releases. Adding new 3.x model strings does not require any call-site change.
+**Note on model upgrades:** The Google AI Studio UI may label models as "Gemini 3.x" but the actual API model ID differs. Always verify the exact API model ID string (e.g. via `ListModels` or the API documentation) before changing model strings — the UI name ≠ the API endpoint name. `_requiresV1Beta` routes `preview`/`exp`/`thinking`/`imagen-` models through `/v1beta`; stable `gemini-2.5-*` models use `/v1`.
 
 ---
 
@@ -264,7 +264,7 @@ Must stay in sync in 3 places: Supabase RPC `calculate_daily_nutrition_totals`, 
 
 File: `food_recognition_service.dart` — Gemini Vision ingredient detection from food photos.
 
-Singleton. Sends base64-encoded image to Gemini 3 Flash (temperature 0.1, maxTokens 2048).
+Singleton. Sends base64-encoded image to Gemini 2.5 Flash (temperature 0.1, maxTokens 2048).
 
 ```dart
 final result = await FoodRecognitionService().recognizeIngredients(
@@ -292,7 +292,7 @@ final result = await SmartRecipeService().generateRecipes(ingredients);
 // result.recipes → List<GeneratedRecipe>
 ```
 
-Gemini 3 Flash (temperature 0.7, maxTokens 8192). 120-second timeout.
+Gemini 2.5 Flash (temperature 0.7, maxTokens 8192). 120-second timeout.
 
 **Prompt source (M32):** prompt is built by `buildRecipePrompt()` in `_ai_prompts.dart` — do NOT inline policy. The prompt enforces:
 - Hard per-serving constraints (`RecipeConstraints`): protein ≥ 25g (35g muscle_gain), fat ≤ 20g (25g muscle_gain), sat fat ≤ 5g, added sugar ≤ 10g, sodium ≤ 600mg, fiber ≥ 5g
