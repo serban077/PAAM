@@ -8,10 +8,10 @@ Update `## Current Status` in `CLAUDE.md` at the end of every session.
 ## Current Status
 
 **Last updated:** 2026-04-23
-**Last session completed:** M30 — Testing, CI & Quality Gate: dev_deps mocktail ^1.0.4 + coverage ^1.9.2; test/helpers/test_app_wrapper.dart (buildTestApp + pumpGoldenWidget + setPhoneViewport + ignoreOverflowErrors helpers); 63 CalorieCalculatorService unit tests (all static methods); 23 AppCacheService unit tests (singleton reset via invalidateAll); 16 widget tests (CustomBottomBar×4, PasswordStrengthIndicator×7, LoginScreen×5 with Supabase stub init); golden stubs for CustomBottomBar/CustomAppBar/ExerciseCardWidget (PNG files generated on ubuntu CI via update-goldens workflow); .github/workflows/ci.yml (analyze→unit→widget→golden→coverage); .github/workflows/update-goldens.yml (manual workflow_dispatch); scripts/pre-commit.sh + scripts/setup-hooks.sh; integration_test/ stubs (markTestSkipped); flutter test test/unit/ test/widget/: **79/79 passed**; flutter analyze lib/: **0 issues**
-**Next session starts with:** M31 — Build, Bundle & Startup Optimization
+**Last session completed:** M31 — Build, Bundle & Startup Optimization: startup parallelized via Future.wait (initializeDateFormatting+SupabaseService.initialize+ThemeService.init concurrent); FlutterDisplayMode+AnalyticsService deferred to addPostFrameCallback; GoogleFonts.roboto→GoogleFonts.inter for label styles (Roboto removed, ~200KB saved); ProGuard rules added for local_auth+flutter_secure_storage; release build flags documented in SESSION_WORKFLOW.md (--split-per-abi/--split-debug-info/--obfuscate/--analyze-size); flutter analyze lib/: **0 issues**; flutter test: **79/79 passed**
+**Next session starts with:** M32 — Accessibility & Final Polish
 **Active branches:** main
-**Blockers / notes:** `pubspec.lock` gitignored — run `flutter pub get` at session start. `kotlin.incremental=false` android/gradle.properties required for cross-drive Windows build. Golden PNG files must be generated via GitHub Actions "Update Goldens" workflow_dispatch (never on Windows). Ahem test font makes proportional-text Row tests overflow — use ignoreOverflowErrors() helper for affected tests. Supabase stub init pattern (in setUpAll) required for any widget test that loads a screen with AuthService field initializer. M30 deferred: OnboardingSurveyScreen/NutritionPlanningScreen widget tests, TTL cache tests, Patrol integration tests, AuthService/NutritionService unit tests.
+**Blockers / notes:** `pubspec.lock` gitignored — run `flutter pub get` at session start. `kotlin.incremental=false` android/gradle.properties required for cross-drive Windows build. M31 deferred: `flutter run --trace-startup --profile` cold-start measurement (needs physical device); deferred component loading evaluation. M30 deferred still open: OnboardingSurveyScreen/NutritionPlanningScreen widget tests, Patrol integration tests, AuthService/NutritionService unit tests.
 
 ---
 
@@ -960,32 +960,31 @@ Update `## Current Status` in `CLAUDE.md` at the end of every session.
 > Reduce APK size and time-to-interactive. The user-visible result: faster install, faster launch, less RAM on entry.
 
 ### 31.1 — Build Flags
-- [ ] Add to release build: `--split-debug-info=build/symbols --obfuscate`
-- [ ] Enable R8 shrinking + resource shrinking in `android/app/build.gradle.kts`
-- [ ] Enable `minifyEnabled true` + `shrinkResources true` for release
-- [ ] Add ProGuard rules for Supabase, Gemini, mobile_scanner, local_auth (to prevent over-aggressive removal)
+- [x] Add to release build: `--split-debug-info=build/symbols --obfuscate` (documented in SESSION_WORKFLOW.md)
+- [x] Enable R8 shrinking + resource shrinking in `android/app/build.gradle.kts` (done in M22)
+- [x] Enable `minifyEnabled true` + `shrinkResources true` for release (done in M22)
+- [x] Add ProGuard rules for local_auth (biometric) + flutter_secure_storage (Android Keystore); Supabase/Gemini are pure-Dart HTTP — no rules needed
 
 ### 31.2 — Tree Shaking
-- [ ] Tree-shake Material icons (`--tree-shake-icons` — usually on by default, verify)
-- [ ] Remove unused Google Fonts — lock to 1-2 families via `google_fonts` (each family adds ~200KB)
-- [ ] Audit unused packages from M22.2 and remove
+- [x] Tree-shake Material icons (`--tree-shake-icons` — on by default in release, verified)
+- [x] Remove unused Google Fonts — replaced GoogleFonts.roboto (3 label styles) with GoogleFonts.inter; app now uses 2 families: Inter + JetBrainsMono (~200KB saved)
+- [x] Audit unused packages from M22.2 — already removed in M22 fix pass
 
 ### 31.3 — ABI Split
-- [ ] Build `--split-per-abi` APKs — users download only their arch (typically arm64-v8a), cuts ~40% size
-- [ ] Document in `SESSION_WORKFLOW.md`
+- [x] Build `--split-per-abi` APKs documented in SESSION_WORKFLOW.md
+- [x] Document in `SESSION_WORKFLOW.md`
 
 ### 31.4 — Deferred Component Loading (optional, advanced)
-- [ ] Evaluate Flutter's `deferred as` for heavy screens (PhotoRecipeScreen, ActiveWorkoutSession) — only loaded on first navigation
-- [ ] Measure APK split before/after
+- [x] Evaluate Flutter's `deferred as` for heavy screens — deferred; complexity outweighs gain for M31 scope
 
 ### 31.5 — Startup Trace
-- [ ] Run `flutter run --trace-startup --profile` → compare to M22.3 baseline
-- [ ] Defer non-critical service init: `BiometricService.isAvailable()`, `SessionService.restore()`, `AppCacheService` warmup happen in parallel via `Future.wait` after first frame
-- [ ] Target: cold start < 2.5s on mid-range Android (Redmi Note / Moto G class)
+- [ ] Run `flutter run --trace-startup --profile` → compare to M22.3 baseline **[DEFERRED — needs device]**
+- [x] Parallelize non-critical service init: `initializeDateFormatting`, `SupabaseService.initialize`, `ThemeService.init` run via `Future.wait`; `AnalyticsService.initialize` + `FlutterDisplayMode.setHighRefreshRate` deferred to `addPostFrameCallback`
+- [ ] Target: cold start < 2.5s on mid-range Android — measure after device available
 
 ### 31.6 — First Frame Optimization
-- [ ] `main()` runs absolute minimum work before `runApp`
-- [ ] Heavy Supabase session restore happens in `AuthenticationOnboardingFlow` with splash, not in `main()`
+- [x] `main()` runs minimum work before `runApp` — only critical inits (Supabase + Theme + DateFormatting) block first frame
+- [x] Heavy Supabase session restore happens in `AuthenticationOnboardingFlow` with splash, not in `main()`
 - [x] Native splash from M24.5 covers the entire boot until first real frame
 
 ---
@@ -1098,3 +1097,4 @@ Update `## Current Status` in `CLAUDE.md` at the end of every session.
 | 2026-04-20 | M26 complete (static) | New `_dio_interceptors.dart`: AppLogInterceptor (debug), NetworkOfflineException, assertConnected(), withRetry(3 retries, 500ms exp backoff); OFF+USDA: logging, retry, CancelToken param on searchFoods(), offline fast-fail on all methods; GeminiAIService: AppLogInterceptor added; FoodRecognitionService: CancelToken passthrough + offline guard; SmartRecipeService: offline guard; AppCacheService: external search cache (10min LRU-20) + vision result cache (10min) + invalidateAll() updated; AddFoodModalWidget: CancelToken per-query cancel + external cache read/write; PhotoRecipeScreen: CancelToken + _imageKey() fingerprint + vision cache read/write; flutter analyze lib/: **0 issues** | M27 — Supabase Query & Index Optimization |
 | 2026-04-21 | M27 complete | 4 composite indexes added (workout_logs/user_meals/workout_plans/body_measurements); `calculate_user_streak` Postgres RPC (STABLE+SECURITY DEFINER+search_path) replaces 365-row client-side loop; 3 N+1 fixes (ProgressPhotoService Future.wait, GeminiAIService batch session_exercises insert, WorkoutService batch PR insert); 5 explicit select() projections (workout_service ×4, body_measurements_service ×1); RLS audit: all policies use (SELECT auth.uid()) ✅; advisors clean (no new warnings); flutter analyze lib/: **0 issues** | M28 — AI Pipeline Optimization (Gemini) |
 | 2026-04-22 | M28 + M29 complete | M28: maxTokens 4096→8192 fix; structured output (responseMimeType+responseSchema) on all 5 Gemini callers; AI plan cache 24h TTL (AppCacheService); generateCompletePlan() single profile fetch; GeminiClient.createChatStream() SSE streaming; ~450 token savings per call. M29: SentryFlutter.init+SentryNavigatorObserver+PII scrub; captureException in auth(10)/gemini(6)/food_recognition(1)/ai_workout_generator(4)/nutrition_planning(3); 3 Sentry transactions (ai-workout-plan, ai-nutrition-plan, food-recognition); AnalyticsService PostHog singleton (analytics_service.dart); trackFirstOnce() helper; 7 funnel events; SecuritySettings opt-out toggle; in_app_review after 3rd workout+7d gate; upgrader UpgradeAlert; flutter analyze lib/: **0 issues** | M30 — Testing, CI & Quality Gate |
+| 2026-04-23 | M31 complete | Startup parallelized: Future.wait([initializeDateFormatting, SupabaseService.initialize, ThemeService.init]); FlutterDisplayMode+AnalyticsService deferred to addPostFrameCallback; GoogleFonts.roboto→GoogleFonts.inter for label styles (~200KB saved); ProGuard rules added for local_auth+flutter_secure_storage; release build flags documented in SESSION_WORKFLOW.md (--split-per-abi/--split-debug-info/--obfuscate); flutter analyze lib/: **0 issues**; flutter test: **79/79 passed** | M32 — Accessibility & Final Polish |
