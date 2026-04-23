@@ -18,10 +18,6 @@ import 'widgets/custom_error_widget.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  if (Platform.isAndroid) {
-    await FlutterDisplayMode.setHighRefreshRate();
-  }
-
   await SentryFlutter.init(
     (options) {
       options.dsn = const String.fromEnvironment('SENTRY_DSN');
@@ -32,10 +28,11 @@ void main() async {
     },
     appRunner: () async {
       try {
-        await initializeDateFormatting();
-        await SupabaseService.initialize();
-        await ThemeService.init();
-        await AnalyticsService.instance.initialize();
+        await Future.wait([
+          initializeDateFormatting(),
+          SupabaseService.initialize(),
+          ThemeService.init(),
+        ]);
         await SystemChrome.setPreferredOrientations(
             [DeviceOrientation.portraitUp]);
 
@@ -49,6 +46,13 @@ void main() async {
           }
           return const SizedBox.shrink();
         };
+
+        WidgetsBinding.instance.addPostFrameCallback((_) async {
+          if (Platform.isAndroid) {
+            await FlutterDisplayMode.setHighRefreshRate();
+          }
+          await AnalyticsService.instance.initialize();
+        });
 
         runApp(const MyApp());
       } catch (e, stack) {

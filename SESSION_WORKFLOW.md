@@ -114,6 +114,39 @@ Keep every file under 300 lines.
 
 ---
 
+## RELEASE BUILD COMMANDS (added M31)
+
+### Standard release APK (single universal APK)
+```bash
+flutter build apk --release --dart-define-from-file=env.json
+```
+
+### Per-ABI APKs (recommended for Play Store — ~40% smaller download per device)
+```bash
+flutter build apk --release --split-per-abi \
+  --split-debug-info=build/symbols \
+  --obfuscate \
+  --dart-define-from-file=env.json
+```
+Outputs: `build/app/outputs/flutter-apk/app-arm64-v8a-release.apk` (most modern devices), `app-armeabi-v7a-release.apk`, `app-x86_64-release.apk`.
+
+### App Bundle (Google Play — preferred over APK)
+```bash
+flutter build appbundle --release \
+  --split-debug-info=build/symbols \
+  --obfuscate \
+  --dart-define-from-file=env.json
+```
+
+### APK size analysis
+```bash
+flutter build apk --release --analyze-size --dart-define-from-file=env.json
+```
+
+> **Debug symbols:** `build/symbols/` holds de-obfuscation info for Sentry. **Never commit this directory** (gitignored). Upload to Sentry via `sentry-cli debug-files upload build/symbols/` after each release.
+
+---
+
 ## TEST & CI REFERENCE (added M30)
 
 ### One-time developer setup (run after cloning)

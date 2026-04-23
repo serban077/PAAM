@@ -855,22 +855,22 @@ class AppTheme {
         height: 1.33,
       ),
 
-      // Label styles - Roboto for captions
-      labelLarge: GoogleFonts.roboto(
+      // Label styles - Inter (consistent with all other text styles)
+      labelLarge: GoogleFonts.inter(
         fontSize: 14,
         fontWeight: FontWeight.w500,
         color: textHighEmphasis,
         letterSpacing: 0.1,
         height: 1.43,
       ),
-      labelMedium: GoogleFonts.roboto(
+      labelMedium: GoogleFonts.inter(
         fontSize: 12,
         fontWeight: FontWeight.w500,
         color: textMediumEmphasis,
         letterSpacing: 0.5,
         height: 1.33,
       ),
-      labelSmall: GoogleFonts.roboto(
+      labelSmall: GoogleFonts.inter(
         fontSize: 11,
         fontWeight: FontWeight.w400,
         color: textDisabled,

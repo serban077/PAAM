@@ -16,3 +16,11 @@
 -dontwarn com.google.mlkit.vision.text.japanese.JapaneseTextRecognizerOptions
 -dontwarn com.google.mlkit.vision.text.korean.KoreanTextRecognizerOptions$Builder
 -dontwarn com.google.mlkit.vision.text.korean.KoreanTextRecognizerOptions
+
+# local_auth — BiometricPrompt callbacks accessed via reflection
+-keep class androidx.biometric.** { *; }
+-dontwarn androidx.biometric.**
+
+# flutter_secure_storage — EncryptedSharedPreferences via Android Keystore
+-keep class com.it_nomads.fluttersecurestorage.** { *; }
+-dontwarn com.it_nomads.fluttersecurestorage.**
