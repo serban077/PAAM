@@ -532,7 +532,11 @@ class _NutritionPlanningScreenState extends State<NutritionPlanningScreen> {
                   HapticFeedback.lightImpact();
                   final result = await Navigator.of(context, rootNavigator: true)
                       .pushNamed(AppRoutes.photoRecipe);
-                  if (result == true) _loadNutritionData();
+                  if (!mounted) return;
+                  if (result == true) {
+                    _cache.invalidateNutrition(_dateKey);
+                    _loadNutritionData(forceRefresh: true);
+                  }
                 },
               ),
             ),
