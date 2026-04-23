@@ -86,14 +86,14 @@ Gemini API key: `const String.fromEnvironment('GEMINI_API_KEY')`
 
 | Call | Model | maxTokens |
 |---|---|---|
-| `generateWeeklyWorkoutPlan` | gemini-2.5-flash-lite | 8192 |
-| `generateNutritionPlan` | gemini-2.5-flash-lite | 8192 |
-| `getPersonalizedExercises` | gemini-2.5-flash-lite | 8192 |
-| `streamWeeklyWorkoutPlan` / `createChatStream` default | gemini-2.5-flash-lite | 8192 |
-| `FoodRecognitionService.recognizeIngredients` | gemini-2.5-flash | 2048 |
-| `SmartRecipeService.generateRecipes` | gemini-2.5-flash | 8192 |
-| `GeminiNutritionLabelService` text path | gemini-2.5-flash-lite | 4096 |
-| `GeminiNutritionLabelService` vision fallback | gemini-2.5-flash | 4096 |
+| `generateWeeklyWorkoutPlan` | gemini-3.1-flash-lite-preview | 8192 |
+| `generateNutritionPlan` | gemini-3.1-flash-lite-preview | 8192 |
+| `getPersonalizedExercises` | gemini-3.1-flash-lite-preview | 8192 |
+| `streamWeeklyWorkoutPlan` / `createChatStream` default | gemini-3.1-flash-lite-preview | 8192 |
+| `FoodRecognitionService.recognizeIngredients` | gemini-3-flash-preview | 2048 |
+| `SmartRecipeService.generateRecipes` | gemini-3-flash-preview | 8192 |
+| `GeminiNutritionLabelService` text path | gemini-3.1-flash-lite-preview | 4096 |
+| `GeminiNutritionLabelService` vision fallback | gemini-3-flash-preview | 4096 |
 
 Flash-Lite is ~5× cheaper per token than Flash. Flash-Lite is NOT suitable for multimodal (image) calls — always use Flash for those.
 

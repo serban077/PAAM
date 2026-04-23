@@ -72,7 +72,7 @@ class FoodRecognitionService {
                 ],
               ),
             ],
-            model: 'gemini-2.5-flash',
+            model: 'gemini-3-flash-preview',
             temperature: 0.1,
             maxTokens: 2048,
             cancelToken: cancelToken,
