@@ -84,18 +84,25 @@ Gemini API key: `const String.fromEnvironment('GEMINI_API_KEY')`
 
 **M32 Model assignments:**
 
-| Call | Model | maxTokens |
-|---|---|---|
-| `generateWeeklyWorkoutPlan` | gemini-3.1-flash-lite-preview | 8192 |
-| `generateNutritionPlan` | gemini-3.1-flash-lite-preview | 8192 |
-| `getPersonalizedExercises` | gemini-3.1-flash-lite-preview | 8192 |
-| `streamWeeklyWorkoutPlan` / `createChatStream` default | gemini-3.1-flash-lite-preview | 8192 |
-| `FoodRecognitionService.recognizeIngredients` | gemini-3-flash-preview | 2048 |
-| `SmartRecipeService.generateRecipes` | gemini-3-flash-preview | 8192 |
-| `GeminiNutritionLabelService` text path | gemini-3.1-flash-lite-preview | 4096 |
-| `GeminiNutritionLabelService` vision fallback | gemini-3-flash-preview | 4096 |
+| Call | Model | maxTokens | thinkingBudget |
+|---|---|---|---|
+| `generateWeeklyWorkoutPlan` | gemini-3-flash-preview | 8192 | 2048 |
+| `generateNutritionPlan` | gemini-3-flash-preview | 8192 | 2048 |
+| `getPersonalizedExercises` | gemini-3-flash-preview | 8192 | 2048 |
+| `streamWeeklyWorkoutPlan` / `createChatStream` default | gemini-3-flash-preview | 8192 | 2048 |
+| `FoodRecognitionService.recognizeIngredients` | gemini-3-flash-preview | 8192 | 0 |
+| `SmartRecipeService.generateRecipes` | gemini-3-flash-preview | 8192 | 2048 |
+| `GeminiNutritionLabelService` text path | gemini-3.1-flash-lite-preview | 4096 | 0 |
+| `GeminiNutritionLabelService` vision fallback | gemini-3-flash-preview | 4096 | 512 |
 
-Flash-Lite is ~5× cheaper per token than Flash. Flash-Lite is NOT suitable for multimodal (image) calls — always use Flash for those.
+Flash-Lite is ~5× cheaper per token than Flash. Flash-Lite is NOT suitable for multimodal (image) calls — always use Flash for those. Plan-generation calls upgraded to `gemini-3-flash-preview` (M32 fine-tune) so the medical-conditions safety reasoning + sequential subtask algorithm has the headroom it needs; cost mitigated by 24h `AppCacheService` plan cache.
+
+**Prompt source (M32 fine-tune):** every plan/exercise prompt now lives in `_ai_prompts.dart`:
+- `buildWorkoutPlanPrompt({userContext, daysPerWeek, splitGuide, exerciseLibrary, fitnessGoal, experienceLevel})` — splits the work into 8 sequential steps (parse → medical safety → split → volume → exercise selection → sets/reps/rest → Romanian coaching → self-check) and pulls in the medical-conditions KB.
+- `buildNutritionPlanPrompt({userContext, fitnessGoal, dietaryPreference, activityLevel})` — 7-step algorithm (parse → medical → preference → BMR/TDEE math → distribute → draft options → self-check) + nutrition-knowledge + macro-math + meal-distribution + hard constraints.
+- `buildPersonalizedExercisesPrompt({userContext, fitnessGoal, experienceLevel})` — wraps the 15–20 exercise list flow with the same medical-conditions KB.
+
+All three include `buildMedicalKnowledgeSection()` from `_medical_conditions_kb.dart` and instruct the model to produce a Romanian `safety_notes` string + `requires_doctor_consult` boolean. Both `_workoutPlanSchema` and `_nutritionPlanSchema` include those two fields in `required`.
 
 **Note on model upgrades:** The Google AI Studio UI may label models as "Gemini 3.x" but the actual API model ID differs. Always verify the exact API model ID string (e.g. via `ListModels` or the API documentation) before changing model strings — the UI name ≠ the API endpoint name. `_requiresV1Beta` routes `preview`/`exp`/`thinking`/`imagen-` models through `/v1beta`; stable `gemini-2.5-*` models use `/v1`.
 
@@ -431,7 +438,8 @@ await service.searchFoods(query, cancelToken: _token);
 | `app_cache_service.dart` | In-memory TTL cache singleton (M19/M26). profile (5min), streak (10min), nutrition (5min), exercise (30min), measurements (5min), PRs (5min), food search LRU (3min/20), external search LRU (10min/20), vision result (10min), contributions (5min). Call `invalidateAll()` on sign-out. |
 | `exercise_db_service.dart` | Free-exercise-db CDN lookup — resolves exercise name to animation frame URLs |
 | `_dio_interceptors.dart` | M26 shared Dio utilities: `AppLogInterceptor` (debug only), `NetworkOfflineException`, `assertConnected()` (throws if offline), `withRetry<T>(fn, maxRetries, baseDelay)` (exp backoff, skips 4xx + cancel) |
-| `_ai_prompts.dart` | M32 shared AI policy constants + prompt fragments: `kBlockedIngredients`, `kMacroGuardsPer100g`, `kPreferredSources`, `kTasteBoosters`, `kQuantityReferenceG`, `RecipeConstraints`, `kFoodRecognitionPrompt`, `buildRecipePrompt({ingredientLines, macroContext, fitnessGoal, dietaryPreference})`. Single source of truth — update here, never inline in callers. |
+| `_ai_prompts.dart` | M32 shared AI policy constants + prompt fragments: `kBlockedIngredients`, `kMacroGuardsPer100g`, `kPreferredSources`, `kTasteBoosters`, `kQuantityReferenceG`, `RecipeConstraints`, `kFoodRecognitionPrompt`, `buildRecipePrompt(...)`, `buildWorkoutPlanPrompt(...)`, `buildNutritionPlanPrompt(...)`, `buildPersonalizedExercisesPrompt(...)`. Single source of truth — update here, never inline in callers. |
+| `_medical_conditions_kb.dart` | M32 fine-tune evidence-based medical-conditions knowledge base (52 conditions across 11 categories — ACSM/ADA/KDIGO/ACOG/OARSI/Monash/ATS/IARC sourced). Each entry: KEYWORDS (RO+EN), SEVERITY, EXERCISE protocol (DO/AVOID/INTENSITY/STOP), NUTRITION protocol (DO/AVOID/MACROS/HYDRATION), EVIDENCE source. Public API: `buildMedicalKnowledgeSection()` returns a Markdown block embedded into every plan prompt. The 5-step header tells the model how to scan free-text `medical_conditions`, build `forbidden_movements` / `forbidden_foods` lists, and trigger `requires_doctor_consult` on `DOCTOR_CONSULT` severity. |
 | `analytics_service.dart` | M29 PostHog singleton — `track()`, `trackFirstOnce()`, `identify()`, `reset()`, `setOptOut()`. SharedPreferences-based opt-out. EU-hosted. |
 
 ---

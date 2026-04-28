@@ -7,11 +7,11 @@ Update `## Current Status` in `CLAUDE.md` at the end of every session.
 
 ## Current Status
 
-**Last updated:** 2026-04-23
-**Last session completed:** M32 — AI Food Recognition & Recipe Generation Overhaul: swapped to gemini-3.1-flash-lite (workout/nutrition/exercises/streaming/nutrition-label text) and gemini-3-flash (food recognition vision + recipe generation + nutrition-label vision fallback); `_requiresV1Beta` now routes all `gemini-3*` to `/v1beta`; new `lib/services/_ai_prompts.dart` centralizes blocklist/macro-guards/preferred-sources/taste-boosters/quantity-table + `RecipeConstraints` + `buildRecipePrompt()`; food recognition prompt restructured into documentation sections (ROLE/TASK/SPEC/RULES/TABLE/AMBIGUITY/CATEGORIES/EXAMPLES); recipe prompt adds hard per-serving constraints, ingredient blocklist, macro guards, preferred sources, dietary overrides, failure modes; `GeneratedRecipe` schema + model extended with `warning`/`macro_compliance`/`blocklisted_ingredients_skipped`/`protein_density`; flutter analyze lib/: **0 issues**; flutter test: **79/79 passed**
+**Last updated:** 2026-04-29
+**Last session completed:** M32 fine-tune — Workout + Nutrition plan prompts rebuilt with sequential subtasks + evidence-based medical-conditions KB. New `lib/services/_medical_conditions_kb.dart` (~870 lines, 52 conditions × 11 categories, ACSM/ADA/KDIGO/ACOG/OARSI/Monash/ATS/IARC sourced) — `buildMedicalKnowledgeSection()` embedded into every plan prompt with a 5-step algorithm to scan free-text `medical_conditions` and trigger `requires_doctor_consult`. New builders in `_ai_prompts.dart`: `buildWorkoutPlanPrompt` (8 sequential steps + Schoenfeld volume landmarks), `buildNutritionPlanPrompt` (7 steps + BMR/TDEE math + meal distribution), `buildPersonalizedExercisesPrompt`. All four plan/exercise calls in `gemini_ai_service.dart` switched from `gemini-3.1-flash-lite-preview` to `gemini-3-flash-preview` with `thinkingBudget: 2048` (medical safety reasoning needs the budget); inline `_buildExercisePrompt`/`_buildWorkoutPlanPrompt`/`_buildNutritionPrompt` deleted (~140 lines). Schemas extended with `safety_notes` (STRING) + `requires_doctor_consult` (BOOLEAN), both required. `GeminiClient.createChatStream` gained a `thinkingBudget` parameter. **Hotfix bundled:** PGRST116 on Start Workout fixed via `AppCacheService.invalidateWorkoutData()` after `delete_user_custom_plans` RPC + `.maybeSingle()` in `ActiveWorkoutSession._loadSession` with friendly Romanian message; AI inventing exercises ("Dead Bug", "Goblet Squat") fixed by HARD RULE in workout prompt step 5 + dropping unverified names in `_enrichPlanWithVideoUrls` (was: fake push-up URL fallback). flutter analyze lib/: **0 issues**; flutter test: **79/79 passed**.
 **Next session starts with:** M33 — Accessibility & Final Polish
 **Active branches:** main
-**Blockers / notes:** `pubspec.lock` gitignored — run `flutter pub get` at session start. `kotlin.incremental=false` android/gradle.properties required for cross-drive Windows build. M31 deferred: `flutter run --trace-startup --profile` cold-start measurement (needs physical device); deferred component loading evaluation. M30 deferred still open: OnboardingSurveyScreen/NutritionPlanningScreen widget tests, Patrol integration tests, AuthService/NutritionService unit tests.
+**Blockers / notes:** `pubspec.lock` gitignored — run `flutter pub get` at session start. `kotlin.incremental=false` android/gradle.properties required for cross-drive Windows build. M31 deferred: `flutter run --trace-startup --profile` cold-start measurement (needs physical device); deferred component loading evaluation. M30 deferred still open: OnboardingSurveyScreen/NutritionPlanningScreen widget tests, Patrol integration tests, AuthService/NutritionService unit tests. M32 fine-tune deferred: UI surface for `safety_notes` + `requires_doctor_consult` (currently emitted in plan JSON but not yet shown in `AIWorkoutGenerator` / `AIPlanScreen` — lands in M33 alongside `warning`/`blocklisted_ingredients_skipped`/`protein_density` recipe surface).
 
 ---
 
@@ -1054,6 +1054,25 @@ Update `## Current Status` in `CLAUDE.md` at the end of every session.
 - [x] Update root `CLAUDE.md` last session + next session markers
 - [x] Commit as `feat(m32): AI food recognition & recipe generation overhaul`
 
+### 32.7 — Plan Prompts Fine-Tune + Medical-Conditions KB (2026-04-29)
+- [x] New `lib/services/_medical_conditions_kb.dart` (~870 lines) — 52 evidence-based conditions × 11 categories (cardiovascular, metabolic/endocrine, musculoskeletal, respiratory, digestive, renal, reproductive, neuro/mental, doctor-consult gates, allergies); each entry has KEYWORDS (RO + EN + typos), SEVERITY (incl. `DOCTOR_CONSULT`), EXERCISE protocol, NUTRITION protocol, EVIDENCE source (ACSM 2024, ADA 2025, KDIGO 2024, ACOG 804, OARSI 2023, LIFTMOR, Monash low-FODMAP, ATS EIB, ACR gout 2020, IARC)
+- [x] `buildMedicalKnowledgeSection()` public API emits the Markdown block embedded into every plan prompt with a 5-step algorithm (lowercase free-text → scan KEYWORDS → apply rules → set `requires_doctor_consult` for DOCTOR_CONSULT → list detected conditions in Romanian `safety_notes`)
+- [x] `_ai_prompts.dart` extended with three new builders:
+  - [x] `buildWorkoutPlanPrompt(...)` — 8 sequential steps (parse → medical safety → split → weekly volume → library exercise selection → sets/reps/rest → Romanian coaching → self-check) + Schoenfeld volume landmarks + rest periods + rep ranges by goal + progression + warm-up rules
+  - [x] `buildNutritionPlanPrompt(...)` — 7 steps (parse → medical → preference → BMR Mifflin-St Jeor + TDEE + goal kcal → meal distribution → 2–3 options/meal → self-check) + per-kg macro targets per goal + % kcal split per meal + workout-day timing + hard daily constraints
+  - [x] `buildPersonalizedExercisesPrompt(...)` — 15–20 exercise recommendations with the same medical KB
+- [x] Each builder includes a 10-item self-check FAILURE MODES section + forces `safety_notes` (Romanian STRING) + `requires_doctor_consult` (BOOLEAN)
+- [x] `gemini_ai_service.dart` rewired: deleted inline `_buildExercisePrompt`/`_buildWorkoutPlanPrompt`/`_buildNutritionPrompt` (~140 lines); `generateWeeklyWorkoutPlan` / `generateNutritionPlan` / `getPersonalizedExercises` / `streamWeeklyWorkoutPlan` now call new builders
+- [x] All four plan calls switched from `gemini-3.1-flash-lite-preview` to `gemini-3-flash-preview` with `thinkingBudget: 2048` (medical safety reasoning + sequential algorithm need the budget)
+- [x] `_workoutPlanSchema` + `_nutritionPlanSchema` extended with `safety_notes` (STRING) + `requires_doctor_consult` (BOOLEAN), both added to `required`
+- [x] `GeminiClient.createChatStream` gained an optional `thinkingBudget` parameter mirroring `createChat` so streaming wires the same thinking config
+- [x] **Hotfix:** PGRST116 on Start Workout — `AppCacheService.invalidateWorkoutData()` (new) wipes today_workout + active_workout + weekly_schedule + AI plan cache; called from `saveGeneratedPlan` immediately after `delete_user_custom_plans` RPC. `ActiveWorkoutSession._loadSession` switched `.single()` → `.maybeSingle()` with friendly Romanian message as defense in depth
+- [x] **Hotfix:** AI inventing exercises ("Dead Bug", "Goblet Squat") not in verified library — `_enrichPlanWithVideoUrls` now DROPS unverified names (was: assigned fake push-up video URL); workout prompt step 5 + failure mode 2 strengthened with HARD RULE block naming common offenders
+- [x] `flutter analyze lib/` → 0 issues
+- [x] `flutter test test/unit/ test/widget/` → 79/79 passed
+- [x] Commit as `feat(m32): plan prompts with sequential subtasks + medical conditions KB`
+- [ ] UI surface for `safety_notes` + `requires_doctor_consult` (currently emitted in plan JSON but not yet shown in `AIWorkoutGenerator` / `AIPlanScreen`) — **deferred to M33** (alongside 33.7 recipe compliance UI surface)
+
 ---
 
 ## Milestone 33 — Accessibility & Final Polish
@@ -1088,6 +1107,11 @@ Update `## Current Status` in `CLAUDE.md` at the end of every session.
 - [ ] Surface `warning` on recipe detail card when `macro_compliance == false`
 - [ ] Show `blocklisted_ingredients_skipped` as a "skipped for health" chip list on recipe detail
 - [ ] Show `protein_density` near the protein macro chip
+
+### 33.8 — Plan Safety UI Surface (from M32 fine-tune)
+- [ ] When `requires_doctor_consult == true`, replace the plan content with a Romanian doctor-consult warning card in `AIWorkoutGenerator` and `AIPlanScreen` (don't render the empty plan body)
+- [ ] When `requires_doctor_consult == false` AND `safety_notes` is non-empty AND not "Nicio afecțiune declarată — plan general aplicat", surface `safety_notes` as a collapsible "Note de siguranță" section above the day list
+- [ ] Same treatment for the nutrition plan
 
 ---
 
