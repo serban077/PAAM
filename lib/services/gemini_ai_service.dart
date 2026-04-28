@@ -6,6 +6,7 @@ import 'package:sentry_flutter/sentry_flutter.dart';
 import '../services/supabase_service.dart';
 import '../services/app_cache_service.dart';
 import '../data/verified_exercises_data.dart';
+import '_ai_prompts.dart';
 import '_dio_interceptors.dart';
 
 class GeminiAIService {
@@ -112,15 +113,20 @@ class GeminiAIService {
     final profile = userData['profile'];
     final onboarding = userData['onboarding'] as Map<String, String>;
 
-    final prompt = _buildExercisePrompt(profile, onboarding);
+    final prompt = buildPersonalizedExercisesPrompt(
+      userContext: _buildUserProfileString(profile, onboarding),
+      fitnessGoal: profile['fitness_goal']?.toString() ?? 'general_fitness',
+      experienceLevel: profile['experience_level']?.toString() ?? 'beginner',
+    );
 
     final message = Message(role: 'user', content: prompt);
     final response = await _client!.createChat(
       messages: [message],
-      model: 'gemini-3.1-flash-lite-preview',
+      model: 'gemini-3-flash-preview',
       temperature: 0.7,
       maxTokens: 8192,
       responseMimeType: 'application/json',
+      thinkingBudget: 2048,
     );
 
     try {
@@ -150,16 +156,25 @@ class GeminiAIService {
 
     final txn = Sentry.startTransaction('ai-workout-plan', 'task');
     try {
-      final prompt = _buildWorkoutPlanPrompt(profile, onboarding);
+      final daysPerWeek = int.tryParse(profile['weekly_training_frequency']?.toString() ?? '3') ?? 3;
+      final prompt = buildWorkoutPlanPrompt(
+        userContext: _buildUserProfileString(profile, onboarding),
+        daysPerWeek: daysPerWeek,
+        splitGuide: _getSplitGuide(daysPerWeek),
+        exerciseLibrary: _getVerifiedExercisesList(),
+        fitnessGoal: profile['fitness_goal']?.toString() ?? 'general_fitness',
+        experienceLevel: profile['experience_level']?.toString() ?? 'beginner',
+      );
 
       final message = Message(role: 'user', content: prompt);
       final response = await _client!.createChat(
         messages: [message],
-        model: 'gemini-3.1-flash-lite-preview',
+        model: 'gemini-3-flash-preview',
         temperature: 0.7,
         maxTokens: 8192,
         responseMimeType: 'application/json',
         responseSchema: _workoutPlanSchema,
+        thinkingBudget: 2048,
       );
 
       final parsedPlan = jsonDecode(response.text) as Map<String, dynamic>;
@@ -177,49 +192,53 @@ class GeminiAIService {
     }
   }
 
-  /// Enriches the workout plan with video URLs from verified exercises database
+  /// Enriches the workout plan with video URLs from verified exercises
+  /// database. Any exercise whose name does NOT match the verified library
+  /// is DROPPED rather than getting a fake fallback video — fake names
+  /// would otherwise leak into `exercises` (auto-inserted by
+  /// `_prepareSessionExerciseData`) with bogus muscle_group / equipment
+  /// data, and the user would see a push-ups video for a "Dead Bug" entry.
+  /// The model is instructed (HARD RULE in the prompt) to only emit names
+  /// from the library; this method is the defensive fallback.
   Map<String, dynamic> _enrichPlanWithVideoUrls(Map<String, dynamic> plan) {
     if (plan['training_plan'] == null) return plan;
-    
+
     final trainingPlan = plan['training_plan'] as Map<String, dynamic>;
     final enrichedTrainingPlan = <String, dynamic>{};
-    
+
     trainingPlan.forEach((dayKey, exercises) {
       if (exercises is! List) {
         enrichedTrainingPlan[dayKey] = exercises;
         return;
       }
-      
+
       final enrichedExercises = <Map<String, dynamic>>[];
-      
+
       for (var exercise in exercises) {
         if (exercise is! Map<String, dynamic>) continue;
-        
+
         final exerciseName = exercise['exercise_name'] as String?;
         if (exerciseName == null) continue;
-        
-        // Find matching exercise in verified database
-        final verifiedExercise = VerifiedExercisesData.getExerciseByName(exerciseName);
-        
+
+        final verifiedExercise =
+            VerifiedExercisesData.getExerciseByName(exerciseName);
+
         if (verifiedExercise != null) {
-          // Add video URL from verified database
           enrichedExercises.add({
             ...exercise,
             'video_url': verifiedExercise['videoUrl'],
           });
         } else {
-          // Exercise not found in database - try to find closest match or use default
-          debugPrint('Warning: Exercise "$exerciseName" not found in verified database');
-          enrichedExercises.add({
-            ...exercise,
-            'video_url': 'https://www.youtube.com/watch?v=IODxDxX7oi4', // Default to push-ups video
-          });
+          // Drop the exercise — better to have a 4-exercise day than to
+          // persist a fake row and play a wrong video for it.
+          debugPrint(
+              'Dropped invented exercise "$exerciseName" not in verified library');
         }
       }
-      
+
       enrichedTrainingPlan[dayKey] = enrichedExercises;
     });
-    
+
     return {
       ...plan,
       'training_plan': enrichedTrainingPlan,
@@ -234,6 +253,11 @@ class GeminiAIService {
         'delete_user_custom_plans',
         params: {'target_user_id': userId},
       );
+      // The RPC just deleted every workout_session row the dashboard cached.
+      // Wipe today_workout / active_workout / weekly_schedule / plan caches
+      // so the next dashboard load fetches the freshly inserted session ids
+      // instead of pointing Start Workout at a now-deleted row (PGRST116).
+      AppCacheService.instance.invalidateWorkoutData();
 
       final trainingPlan = completePlan['training_plan'] as Map<String, dynamic>;
       
@@ -252,12 +276,13 @@ class GeminiAIService {
       final planRes = await SupabaseService.instance.client
           .from('workout_plans')
           .insert({
-            'plan_name': 'AI Custom Plan - $fitnessGoal', // Changed 'name' to 'plan_name'
-            'fitness_goal': fitnessGoal, // Map to existing 'fitness_goal'
-            'weekly_frequency': daysPerWeek, // Map to existing 'weekly_frequency'
-            'days_per_week': daysPerWeek, // Keep for new logic
-            'goal': fitnessGoal, // Keep for code consistency if column added
-            'fitness_level': fitnessLevel, // New column
+            'plan_name': 'AI Custom Plan - $fitnessGoal',
+            'fitness_goal': fitnessGoal,
+            'weekly_frequency': daysPerWeek,
+            'days_per_week': daysPerWeek,
+            'goal': fitnessGoal,
+            'fitness_level': fitnessLevel,
+            'user_id': userId,
             'creator_id': userId,
           })
           .select()
@@ -442,16 +467,22 @@ class GeminiAIService {
 
     final txn = Sentry.startTransaction('ai-nutrition-plan', 'task');
     try {
-      final prompt = _buildNutritionPrompt(profile, onboarding);
+      final prompt = buildNutritionPlanPrompt(
+        userContext: _buildUserProfileString(profile, onboarding),
+        fitnessGoal: profile['fitness_goal']?.toString() ?? 'general_fitness',
+        dietaryPreference: profile['dietary_preference']?.toString() ?? 'normal',
+        activityLevel: profile['activity_level']?.toString() ?? 'moderately_active',
+      );
 
       final message = Message(role: 'user', content: prompt);
       final response = await _client!.createChat(
         messages: [message],
-        model: 'gemini-3.1-flash-lite-preview',
+        model: 'gemini-3-flash-preview',
         temperature: 0.7,
         maxTokens: 8192,
         responseMimeType: 'application/json',
         responseSchema: _nutritionPlanSchema,
+        thinkingBudget: 2048,
       );
 
       final plan = jsonDecode(response.text) as Map<String, dynamic>;
@@ -518,8 +549,10 @@ class GeminiAIService {
           'day_6': {'type': 'ARRAY', 'items': _exerciseItem},
         },
       },
+      'safety_notes': {'type': 'STRING'},
+      'requires_doctor_consult': {'type': 'BOOLEAN'},
     },
-    'required': ['training_plan'],
+    'required': ['training_plan', 'safety_notes', 'requires_doctor_consult'],
   };
 
   static const _nutritionPlanSchema = {
@@ -561,8 +594,10 @@ class GeminiAIService {
         'required': ['daily_calories_goal', 'meals'],
       },
       'notes': {'type': 'STRING'},
+      'safety_notes': {'type': 'STRING'},
+      'requires_doctor_consult': {'type': 'BOOLEAN'},
     },
-    'required': ['nutrition_plan', 'notes'],
+    'required': ['nutrition_plan', 'notes', 'safety_notes', 'requires_doctor_consult'],
   };
 
   // ── Streaming ──────────────────────────────────────────────────────
@@ -589,16 +624,25 @@ class GeminiAIService {
       return;
     }
 
-    final prompt = _buildWorkoutPlanPrompt(profile, onboarding);
+    final daysPerWeek = int.tryParse(profile['weekly_training_frequency']?.toString() ?? '3') ?? 3;
+    final prompt = buildWorkoutPlanPrompt(
+      userContext: _buildUserProfileString(profile, onboarding),
+      daysPerWeek: daysPerWeek,
+      splitGuide: _getSplitGuide(daysPerWeek),
+      exerciseLibrary: _getVerifiedExercisesList(),
+      fitnessGoal: profile['fitness_goal']?.toString() ?? 'general_fitness',
+      experienceLevel: profile['experience_level']?.toString() ?? 'beginner',
+    );
     final fullBuffer = StringBuffer();
 
     yield* _client!.createChatStream(
       messages: [Message(role: 'user', content: prompt)],
-      model: 'gemini-3.1-flash-lite-preview',
+      model: 'gemini-3-flash-preview',
       temperature: 0.7,
       maxTokens: 8192,
       responseMimeType: 'application/json',
       responseSchema: _workoutPlanSchema,
+      thinkingBudget: 2048,
     ).map((chunk) {
       fullBuffer.write(chunk);
       return chunk;
@@ -645,135 +689,6 @@ class GeminiAIService {
     return hash.toRadixString(16).padLeft(8, '0');
   }
 
-  String _buildExercisePrompt(
-      Map<String, dynamic> profile,
-      Map<String, String> onboarding,
-      ) {
-    return '''
-Ești un antrenor personal certificat cu experiență în programare personalizată de antrenamente. Analizează următorul profil de utilizator și recomandă exerciții specifice și sigure:
-
-PROFIL UTILIZATOR:
-- Vârstă: ${profile['age'] ?? 'necunoscut'}
-- Gen: ${profile['gender'] ?? 'necunoscut'}
-- Greutate: ${profile['weight_kg'] ?? 'necunoscut'} kg, Înălțime: ${profile['height_cm'] ?? 'necunoscut'} cm
-- Nivel fitness: ${profile['experience_level'] ?? 'necunoscut'}
-- Obiectiv principal: ${profile['fitness_goal'] ?? 'necunoscut'}
-- Restricții medicale: ${profile['medical_conditions'] ?? 'niciuna'}
-- Echipament disponibil: ${profile['equipment_available'] ?? 'necunoscut'}
-- Locație antrenament: ${onboarding['workout_location'] ?? 'necunoscut'}
-- Zile disponibile: ${profile['weekly_training_frequency'] ?? 'necunoscut'}
-
-CERINȚE:
-1. Recomandă 15-20 exerciții variate care acoperă toate grupele musculare majore
-2. Adaptează intensitatea la nivelul utilizatorului
-3. Ține cont de restricțiile medicale - EVITĂ exercițiile contraindicate
-4. Folosește DOAR echipamentul disponibil
-5. Pentru fiecare exercițiu, include un link YouTube VALID și FUNCȚIONAL la un videoclip demonstrativ
-6. Explică DE CE fiecare exercițiu este potrivit pentru acest utilizator specific
-7. Oferă alternative pentru exercițiile mai dificile
-8. Toate denumirile exercițiilor, instrucțiunile și sfaturile trebuie să fie în LIMBA ROMÂNĂ
-9. Videoclipurile pot fi în engleză dacă nu există versiuni românești, dar instrucțiunile text trebuie traduse
-
-IMPORTANT - RESTRICȚII VIDEOCLIPURI YOUTUBE:
-- Folosește DOAR videoclipuri de la canale oficiale de fitness care permit embedding (ex: ATHLEAN-X, Jeff Nippard, ScottHermanFitness, Calisthenicmovement, FitnessBlender)
-- EVITĂ videoclipuri care au restricții de playback în aplicații externe
-- Preferă videoclipuri populare (peste 100k views) care sunt mai probabil să permită embedding
-- Testează mental dacă videoclipul este de la un canal cunoscut care permite embedding
-- NU folosi videoclipuri de la canale personale mici sau canale care restricționează playback-ul
-
-Răspunde DOAR cu un array JSON valid, fără text suplimentar. Format:
-
-[
-  {
-    "name": "Nume exercițiu în română",
-    "bodyPart": "Piept|Spate|Picioare|Umeri|Brațe|Abdomen",
-    "targetMuscles": "Mușchi țintă",
-    "equipment": "Echipament necesar",
-    "difficulty": "Începător|Intermediar|Avansat",
-    "sets": 3,
-    "reps": "10-12",
-    "restSeconds": 60,
-    "videoUrl": "https://www.youtube.com/watch?v=...",
-    "instructions": "Instrucțiuni detaliate de execuție",
-    "safetyTips": "Sfaturi de siguranță",
-    "whyRecommended": "Explicație personalizată de ce acest exercițiu este recomandat pentru acest utilizator"
-  }
-]
-''';
-  }
-
-  String _buildWorkoutPlanPrompt(
-      Map<String, dynamic> profile,
-      Map<String, String> onboarding,
-      ) {
-    final daysPerWeek = int.tryParse(profile['weekly_training_frequency']?.toString() ?? '3') ?? 3;
-    final splitGuide = _getSplitGuide(daysPerWeek);
-    
-    return '''
-### ROL ȘI OBIECTIV
-Ești un antrenor personal certificat (CPT) și antrenor de forță și condiționare fizică cu cunoștințe extinse în biomecanică, hipertrofie și periodizare.
-
-Scopul tău este să generezi planuri de antrenament extrem de personalizate și științific corecte pentru utilizatorii unei aplicații de fitness.
-
-### DATE UTILIZATOR
-${_buildUserProfileString(profile, onboarding)}
-
-Frecvență antrenament: $daysPerWeek zile pe săptămână
-Obiectiv principal: ${profile['fitness_goal'] ?? 'necunoscut'}
-Nivel experiență: ${profile['experience_level'] ?? 'necunoscut'}
-
-${_getVerifiedExercisesList()}
-
-### SPLIT RECOMANDAT PENTRU $daysPerWeek ZILE/SĂPTĂMÂNĂ
-$splitGuide
-
-### REGULI CRITICE
-1. **Limbaj Exerciții:** TREBUIE să folosești STRICT numele în ENGLEZĂ pentru exerciții (ex: "Barbell Bench Press", "Romanian Deadlift", "Face Pulls"). NU traduce numele exercițiilor!
-2. **Limbaj Explicații:** Toate explicațiile, sfaturile și descrierile TREBUIE să fie în ROMÂNĂ.
-3. **Logica Antrenamentului:**
-   - Respectă EXACT split-ul recomandat mai sus
-   - NU amesteca grupele musculare din zile diferite
-   - Fiecare zi trebuie focusată pe grupele musculare specificate
-   - Exemplu CORECT pentru Push: Barbell Bench Press, Overhead Press, Tricep Dips
-   - Exemplu GREȘIT pentru Push: Barbell Bench Press, Pull-Ups (Pull-Ups e pentru Pull!)
-4. **Selecție Exerciții:**
-   - Selectează DOAR din lista de exerciții furnizată mai sus
-   - Folosește EXACT numele în engleză din listă
-   - NU crea exerciții noi sau nu modifica numele
-   - Fiecare exercițiu din listă are deja un videoclip verificat
-
-### PRINCIPII ȘTIINȚIFICE (OBLIGATORIU)
-Bazat pe studii Schoenfeld et al. (2016, 2017, 2021):
-
-1. **Volume Landmarks**:
-   - Hipertrofie: 10-20 seturi/grupă musculară/săptămână
-   - Forță: 6-12 seturi/grupă musculară/săptămână
-
-2. **Frequency**:
-   - Antrenează fiecare grupă musculară de 2x/săptămână pentru rezultate optime
-   
-3. **Rest Periods**:
-   - Exerciții compuse (Squat, Deadlift, Bench Press): 90-120 secunde
-   - Exerciții izolate (Bicep Curls, Lateral Raises): 60-90 secunde
-   
-4. **Rep Ranges**:
-   - Obiectiv Hipertrofie: 8-12 repetări
-   - Obiectiv Forță: 4-6 repetări
-   - Obiectiv Rezistență: 12-15+ repetări
-
-### CERINȚE IMPORTANTE
-- Creează exact $daysPerWeek zile (day_1, day_2, day_3, etc.)
-- Fiecare zi trebuie să aibă 4-6 exerciții
-- Respectă STRICT split-ul recomandat (nu amesteca grupele musculare!)
-- Toate exercițiile TREBUIE să fie din lista furnizată
-- Folosește NUME ÎN ENGLEZĂ pentru câmpul "exercise_name"
-- Câmpul "coaching_tip" trebuie să fie în ROMÂNĂ
-- NU include câmpul "video_url" (videoclipurile sunt deja în baza de date)
-- Adaptează numărul de seturi/repetări la nivelul utilizatorului și obiectiv
-- Asigură volum optim per grupă musculară conform studiilor științifice
-''';
-  }
-
   String _getSplitGuide(int daysPerWeek) {
     switch (daysPerWeek) {
       case 3:
@@ -813,28 +728,6 @@ Bazat pe studii Schoenfeld et al. (2016, 2017, 2021):
       default:
         return _getSplitGuide(3);
     }
-  }
-
-  String _buildNutritionPrompt(
-      Map<String, dynamic> profile,
-      Map<String, String> onboarding,
-      ) {
-    return '''
-Ești un nutriționist specializat în nutriție sportivă. Creează un plan personalizat de mese:
-
-PROFIL: ${_buildUserProfileString(profile, onboarding)}
-
-CERINȚE:
-1. Calculează necesarul caloric pentru obiectiv: ${profile['fitness_goal'] ?? 'general'}
-2. Distribuie optim macronutrienții pentru obiectiv
-3. Creează mese pentru o zi completă (Mic dejun, Prânz, Gustare, Cină, eventual Gustare seara)
-4. Pentru FIECARE masă, oferă 2-3 OPȚIUNI diferite cu descrieri DETALIATE cu gramaje
-5. Respectă preferințele: ${profile['dietary_preference'] ?? 'normal'}
-6. Evită alergenele: ${profile['medical_conditions'] ?? 'niciuna'}
-7. Include sincronizarea meselor în raport cu antrenamentele
-8. Toate denumirile meselor, descrierile alimentelor în LIMBA ROMÂNĂ
-9. Calculează corect caloriile și macronutrienții pentru fiecare opțiune
-''';
   }
 
   String _buildUserProfileString(
@@ -1017,11 +910,12 @@ class GeminiClient {
   /// Does NOT retry on mid-stream failures (unlike [createChat]).
   Stream<String> createChatStream({
     required List<Message> messages,
-    String model = 'gemini-3.1-flash-lite-preview',
+    String model = 'gemini-3-flash-preview',
     int maxTokens = 8192,
     double temperature = 1.0,
     String? responseMimeType,
     Map<String, dynamic>? responseSchema,
+    int? thinkingBudget,
     CancelToken? cancelToken,
   }) async* {
     final contents = messages.map((m) => {
@@ -1035,6 +929,11 @@ class GeminiClient {
     };
     if (responseMimeType != null) generationConfig['responseMimeType'] = responseMimeType;
     if (responseSchema != null) generationConfig['responseSchema'] = responseSchema;
+    if (thinkingBudget != null) {
+      generationConfig['thinkingConfig'] = {
+        'thinkingBudget': thinkingBudget,
+      };
+    }
 
     final response = await dio.post(
       '/models/$model:streamGenerateContent',

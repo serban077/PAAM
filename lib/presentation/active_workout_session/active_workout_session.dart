@@ -75,8 +75,21 @@ class _ActiveWorkoutSessionState extends State<ActiveWorkoutSession> {
           .from('workout_sessions')
           .select('id, session_name, focus_area, estimated_duration_minutes')
           .eq('id', widget.sessionId)
-          .single()
+          .maybeSingle()
           .timeout(const Duration(seconds: 15));
+
+      if (sessionRes == null) {
+        // Session row no longer exists — typically because the user just
+        // regenerated their plan and the dashboard handed us a stale id.
+        // Show a friendly message + tell the dashboard to reload.
+        if (!mounted) return;
+        setState(() {
+          _errorMessage = 'Your workout plan was updated. Return to the '
+              'dashboard to load the new session.';
+          _isLoading = false;
+        });
+        return;
+      }
 
       final exercisesRes = await SupabaseService.instance.client
           .from('session_exercises')

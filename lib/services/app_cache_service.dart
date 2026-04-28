@@ -60,6 +60,22 @@ class AppCacheService {
     _todayWorkout = workout;
   }
 
+  void invalidateTodayWorkout() {
+    _todayWorkout = null;
+    _todayWorkoutDateKey = null;
+  }
+
+  /// Wipes every workout-related cache slot. Call this whenever the workout
+  /// schedule / sessions / exercises rows are deleted+recreated (e.g. after
+  /// `saveGeneratedPlan`), otherwise the dashboard keeps a stale session id
+  /// that points at a row the regenerate already wiped.
+  void invalidateWorkoutData() {
+    invalidateTodayWorkout();
+    invalidateActiveWorkout();
+    invalidateWeeklySchedule();
+    invalidateAIPlanCache();
+  }
+
   // ── Workout streak ─────────────────────────────────────────────────
   int? _workoutStreak;
   DateTime? _streakAt;
